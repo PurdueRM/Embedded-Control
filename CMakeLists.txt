@@ -20,7 +20,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Build the control base library first
 add_subdirectory(control-base)
 
-# Add your executable projects
+# Build all robot projects
 add_subdirectory(Swerve-Standard)
-# Add other projects as needed
-# add_subdirectory(Template)
+add_subdirectory(Template)
+# Add any other robot projects here

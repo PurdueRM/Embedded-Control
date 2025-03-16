@@ -16,30 +16,27 @@ enable_language(C ASM)
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
-# Create a LIBRARY object type
-add_library(${CMAKE_PROJECT_NAME} STATIC)
-
-# Add STM32CubeMX generated sources
+# Add the STM32CubeMX library
 add_subdirectory(cmake/stm32cubemx)
 
-# Link directories setup (Usually not needed for libraries)
-# target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ...)
-
-# Add sources to library
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    startup_stm32f407xx.s
-    STM32F407IGHx_FLASH.ld
-    # Add other user sources from typec-board-base here, if any
+# Create the board base library (excluding main.c)
+file(GLOB_RECURSE TYPEC_BOARD_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/*.c"
 )
 
-# Add include paths (If you have any headers specific to typec-board-base)
-# target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ...)
+# Explicitly exclude main.c since it needs robot-specific headers
+list(FILTER TYPEC_BOARD_SOURCES EXCLUDE REGEX ".*main.c$")
 
-# Add project symbols (macros)
-# target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ...)
+add_library(typec-board-base STATIC
+    ${TYPEC_BOARD_SOURCES}
+)
 
-# Link the generated stm32cubemx library.  This assumes stm32cubemx
-# creates a library named 'stm32cubemx'.
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE stm32cubemx)
+target_include_directories(typec-board-base PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Inc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Device/ST/STM32F4xx/Include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Include"
+)
 
-# No need to set C_STANDARD here; it's set globally.
+# Link with STM32CubeMX library
+target_link_libraries(typec-board-base PRIVATE stm32cubemx)
