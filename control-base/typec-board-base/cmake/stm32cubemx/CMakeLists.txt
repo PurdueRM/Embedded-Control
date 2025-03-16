@@ -25,6 +25,12 @@ file(GLOB_RECURSE CUBEMX_SOURCES
 # Exclude main.c from compilation
 list(FILTER CUBEMX_SOURCES EXCLUDE REGEX ".*main.c$")
 
+# Exclude template files from compilation
+list(FILTER CUBEMX_SOURCES EXCLUDE REGEX ".*_template\\.c$")
+
+# Exclude RTC alarm timebase specifically
+list(FILTER CUBEMX_SOURCES EXCLUDE REGEX ".*hal_timebase_rtc.*\\.c$")
+
 # Add sources to library
 target_sources(stm32cubemx PRIVATE ${CUBEMX_SOURCES})
 
