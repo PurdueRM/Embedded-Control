@@ -31,11 +31,19 @@ add_library(typec-board-base STATIC
     ${TYPEC_BOARD_SOURCES}
 )
 
+# Use absolute paths to ensure correct inclusion
+set(CONTROL_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
+
 target_include_directories(typec-board-base PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc"
     "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Inc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy"
     "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Device/ST/STM32F4xx/Include"
     "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Include"
+    # Add control-base include directories
+    "${CONTROL_BASE_DIR}/algo/inc"
+    "${CONTROL_BASE_DIR}/bsp/inc"
+    "${CONTROL_BASE_DIR}/devices/inc"
 )
 
 # Link with STM32CubeMX library

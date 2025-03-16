@@ -28,6 +28,13 @@ list(FILTER CUBEMX_SOURCES EXCLUDE REGEX ".*main.c$")
 # Add sources to library
 target_sources(stm32cubemx PRIVATE ${CUBEMX_SOURCES})
 
+# Use absolute paths to ensure correct inclusion
+set(CONTROL_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../control-base")
+
+# Print the path to verify it's correct
+message(STATUS "Control base directory: ${CONTROL_BASE_DIR}")
+message(STATUS "remote.h should be at: ${CONTROL_BASE_DIR}/devices/inc/remote.h")
+
 # Include directories for STM32CubeMX
 target_include_directories(stm32cubemx PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Inc
@@ -38,6 +45,10 @@ target_include_directories(stm32cubemx PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/CMSIS/Include
+    # Use absolute paths for more reliability
+    "${CONTROL_BASE_DIR}/algo/inc"
+    "${CONTROL_BASE_DIR}/bsp/inc"
+    "${CONTROL_BASE_DIR}/devices/inc"
 )
 
 # Validate that STM32CubeMX code is compatible with C standard
