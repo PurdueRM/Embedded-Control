@@ -11,10 +11,7 @@ project(BoilerBots-Embedded C ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Linker script
-set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/control-base/typec-board-base/STM32F407IGHx_FLASH.ld")
-
-# Compiler and linker flags
+# Compiler flags
 add_compile_options(
     -mcpu=cortex-m4
     -mthumb
@@ -24,8 +21,6 @@ add_compile_options(
     -fdata-sections
     -ffunction-sections
 )
-
-set(CMAKE_EXE_LINKER_FLAGS "-T${LINKER_SCRIPT} -Wl,-Map=${CMAKE_BINARY_DIR}/output.map,--cref -Wl,--gc-sections -flto -u _printf_float")
 
 # Common directories to include
 include_directories(

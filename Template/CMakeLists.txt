@@ -38,6 +38,10 @@ set(MAIN_FILE "${CMAKE_SOURCE_DIR}/control-base/typec-board-base/Core/Src/main.c
 set(CUSTOM_MAIN "${CMAKE_CURRENT_BINARY_DIR}/main_custom.c")
 configure_file(${MAIN_FILE} ${CUSTOM_MAIN} COPYONLY)
 
+# Set linker script path (fix path issue)
+set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/control-base/typec-board-base/STM32F407IGHx_FLASH.ld")
+set(CMAKE_EXE_LINKER_FLAGS "-T${LINKER_SCRIPT} -Wl,-Map=${CMAKE_BINARY_DIR}/${PROJECT_NAME}.map,--cref -Wl,--gc-sections -flto -u _printf_float")
+
 # Add executable
 add_executable(${PROJECT_NAME} 
     ${ROBOT_SOURCES}
