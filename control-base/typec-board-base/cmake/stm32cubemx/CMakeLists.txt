@@ -1,102 +1,81 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(stm32cubemx)
-add_library(stm32cubemx STATIC)
+add_library(stm32cubemx INTERFACE)
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
 
-# Add specific HAL modules that need to be enabled
-target_compile_definitions(stm32cubemx PRIVATE 
-    USE_HAL_DRIVER 
-    STM32F407xx
-    HAL_CAN_MODULE_ENABLED  # Ensure CAN module is enabled
+target_compile_definitions(stm32cubemx INTERFACE 
+	USE_HAL_DRIVER 
+	STM32F407xx
     $<$<CONFIG:Debug>:DEBUG>
 )
 
-# Add STM32CubeMX generated sources
-file(GLOB CORE_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/*.c"
+target_include_directories(stm32cubemx INTERFACE
+    ../../Core/Inc
+    ../../Drivers/STM32F4xx_HAL_Driver/Inc
+    ../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
+    ../../Middlewares/Third_Party/FreeRTOS/Source/include
+    ../../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
+    ../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
+    ../../Drivers/CMSIS/Device/ST/STM32F4xx/Include
+    ../../Drivers/CMSIS/Include
 )
 
-# Add HAL Driver sources
-file(GLOB_RECURSE HAL_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F4xx_HAL_Driver/Src/*.c"
+target_sources(stm32cubemx INTERFACE
+    ../../Core/Src/main.c
+    ../../Core/Src/gpio.c
+    ../../Core/Src/freertos.c
+    ../../Core/Src/can.c
+    ../../Core/Src/dma.c
+    ../../Core/Src/i2c.c
+    ../../Core/Src/spi.c
+    ../../Core/Src/tim.c
+    ../../Core/Src/usart.c
+    ../../Core/Src/stm32f4xx_it.c
+    ../../Core/Src/stm32f4xx_hal_msp.c
+    ../../Core/Src/stm32f4xx_hal_timebase_tim.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_can.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c
+    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
+    ../../Core/Src/system_stm32f4xx.c
+    ../../Middlewares/Third_Party/FreeRTOS/Source/croutine.c
+    ../../Middlewares/Third_Party/FreeRTOS/Source/event_groups.c
+    ../../Middlewares/Third_Party/FreeRTOS/Source/list.c
+    ../../Middlewares/Third_Party/FreeRTOS/Source/queue.c
+    ../../Middlewares/Third_Party/FreeRTOS/Source/stream_buffer.c
+    ../../Middlewares/Third_Party/FreeRTOS/Source/tasks.c
+    ../../Middlewares/Third_Party/FreeRTOS/Source/timers.c
+    ../../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c
+    ../../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c
+    ../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
+    ../../Core/Src/sysmem.c
+    ../../Core/Src/syscalls.c
+    ../../startup_stm32f407xx.s
 )
 
-# Add only the specific FreeRTOS files we need (like in the original Makefile)
-set(FREERTOS_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/croutine.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/event_groups.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/list.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/queue.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/stream_buffer.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/tasks.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/timers.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c"
+target_link_directories(stm32cubemx INTERFACE
 )
 
-# Combine all sources
-set(CUBEMX_SOURCES ${CORE_SOURCES} ${HAL_SOURCES} ${FREERTOS_SOURCES})
-
-# Exclude main.c from compilation
-list(FILTER CUBEMX_SOURCES EXCLUDE REGEX ".*main.c$")
-
-# Exclude template files from compilation
-list(FILTER CUBEMX_SOURCES EXCLUDE REGEX ".*_template\\.c$")
-
-# Exclude RTC alarm timebase specifically
-list(FILTER CUBEMX_SOURCES EXCLUDE REGEX ".*hal_timebase_rtc.*\\.c$")
-
-# Add sources to library
-target_sources(stm32cubemx PRIVATE ${CUBEMX_SOURCES})
-
-# Use absolute paths to ensure correct inclusion
-set(CONTROL_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../control-base")
-
-# Also create a forced include file to set HAL_CAN_MODULE_ENABLED
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/stm32_hal_conf_extra.h 
-"#ifndef STM32_HAL_CONF_EXTRA_H
-#define STM32_HAL_CONF_EXTRA_H
-
-/* Ensure CAN module is enabled */
-#ifndef HAL_CAN_MODULE_ENABLED
-#define HAL_CAN_MODULE_ENABLED
-#endif
-
-#endif /* STM32_HAL_CONF_EXTRA_H */
-")
-
-# Include directories for STM32CubeMX
-target_include_directories(stm32cubemx PUBLIC
-    ${CMAKE_CURRENT_BINARY_DIR}  # For stm32_hal_conf_extra.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F4xx_HAL_Driver/Inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/CMSIS/Device/ST/STM32F4xx/Include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/CMSIS/Include
-    # Use absolute paths for more reliability
-    "${CONTROL_BASE_DIR}/algo/inc"
-    "${CONTROL_BASE_DIR}/bsp/inc"
-    "${CONTROL_BASE_DIR}/devices/inc"
-)
-
-# Add a forced include directive for our extra header
-target_compile_options(stm32cubemx PRIVATE
-    -include ${CMAKE_CURRENT_BINARY_DIR}/stm32_hal_conf_extra.h
-)
-
-# Add compiler options for floating point hardware
-target_compile_options(stm32cubemx PRIVATE
-    -mcpu=cortex-m4
-    -mthumb
-    -mfpu=fpv4-sp-d16
-    -mfloat-abi=hard
+target_link_libraries(stm32cubemx INTERFACE
 )
 
 # Validate that STM32CubeMX code is compatible with C standard
