@@ -34,7 +34,13 @@ add_library(typec-board-base STATIC
 # Use absolute paths to ensure correct inclusion
 set(CONTROL_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
+# Make sure typec-board-base also gets the forced include for HAL modules
+target_compile_options(typec-board-base PRIVATE
+    -include ${CMAKE_CURRENT_BINARY_DIR}/cmake/stm32cubemx/stm32_hal_conf_extra.h
+)
+
 target_include_directories(typec-board-base PUBLIC
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake/stm32cubemx"
     "${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc"
     "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Inc"
     "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy"
@@ -44,6 +50,14 @@ target_include_directories(typec-board-base PUBLIC
     "${CONTROL_BASE_DIR}/algo/inc"
     "${CONTROL_BASE_DIR}/bsp/inc"
     "${CONTROL_BASE_DIR}/devices/inc"
+)
+
+# Add compiler definitions
+target_compile_definitions(typec-board-base PRIVATE 
+    USE_HAL_DRIVER 
+    STM32F407xx
+    HAL_CAN_MODULE_ENABLED  # Ensure CAN module is enabled
+    $<$<CONFIG:Debug>:DEBUG>
 )
 
 # Link with STM32CubeMX library
