@@ -1,0 +1,125 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Clear Terminal",
+            "type": "shell",
+            "command": "clear",
+            "presentation": {
+                "reveal": "never",
+                "clear": true
+            },
+            "hide": true
+        },
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "-j",
+                "ROBOT_PROJECT=${input:robotProject}"
+            ],
+            "windows": {
+                "command": "mingw32-make",
+                "args": [
+                    "-j",
+                    "ROBOT_PROJECT=${input:robotProject}"
+                ]
+            },
+            "dependsOn": "Clear Terminal",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "Flash",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "flash",
+                "ROBOT_PROJECT=${input:robotProject}"
+            ],
+            "windows": {
+                "command": "mingw32-make",
+                "args": [
+                    "flash_powershell",
+                    "ROBOT_PROJECT=${input:robotProject}"
+                ]
+            },
+            "dependsOn": "Clear Terminal",
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "Clean",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "clean"
+            ],
+            "windows": {
+                "command": "mingw32-make",
+                "args": [
+                    "clean_powershell"
+                ]
+            },
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "Build and Flash",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Build",
+                "Flash"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "Rebuild",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Clean",
+                "Build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "panel": "shared",
+                "clear": true
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "robotProject",
+            "type": "pickString",
+            "description": "Select the robot project to build",
+            "options": [
+                "Swerve-Standard",
+                //"Template"
+                // Add your other robot projects here
+            ]
+        }
+    ]
+}
