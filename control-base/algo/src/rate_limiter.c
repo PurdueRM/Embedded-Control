@@ -20,7 +20,7 @@ void rate_limiter_init(rate_limiter_t *rate_limiter, float rate_limit)
  * @param input The input value
  * @return float The limited value
  */
-float rate_limiter(rate_limiter_t *rate_limiter, float input)
+float rate_limiter_iterate(rate_limiter_t *rate_limiter, float input)
 {
     uint32_t curr_time = xTaskGetTickCount();
     float dt = (curr_time - rate_limiter->prev_time) / (float)configTICK_RATE_HZ; // convert to seconds

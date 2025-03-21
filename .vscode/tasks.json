@@ -117,6 +117,7 @@
             "description": "Select the robot project to build",
             "options": [
                 "Swerve-Standard",
+                "Sentry",
                 //"Template"
                 // Add your other robot projects here
             ]

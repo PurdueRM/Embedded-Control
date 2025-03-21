@@ -61,6 +61,7 @@ typedef struct {
     // controller input
     float vx;
     float vy;
+    float vomega; // TODO Remove
 
     // mouse input
     float vx_keyboard;

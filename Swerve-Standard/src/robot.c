@@ -20,8 +20,6 @@ extern Supercap_t g_supercap;
 extern DJI_Motor_Handle_t *g_yaw;
 
 Input_State_t g_input_state = {0};
-rate_limiter_t controller_limit_x = {0};
-rate_limiter_t controller_limit_y = {0};
 
 #define KEYBOARD_RAMP_COEF (0.004f)
 
@@ -62,11 +60,6 @@ void Handle_Starting_Up_State()
     Jetson_Orin_Init(&huart1); // ! temp uart1
 
     Remote_Init(&huart3);
-
-    // ! this should be 4, we just made it high to disable the rate limiter for now
-    #define MAX_ACCEL 100 // %/s^2 defined here for local context
-    rate_limiter_init(&g_robot_state.rate_limiters.controller_limit_x, MAX_ACCEL);
-    rate_limiter_init(&g_robot_state.rate_limiters.controller_limit_y, MAX_ACCEL);
 
     g_robot_state.state = DISABLED;
 }
@@ -119,8 +112,8 @@ void Process_Remote_Input()
     g_robot_state.input.vx_keyboard = ((1.0f - KEYBOARD_RAMP_COEF) * g_robot_state.input.vx_keyboard - g_remote.keyboard.A * KEYBOARD_RAMP_COEF + g_remote.keyboard.D * KEYBOARD_RAMP_COEF);
     float temp_x = g_robot_state.input.vx_keyboard + g_remote.controller.left_stick.x / REMOTE_STICK_MAX;
     float temp_y = g_robot_state.input.vy_keyboard + g_remote.controller.left_stick.y / REMOTE_STICK_MAX;
-    g_robot_state.input.vx = rate_limiter(&g_robot_state.rate_limiters.controller_limit_x, temp_x);
-    g_robot_state.input.vy = rate_limiter(&g_robot_state.rate_limiters.controller_limit_y, temp_y);
+    g_robot_state.input.vx = temp_x;
+    g_robot_state.input.vy = temp_y;
 
 
     // Calculate Gimbal Oriented Control

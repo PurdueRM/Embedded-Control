@@ -13,6 +13,6 @@ typedef struct {
 } rate_limiter_t;
 
 void rate_limiter_init(rate_limiter_t *rate_limiter, float rate_limit);
-float rate_limiter(rate_limiter_t *rate_limiter, float input);
+float rate_limiter_iterate(rate_limiter_t *rate_limiter, float input);
 
 #endif // RATE_LIMITER_H

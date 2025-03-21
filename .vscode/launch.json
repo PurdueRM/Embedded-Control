@@ -49,6 +49,7 @@
             "description": "Select the robot project to debug",
             "options": [
                 "Swerve-Standard",
+                "Sentry",
                 //"Template"
                 // Add your other robot projects here
             ]

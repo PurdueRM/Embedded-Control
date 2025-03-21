@@ -5,6 +5,7 @@
 #include "dji_motor.h"
 #include "motor.h"
 #include "swerve_locomotion.h"
+#include "rate_limiter.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
@@ -125,10 +126,23 @@ void Chassis_Ctrl_Loop()
     swerve_calculate_kinematics(&g_chassis_state, &g_swerve_constants);
     swerve_optimize_module_angles(&g_chassis_state, measured_angles);
     swerve_desaturate_wheel_speeds(&g_chassis_state, &g_swerve_constants);
+    float vx = g_robot_state.input.vx;
+    float vy = g_robot_state.input.vy;
+
+    // Quick Deceleration when the joystick is released
+    if ((vx * vx + vy * vy) < 0.01f) {
+        for (int i = 0; i < NUMBER_OF_MODULES; i++) {
+            chassis_vel_limiters[i].rate_limit = SWERVE_QUICK_STOP_ACCEL;
+        }
+    } else {
+        for (int i = 0; i < NUMBER_OF_MODULES; i++) {
+            chassis_vel_limiters[i].rate_limit = SWERVE_MAX_WHEEL_ACCEL;
+        }
+    }
     
     // rate limit the module speeds
     for (int i = 0; i < NUMBER_OF_MODULES; i++) {
-        g_chassis_state.states[i].speed = rate_limiter(&chassis_vel_limiters[i], g_chassis_state.states[i].speed);
+        g_chassis_state.states[i].speed = rate_limiter_iterate(&chassis_vel_limiters[i], g_chassis_state.states[i].speed);   
     }
 
     swerve_convert_to_rpm(&g_chassis_state, &g_swerve_constants);
