@@ -153,7 +153,7 @@ void Process_Remote_Input()
         g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
     }
 
-    if (g_remote.controller.left_switch == UP)
+    if (g_remote.controller.left_switch == MID)
     {
         g_robot_state.launch.IS_FIRING_ENABLED = 1;
     }

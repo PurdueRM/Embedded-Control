@@ -55,7 +55,7 @@ void Gimbal_Task_Init()
         .motor_reversal = MOTOR_REVERSAL_NORMAL,
         .angle_pid =
             {
-                .kp = 25.0f,
+                .kp = 40.0f,
                 .kd = 100.0f,
                 .output_limit = 50.0f,
             },

@@ -1,6 +1,7 @@
 #include "launch_task.h"
 
 #include "dji_motor.h"
+#include "motor.h"
 #include "robot.h"
 #include "remote.h"
 #include "user_math.h"
@@ -21,7 +22,7 @@ void Launch_Task_Init()
         .speed_controller_id = 4,
         .offset = 0,
         .control_mode = VELOCITY_CONTROL,
-        .motor_reversal = MOTOR_REVERSAL_REVERSED,
+        .motor_reversal = MOTOR_REVERSAL_NORMAL,
         .velocity_pid =
             {
                 .kp = 500.0f,
@@ -34,7 +35,7 @@ void Launch_Task_Init()
         .speed_controller_id = 5,
         .offset = 0,
         .control_mode = VELOCITY_CONTROL,
-        .motor_reversal = MOTOR_REVERSAL_NORMAL,
+        .motor_reversal = MOTOR_REVERSAL_REVERSED,
         .velocity_pid =
             {
                 .kp = 500.0f,
@@ -57,7 +58,7 @@ void Launch_Task_Init()
             },
         .angle_pid =
             {
-                .kp = 450000.0f,
+                .kp = 500000.0f,
                 .kd = 15000000.0f,
                 .ki = 0.1f,
                 .output_limit = M2006_MAX_CURRENT,
@@ -165,14 +166,14 @@ void rejiggle() {
             g_robot_state.launch.busy_mode = IDLE;
             g_robot_state.launch.IS_BUSY = 0;
             DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
-            DJI_Motor_Set_Angle(g_feed_motor, curr_angle_rad + SHOT_ANGLE_OFFSET_RAD);
+            DJI_Motor_Set_Angle(g_feed_motor, curr_angle_rad + (SHOT_ANGLE_OFFSET_RAD / 2));
         }
     }
     else {
         g_robot_state.launch.busy_mode = REJIGGLE;
         g_robot_state.launch.IS_BUSY = 1;
         DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
-        DJI_Motor_Set_Angle(g_feed_motor, curr_angle_rad - SHOT_ANGLE_OFFSET_RAD);
+        DJI_Motor_Set_Angle(g_feed_motor, curr_angle_rad - (SHOT_ANGLE_OFFSET_RAD / 2));
     }
 }
 
@@ -194,8 +195,8 @@ void handleFullAuto() {
 }
 
 void startFlywheel() {
-    DJI_Motor_Set_Velocity(g_flywheel_left, -100);
-    DJI_Motor_Set_Velocity(g_flywheel_right, -100);
+    DJI_Motor_Set_Velocity(g_flywheel_left, -320);
+    DJI_Motor_Set_Velocity(g_flywheel_right, -320);
 }
 
 void stopFlywheel() {
