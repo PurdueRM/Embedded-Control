@@ -52,7 +52,7 @@ void Handle_Starting_Up_State()
 {
     // Initialize all hardware
     CAN_Service_Init();
-    //Referee_System_Init(&huart1);
+    Referee_System_Init(&huart1);
     Supercap_Init(&g_supercap);
     Chassis_Task_Init();
     Gimbal_Task_Init();
