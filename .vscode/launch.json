@@ -19,7 +19,7 @@
                 "enabled": true,
                 "samplesPerSecond": 4
             },
-            "preLaunchTask": "Build Robot" // build before debug
+            "preLaunchTask": "Build" // build before debug
         },
         {
             "name": "ST-LINK",
