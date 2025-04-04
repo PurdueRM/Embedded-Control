@@ -8,7 +8,8 @@
 #define ORIN_DATA_TX_BUFER_SIZE (34)
 
 #define ORIN_TIMEOUT_MS (3000)
-#define JETSON_ORIN_PERIOD (100)
+#define JETSON_ORIN_PERIOD (4)
+#pragma message "orin period must match with algorithm team"
 
 typedef struct
 {

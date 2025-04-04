@@ -1,0 +1,5 @@
+{
+    "files.associations": {
+        "jetson_orin.h": "c"
+    }
+}
