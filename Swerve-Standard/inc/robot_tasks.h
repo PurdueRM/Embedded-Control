@@ -76,7 +76,7 @@ void Robot_Tasks_Motor(void const *argument)
 {
     portTickType xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
-    const TickType_t TimeIncrement = pdMS_TO_TICKS(1);
+    const TickType_t TimeIncrement = pdMS_TO_TICKS(2);
     while (1)
     {
         Motor_Task_Loop();

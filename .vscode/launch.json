@@ -39,7 +39,7 @@
                 "enabled": true,
                 "samplesPerSecond": 8
             },
-            "preLaunchTask": "Build Robot" // build before debug
+            "preLaunchTask": "Build" // build before debug
         }
     ],
     "inputs": [

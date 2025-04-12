@@ -109,7 +109,7 @@ typedef struct
 	uint8_t Shooting_Frequency;
 	float Shooting_Speed;
 	uint8_t Shooter_Power_Output;
-}Referee_Robot_State_t;
+} Referee_Robot_State_t;
 
 typedef struct
 {

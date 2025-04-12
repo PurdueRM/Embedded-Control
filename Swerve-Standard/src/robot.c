@@ -21,7 +21,7 @@ extern DJI_Motor_Handle_t *g_yaw;
 
 Input_State_t g_input_state = {0};
 
-#define KEYBOARD_RAMP_COEF (0.004f)
+#define KEYBOARD_RAMP_COEF (0.01f)
 
 /**
  * @brief This function initializes the robot.
@@ -57,7 +57,7 @@ void Handle_Starting_Up_State()
     Chassis_Task_Init();
     Gimbal_Task_Init();
     Launch_Task_Init();
-    Jetson_Orin_Init(&huart6); // ! temp uart1
+    Jetson_Orin_Init(&huart6);
 
     Remote_Init(&huart3);
 
@@ -124,91 +124,47 @@ void Process_Remote_Input()
     g_robot_state.gimbal.yaw_angle -= (g_remote.controller.right_stick.x / 50000.0f + g_remote.mouse.x / 10000.0f);    // controller and mouse
     g_robot_state.gimbal.pitch_angle -= (g_remote.controller.right_stick.y / 100000.0f - g_remote.mouse.y / 50000.0f);
 
-    // keyboard toggles
-    if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B))
+    // if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B))
+    // {
+    //     g_robot_state.UI_ENABLED ^= 0x01; // Toggle UI
+    // }
+
+    if ((g_remote.keyboard.Shift) || (g_remote.controller.right_switch == UP)) // Hold shift to boost
     {
-        g_robot_state.launch.IS_FIRING_ENABLED ^= 0x01; // Toggle firing
-    }
-    if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B))
-    {
-        g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01; // Toggle spintop
-    }
-    if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B))
-    {
-        g_robot_state.UI_ENABLED ^= 0x01; // Toggle UI
-    }
-    if (__IS_TOGGLED(g_remote.keyboard.Shift, g_input_state.prev_Shift))
-    {
-        g_robot_state.IS_SUPER_CAPACITOR_ENABLED ^= 0x01; // Toggle supercap
+        g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 1;
+    } else {
+        g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 0;
     }
 
-    // controller toggles
-    if (__IS_TRANSITIONED(g_remote.controller.left_switch, g_input_state.prev_left_switch, MID))
-    {
-        g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
-    }
-    if (__IS_TRANSITIONED(g_remote.controller.left_switch, g_input_state.prev_left_switch, DOWN) ||
-        __IS_TRANSITIONED(g_remote.controller.left_switch, g_input_state.prev_left_switch, UP))
-    {
-        g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
-    }
-
-    if (g_remote.controller.left_switch == MID)
-    {
-        g_robot_state.launch.IS_FIRING_ENABLED = 1;
-    }
-    else
-    {
-        g_robot_state.launch.IS_FIRING_ENABLED = 0;
-    }
-
-    if ((g_remote.controller.right_switch == UP) || (g_remote.mouse.right == 1)) // mouse right button auto aim
-    {
+    if (g_remote.mouse.right) { // Hold right mouse button to enable auto aim
         g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
-    }
-    else
-    {
+    } else {
         g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
     }
 
-    if (g_remote.controller.wheel < -50.0f)
-    { // dial wheel forward single fire
-        g_robot_state.launch.fire_mode = SINGLE_FIRE;
-    }
-    else if (g_remote.controller.wheel > 50.0f)
-    { // dial wheel backward burst `fire
+    if ((g_remote.mouse.left) || (g_remote.controller.wheel > 50.0f)) { // Hold left mouse to fire
         g_robot_state.launch.fire_mode = FULL_AUTO;
-    }
-    else
-    { // dial wheel mid stop fire
+    } else {
         g_robot_state.launch.fire_mode = NO_FIRE;
     }
 
-    // cycle burst flags with keyboard
-    // TODO: assign a key for this
-    // if (__IS_TOGGLED(g_remote.keyboard.G, g_input_state.prev_G))
-    // {
-    //     if (g_robot_state.launch.fire_mode == FULL_AUTO)
-    //     {
-    //         g_robot_state.launch.fire_mode = SINGLE_FIRE;
-    //     }
-    //     else
-    //     {
-    //         g_robot_state.launch.fire_mode++;
-    //     }
-    // }
+    if (__IS_TOGGLED(g_remote.keyboard.G, g_input_state.prev_G)) { 
+        g_robot_state.launch.IS_FIRING_ENABLED ^= 0x01; // Toggle firing with G
+    }
 
+    if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B)) { // Toggle spintop with B
+        g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
+    }
 
-
-    // TODO: implement controller toggle for supercap
-    // if (g_remote.controller.wheel > 50.0f && !g_robot_state.launch.IS_FLYWHEEL_ENABLED)
-    // {
-    //     g_supercap.supercap_enabled_flag = 1;
-    // }
-    // else
-    // {
-    //     g_supercap.supercap_enabled_flag = 0;
-    // }
+    if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
+        //g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
+        //g_robtot_state.launch.IS_FIRING_ENABLED = 1;
+        g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
+    } else {
+        //g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
+        //g_robot_state.launch.IS_FIRING_ENABLED = 0;
+        g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
+    }
 
     // Update previous states keyboard
     g_input_state.prev_B = g_remote.keyboard.B;
