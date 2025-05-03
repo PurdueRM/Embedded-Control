@@ -2,6 +2,7 @@
 
 #include "robot_tasks.h"
 #include "chassis_task.h"
+#include "dji_motor.h"
 #include "gimbal_task.h"
 #include "launch_task.h"
 #include "gimbal_task.h"
@@ -12,10 +13,13 @@
 #include "user_math.h"
 #include "math.h"
 #include "rate_limiter.h"
+#include "imu_task.h"
 
 Robot_State_t g_robot_state = {0};
 extern Remote_t g_remote;
 extern Supercap_t g_supercap;
+
+extern IMU_t g_imu;
 
 extern DJI_Motor_Handle_t *g_yaw;
 
@@ -115,9 +119,13 @@ void Process_Remote_Input()
     g_robot_state.input.vx = temp_x;
     g_robot_state.input.vy = temp_y;
 
+    // Update chassis yaw angle based on gimble IMU
+    // TODO: Place an IMU directly on the chassis, this is kind of jank
+    // UNTESTED!!! If odometry isn't working, it's probably this
+    float theta = DJI_Motor_Get_Absolute_Angle(g_yaw);
+    g_robot_state.chassis.yaw = g_imu.rad.yaw - theta;
 
     // Calculate Gimbal Oriented Control
-    float theta = DJI_Motor_Get_Absolute_Angle(g_yaw);
     g_robot_state.chassis.x_speed = -g_robot_state.input.vy * sin(theta) + g_robot_state.input.vx * cos(theta);
     g_robot_state.chassis.y_speed = g_robot_state.input.vy * cos(theta) + g_robot_state.input.vx * sin(theta);
 
@@ -157,12 +165,12 @@ void Process_Remote_Input()
     }
 
     if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
-        //g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
-        //g_robtot_state.launch.IS_FIRING_ENABLED = 1;
+        // g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
+        // g_robot_state.launch.IS_FIRING_ENABLED = 1;
         g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
     } else {
-        //g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
-        //g_robot_state.launch.IS_FIRING_ENABLED = 0;
+        // g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
+        // g_robot_state.launch.IS_FIRING_ENABLED = 0;
         g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
     }
 

@@ -2,6 +2,7 @@
 #define ROBOT_H
 
 #include "user_math.h"
+#include "swerve_odometry.h"
 #include <stdint.h>
 
 typedef enum Robot_State_e {
@@ -17,6 +18,11 @@ typedef struct {
     float y_speed;
     float omega;
     uint8_t IS_SPINTOP_ENABLED;
+
+    float yaw;
+
+    // Estimated pose according to wheel odometry
+    pose_2d pose;
 
     // power management
     uint16_t power_index;

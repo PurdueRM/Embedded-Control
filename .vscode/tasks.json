@@ -5,6 +5,7 @@
             "label": "Clear Terminal",
             "type": "shell",
             "command": "clear",
+            "windows": { "command": "cls" },
             "presentation": {
                 "reveal": "never",
                 "clear": true
