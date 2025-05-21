@@ -22,6 +22,7 @@
             "windows": {
                 "command": "mingw32-make",
                 "args": [
+                    "all_windows",
                     "-j",
                     "ROBOT_PROJECT=${input:robotProject}"
                 ]

@@ -159,12 +159,25 @@ vpath %.s $(sort $(dir $(ASM_SOURCES)))
 all: print_info 
 	@echo "${COLOR_YELLOW}Compiling...${COLOR_RESET}"
 	@$(MAKE) --no-print-directory $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
+	@echo "${COLOR_CYAN}Generated binary: $(BUILD_DIR)/$(TARGET).bin ${COLOR_RESET}"
 	@echo "${COLOR_GREEN}${COLOR_BOLD}Build successful!${COLOR_RESET}"
 
 # Project info
 print_info:
 	@echo "${COLOR_CYAN}${COLOR_BOLD}Building robot project: ${COLOR_MAGENTA}$(ROBOT_PROJECT)${COLOR_CYAN}"
 	@echo "${COLOR_CYAN}${COLOR_BOLD}Output directory: ${COLOR_MAGENTA}$(BUILD_DIR)/${COLOR_RESET}"
+
+# Default target: build all (PowerShell version)
+all_windows: print_info_powershell
+	@powershell -Command "Write-Host -ForegroundColor Yellow 'Compiling...'"
+	@$(MAKE) --no-print-directory $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
+	@powershell -Command "Write-Host -ForegroundColor Cyan 'Generated binary: $(BUILD_DIR)/$(TARGET).bin'"
+	@powershell -Command "Write-Host -ForegroundColor Green 'Build successful!'"
+
+
+print_info_powershell:
+	@powershell -Command "Write-Host -NoNewline -ForegroundColor CYAN 'Building robot project: '; Write-Host -ForegroundColor MAGENTA '$(ROBOT_PROJECT)'"
+	@powershell -Command "Write-Host -NoNewline -ForegroundColor CYAN 'Output directory: '; Write-Host -ForegroundColor MAGENTA '$(BUILD_DIR)/'"
 
 # Build C files
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
@@ -186,10 +199,9 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
 # Generate binary
 $(BUILD_DIR)/$(TARGET).bin: $(BUILD_DIR)/$(TARGET).elf | $(BUILD_DIR)
 	@$(BIN) $< $@
-	@echo "${COLOR_CYAN}Generated binary: $@${COLOR_RESET}"
 
 $(BUILD_DIR):
-	@mkdir -p $@
+	@if not exist "$@" mkdir "$@"
 
 # Clean build files
 clean:
