@@ -27,6 +27,20 @@ endif
 # Find available robot projects
 ROBOT_PROJECTS := $(patsubst %/src,%,$(wildcard */src))
 
+# ======== OS DETECTION ===========
+ifeq ($(OS),Windows_NT)
+	IS_WINDOWS := 1
+else
+	IS_WINDOWS := 0
+endif
+
+# Define mkdir macro according to the OS
+ifeq ($(IS_WINDOWS),1)
+	MKDIR_CMD = if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
+else
+	MKDIR_CMD = mkdir -p "$(BUILD_DIR)"
+endif
+
 # ======== TOOLCHAIN SETUP ========
 # Compiler and tools
 PREFIX = arm-none-eabi-
@@ -67,6 +81,7 @@ C_INCLUDES = \
 -I$(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F \
 -I$(BOARD_BASE)/Drivers/CMSIS/Device/ST/STM32F4xx/Include \
 -I$(BOARD_BASE)/Drivers/CMSIS/Include \
+-I$(BOARD_BASE)/Drivers/CMSIS/DSP/Include \
 -I$(CONTROL_BASE)/algo/inc \
 -I$(CONTROL_BASE)/devices/inc \
 -I$(CONTROL_BASE)/bsp/inc \
@@ -143,7 +158,11 @@ $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port
 $(wildcard $(CONTROL_BASE)/algo/src/*.c) \
 $(wildcard $(CONTROL_BASE)/bsp/src/*.c) \
 $(wildcard $(CONTROL_BASE)/devices/src/*.c) \
-$(wildcard $(ROBOT_PROJECT)/src/*.c)
+$(wildcard $(ROBOT_PROJECT)/src/*.c) \
+$(BOARD_BASE)/Drivers/CMSIS/DSP/Source/FastMathFunctions/arm_cos_f32.c \
+$(BOARD_BASE)/Drivers/CMSIS/DSP/Source/FastMathFunctions/arm_sin_f32.c \
+$(BOARD_BASE)/Drivers/CMSIS/DSP/Source/FastMathFunctions/arm_atan2_f32.c \
+$(BOARD_BASE)/Drivers/CMSIS/DSP/Source/CommonTables/arm_common_tables.c
 
 # ASM sources
 ASM_SOURCES = $(BOARD_BASE)/startup_stm32f407xx.s
@@ -169,6 +188,7 @@ print_info:
 
 # Default target: build all (PowerShell version)
 all_windows: print_info_powershell
+
 	@powershell -Command "Write-Host -ForegroundColor Yellow 'Compiling...'"
 	@$(MAKE) --no-print-directory $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 	@powershell -Command "Write-Host -ForegroundColor Cyan 'Generated binary: $(BUILD_DIR)/$(TARGET).bin'"
@@ -201,7 +221,7 @@ $(BUILD_DIR)/$(TARGET).bin: $(BUILD_DIR)/$(TARGET).elf | $(BUILD_DIR)
 	@$(BIN) $< $@
 
 $(BUILD_DIR):
-	@if not exist "$@" mkdir "$@"
+	@$(MKDIR_CMD)
 
 # Clean build files
 clean:
