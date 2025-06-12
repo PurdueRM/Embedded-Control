@@ -113,6 +113,8 @@ void Process_Remote_Input()
     }
 
     g_robot_state.input.prev_left_switch = g_remote.controller.left_switch;
+
+    g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f;
 }
 
 void Process_Chassis_Control()
@@ -122,7 +124,7 @@ void Process_Chassis_Control()
 
 void Process_Gimbal_Control()
 {
-     // USER CODE HERE
+     Gimbal_Ctrl_Loop();
 }
 
 void Process_Launch_Control()

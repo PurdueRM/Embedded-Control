@@ -19,11 +19,12 @@ omni_physical_constants_t omni_init(float R, float d, float theta, float max_spe
         .d = d,
         .max_speed = max_speed,
         .kinematics_matrix = {
-            {-sin(theta) / R, cos(theta) / R, d / R},
-            {-cos(theta) / R, -sin(theta) / R, d / R},
-            {sin(theta) / R, -cos(theta) / R, d / R},
-            {cos(theta) / R, sin(theta) / R, d / R}}};
-
+            {-sin(theta) / R,   -cos(theta) / R , d / R},
+            {sin(theta) / R,    -cos(theta) / R , d / R},
+            {sin(theta) / R,    cos(theta) / R  , d / R},
+            {-sin(theta) / R,   cos(theta) / R  , d / R},
+        },
+    };
     return omni_physical_constants;
 }
 

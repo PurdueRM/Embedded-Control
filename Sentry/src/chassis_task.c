@@ -6,23 +6,26 @@
 #include "dji_motor.h"
 #include "omni_locomotion.h"
 #include "rate_limiter.h"
+#include "pid.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
-
+extern DJI_Motor_Handle_t *g_yaw; // for reading gimbal angle
+float gimbal_angle_difference;
 DJI_Motor_Handle_t *motors[4];
 uint8_t drive_esc_id_array[4] = {1, 2, 3, 4};
 Motor_Reversal_t drive_motor_reversal_array[4] = {
-    MOTOR_REVERSAL_REVERSED,
-    MOTOR_REVERSAL_REVERSED,
-    MOTOR_REVERSAL_REVERSED,
-    MOTOR_REVERSAL_REVERSED
+    MOTOR_REVERSAL_NORMAL,
+    MOTOR_REVERSAL_NORMAL,
+    MOTOR_REVERSAL_NORMAL,
+    MOTOR_REVERSAL_NORMAL
 };
 
 omni_physical_constants_t physical_constants;
 omni_chassis_state_t chassis_state;
 
 rate_limiter_t wheel_rate_limiters[4];
+PID_t g_follow_gimbal_pid;                      // chassis following gimbal
 
 void Chassis_Task_Init()
 {
@@ -62,21 +65,26 @@ void Chassis_Task_Init()
         rate_limiter_init(&wheel_rate_limiters[i], MAX_ABC);
     }
 
-    
+    // Init PID
+    PID_Init(&g_follow_gimbal_pid, 1, 0, 0, 2*PI*10, 0, 0);
 }
 
 void Chassis_Ctrl_Loop()
 {
+    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         chassis_state.omega = SPIN_TOP_OMEGA;
     } else {
-        //chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
-        chassis_state.omega = g_robot_state.input.vomega;
+        // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
+        chassis_state.omega = PID(&g_follow_gimbal_pid, gimbal_angle_difference);
+        chassis_state.omega = 0;
+
     }
     
-    chassis_state.v_x = g_robot_state.input.vy; // x and y are swapped due to joytick orientation
-    chassis_state.v_y = -g_robot_state.input.vx;
-    
+    chassis_state.v_x = g_robot_state.input.vx * cos(gimbal_angle_difference) - g_robot_state.input.vy * sin(gimbal_angle_difference);
+    chassis_state.v_y = g_robot_state.input.vx * sin(gimbal_angle_difference) + g_robot_state.input.vy * cos(gimbal_angle_difference);
+    chassis_state.v_x = g_robot_state.input.vx;
+    chassis_state.v_y = g_robot_state.input.vy;
 
     // Control loop for the chassis
     omni_calculate_kinematics(&chassis_state, &physical_constants);
@@ -95,5 +103,3 @@ void Chassis_Ctrl_Loop()
     DJI_Motor_Set_Velocity(motors[2], chassis_state.phi_dot_3);
     DJI_Motor_Set_Velocity(motors[3], chassis_state.phi_dot_4);
 }
-
-

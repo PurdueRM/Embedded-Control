@@ -1,7 +1,7 @@
 #ifndef CHASSIS_TASK_H
 #define CHASSIS_TASK_H
 
-#define SPIN_TOP_OMEGA 2 // rad / s
+#define SPIN_TOP_OMEGA 6 // rad / s
 #define MAX_ANGLUAR_SPEED 3.14 // rad / s
 #define CHASSIS_WHEEL_DIAMETER (0.15f) // m
 #define CHASSIS_RADIUS (0.21f) // center to wheel, m
