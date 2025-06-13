@@ -377,6 +377,7 @@
     {Note_FSharp4, FOURTH_NOTE_DURATION},\
 }
 
+// https://www.bilibili.com/video/BV1LM4y1R7Gp/?vd_source=7e89cec769f049f9952459436503cfd4
 #define RM_MAIN_THEME { \
     {Note_A3, EIGHTH_NOTE_DURATION},\
     {Note_A3, EIGHTH_NOTE_DURATION},\
