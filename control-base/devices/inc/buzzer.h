@@ -125,10 +125,12 @@
 #define Note_ASharp7 (3729) // A#7 / Bb7, ~3729.31Hz
 #define Note_BFlat7  Note_ASharp7
 
+/* ------------- NOTE LENGTHS ------------*/
 #define SMALL_SPACER (50)
 #define SIXTEENTH_NOTE_DURATION (62)
 #define EIGHTH_NOTE_DURATION (125)
 #define FOURTH_NOTE_DURATION (500)
+#define DOT_FOURTH_NOTE_DURATION (750)
 #define HALF_NOTE_DURATION (1000)
 #define DOT_HALF_NOTE_DURATION (1500)
 #define WHOLE_NOTE_DURATION (2000)
@@ -551,6 +553,22 @@
     {Note_C5, SIXTEENTH_NOTE_DURATION},\
 }
 
+// https://musescore.com/user/1320626/scores/6180529
+#define MEGALOVANIA_MOTIF {\
+    {Note_D4, EIGHTH_NOTE_DURATION},\
+    {Note_D4, EIGHTH_NOTE_DURATION},\
+    {Note_D5, FOURTH_NOTE_DURATION},\
+    {Note_A4, DOT_FOURTH_NOTE_DURATION},\
+    {Note_GSharp4, EIGHTH_NOTE_DURATION},\
+    \
+    {Note_00, EIGHTH_NOTE_DURATION},\
+    {Note_G4, FOURTH_NOTE_DURATION},\
+    {Note_F4, FOURTH_NOTE_DURATION},\
+    {Note_D4, EIGHTH_NOTE_DURATION},\
+    {Note_F4, EIGHTH_NOTE_DURATION},\
+    {Note_G4, EIGHTH_NOTE_DURATION},\
+}
+
 #define SYSTEM_INITIALIZING_NOTE_NUM (7)
 #define SYSTEM_READY_NOTE_NUM (6)
 #define SYSTEM_ERROR_NOTE_NUM (7)
@@ -563,6 +581,7 @@
 #define RM_MAIN_THEME_FAST_NOTE_NUM (48)
 #define RM_MAIN_THEME_SHORT_NOTE_NUM (24)
 #define RM_MAIN_THEME_SHORT_UP_OCTAVE_NOTE_NUM (24)
+#define MEGALOVVANIA_MOTIF_NOTE_NUM (11)
 
 typedef struct _Melody_t
 {
