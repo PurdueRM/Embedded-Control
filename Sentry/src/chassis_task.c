@@ -66,7 +66,7 @@ void Chassis_Task_Init()
     }
 
     // Init PID
-    PID_Init(&g_follow_gimbal_pid, 1, 0, 0, 2*PI*10, 0, 0);
+    PID_Init(&g_follow_gimbal_pid, 10, 0, 400, 2*PI*30, 0, 0);
 }
 
 void Chassis_Ctrl_Loop()
@@ -76,26 +76,25 @@ void Chassis_Ctrl_Loop()
         chassis_state.omega = SPIN_TOP_OMEGA;
     } else {
         // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
+        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
         chassis_state.omega = PID(&g_follow_gimbal_pid, gimbal_angle_difference);
-        chassis_state.omega = 0;
-
     }
     
     chassis_state.v_x = g_robot_state.input.vx * cos(gimbal_angle_difference) - g_robot_state.input.vy * sin(gimbal_angle_difference);
     chassis_state.v_y = g_robot_state.input.vx * sin(gimbal_angle_difference) + g_robot_state.input.vy * cos(gimbal_angle_difference);
-    chassis_state.v_x = g_robot_state.input.vx;
-    chassis_state.v_y = g_robot_state.input.vy;
+    // chassis_state.v_x = g_robot_state.input.vx;
+    // chassis_state.v_y = g_robot_state.input.vy;
 
     // Control loop for the chassis
     omni_calculate_kinematics(&chassis_state, &physical_constants);
-    omni_desaturate_wheel_speeds(&chassis_state, &physical_constants);
+    // omni_desaturate_wheel_speeds(&chassis_state, &physical_constants);
     omni_convert_to_rpm(&chassis_state);
 
     // use rate limiter to limit acceleration of the wheels
-    chassis_state.phi_dot_1 = rate_limiter_iterate(&wheel_rate_limiters[0], chassis_state.phi_dot_1);
-    chassis_state.phi_dot_2 = rate_limiter_iterate(&wheel_rate_limiters[1], chassis_state.phi_dot_2);
-    chassis_state.phi_dot_3 = rate_limiter_iterate(&wheel_rate_limiters[2], chassis_state.phi_dot_3);
-    chassis_state.phi_dot_4 = rate_limiter_iterate(&wheel_rate_limiters[3], chassis_state.phi_dot_4);
+    // chassis_state.phi_dot_1 = rate_limiter_iterate(&wheel_rate_limiters[0], chassis_state.phi_dot_1);
+    // chassis_state.phi_dot_2 = rate_limiter_iterate(&wheel_rate_limiters[1], chassis_state.phi_dot_2);
+    // chassis_state.phi_dot_3 = rate_limiter_iterate(&wheel_rate_limiters[2], chassis_state.phi_dot_3);
+    // chassis_state.phi_dot_4 = rate_limiter_iterate(&wheel_rate_limiters[3], chassis_state.phi_dot_4);
 
     // set the velocities of the wheels
     DJI_Motor_Set_Velocity(motors[0], chassis_state.phi_dot_1);
