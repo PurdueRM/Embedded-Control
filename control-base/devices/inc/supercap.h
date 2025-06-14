@@ -20,6 +20,7 @@ typedef struct
     uint8_t send_counter;
 
     uint8_t receive_counter;
+    uint8_t final_receive_counter;
 
     uint8_t supercap_percent;
     uint8_t supercap_enabled_flag;
@@ -36,6 +37,7 @@ typedef struct
     uint8_t rx_buffer[SUPERCAP_RX_BUFFER_SIZE];
     uint8_t tx_buffer[SUPERCAP_TX_BUFFER_SIZE]; // chnage this to other uint type if possible
     uint8_t buffer_for_construction[SUPERCAP_BUFFER_SIZE]; //storing each byte unitl \r\n
+    uint8_t final_buffer_for_construction[SUPERCAP_BUFFER_SIZE];
     // struct {
     //     float input_voltage; // Vi
     //     float output_voltage; // Vo

@@ -1,6 +1,8 @@
 #include "supercap.h"
 #include "bsp_uart.h"
 #include "bsp_daemon.h"
+#include "string.h"
+#include "stdlib.h"
 
 #define SUPERCAP_TIMEOUT_MS (3000)
 Supercap_t g_supercap;
@@ -8,7 +10,7 @@ Daemon_Instance_t *g_supercap_daemon_ptr;
 // CAN_Instance_t *supercap_can_instance;
 UART_Instance_t *supercap_uart_instance_ptr;
 extern Jetson_Orin_Data_t g_orin_data;
-
+char* middle_cpy;
 char uart_buffer[SUPERCAP_RX_BUFFER_SIZE];
 uint8_t uart_byte;
 uint8_t uart_index = 0;
@@ -26,6 +28,14 @@ struct rx_data
 } g_supercap_data;
 
 
+// Function to extract float after a key like "Vi:"
+// float extract_value(const char *src, const char *key) {
+//     const char *start = strstr(src, key);
+//     if (!start) return 0.0f;
+//     start += strlen(key);  // move pointer after "Vi:"
+//     return atof(start);    // convert to float
+// }
+
 void Supercap_Timeout_Callback(void){
     UART_Service_Init(supercap_uart_instance_ptr);
 }
@@ -35,16 +45,25 @@ void Supercap_Decode_Callback(UART_Instance_t *uart_instance) {
     
     // uart_instance->rx_buffer[0];
     if (uart_instance->rx_buffer[0] != '\n') {
-        g_supercap.receive_counter++; // R
+        
         g_supercap.buffer_for_construction[g_supercap.receive_counter] = uart_instance->rx_buffer[0]; // store the byte in the buffer
+        g_supercap.receive_counter++; // R
     }
     else // if the end of frame is reached
     {
+        g_supercap.buffer_for_construction[g_supercap.receive_counter] = '\0'; 
         g_supercap.receive_counter = 0; // reset counter if \n is received
         Daemon_Reload(g_supercap_daemon_ptr);
+
         // Supercap decode logic
-        sscanf((char *)g_supercap.buffer_for_construction, "Vi:%f Vo:%f Pi:%f Ii:%f Io:%f Ps:%f\r\n",
-               &g_supercap.Vi, &g_supercap.Vo, &g_supercap.Pi, &g_supercap.Ii, &g_supercap.Io, &g_supercap.Ps);
+        // g_supercap.Vi = extract_value((const char*)g_supercap.buffer_for_construction, "Vi:");
+        // g_supercap.Vo = extract_value((const char*)g_supercap.buffer_for_construction, "Vo:");
+        // g_supercap.Pi = extract_value((const char*)g_supercap.buffer_for_construction, "Pi:");
+        // g_supercap.Ii = extract_value((const char*)g_supercap.buffer_for_construction, "Ii:");
+        // g_supercap.Io = extract_value((const char*)g_supercap.buffer_for_construction, "Io:");
+        // g_supercap.Ps = extract_value((const char*)g_supercap.buffer_for_construction, "Ps:");
+       sscanf((char *)g_supercap.buffer_for_construction, "Vi:%f Vo:%f Pi:%f Ii:%f Io:%f Ps:%f",
+              &g_supercap.Vi, &g_supercap.Vo, &g_supercap.Pi, &g_supercap.Ii, &g_supercap.Io, &g_supercap.Ps);
     }
 }
 
