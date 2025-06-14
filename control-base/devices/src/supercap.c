@@ -82,67 +82,6 @@ void Supercap_Init(UART_HandleTypeDef *huartx)
     supercap_uart_instance_initialized = 1; //turn on supercap uart 
 }
 
-// // Recieve supercap data
-    // uint16_t *supercap_rx = (uint16_t *) can_instance->rx_buffer;
-  
-void Supercap_Decode(UART_Instance_t *uart_instance, float *Vi, float *Vo, float *Pi, float *Ii, float *Io, float *Ps) 
-{
-    // uint8_t uart_byte;
-    // static char uart_buffer[SUPERCAP_RX_BUFFER_SIZE];
-    // static uint16_t uart_index = 0;
-    // sscanf((char *)uart_instance->rx_buffer, "Vi:%2.2f Vo:%2.2f Pi:%3.2f Ii:%2.2f Io:%2.2f Ps:%3.2f\r\n",
-    //                Vi, Vo, Pi, Ii, Io, Ps);
-    // while (1) {
-    //     HAL_UART_Receive(uart_instance->uart_handle, &uart_byte, 1, HAL_MAX_DELAY);
-
-    //     if (uart_byte == '\n') {
-    //         uart_buffer[uart_index] = '\0';  // Null-terminate the string
-
-    //         // Copy the buffer to rx_buffer if needed
-    //         strncpy((char *)uart_instance->rx_buffer, uart_buffer, uart_index + 1);
-
-    //         // Attempt to parse the expected format
-    //         sscanf((char *)uart_instance->rx_buffer, "Vi:%f Vo:%f Pi:%f Ii:%f Io:%f Ps:%f\r\n",
-    //                Vi, Vo, Pi, Ii, Io, Ps);
-
-    //         uart_index = 0;  // Reset for next message
-    //     } else if (uart_index < SUPERCAP_RX_BUFFER_SIZE - 1) {
-    //         uart_buffer[uart_index++] = uart_byte;
-    //     } else {
-    //         uart_index = 0;  // Overflow protection
-    //     }
-    // }
-}
-
-// void parse_uart_data(const char *msg) {
-//     // Example format:
-//     // Vi:12.34 Vo:12.34 Pi:56.78 Io:2.34 Ps:50.00
-
-
-//     sscanf(msg, "Vi:%f Vo:%f Pi:%f Io:%f Ps:%f", &Vi, &Vo, &Pi, &Io, &Ps);
-
-
-//     // Now you can use the parsed variables as needed
-// }
-
-// void uart_receive_loop() {
-//     while (1) {
-//         HAL_UART_Receive(&huart1, &uart_byte, 1, HAL_MAX_DELAY);
-
-
-//         if (uart_byte == '\n') {
-//             uart_buffer[uart_index] = '\0';  // Null-terminate
-//             parse_uart_data(uart_buffer);
-//             uart_index = 0;  // Reset for next line
-//         }
-//         else if (uart_index < UART_BUFFER_SIZE - 1) {
-//             uart_buffer[uart_index++] = uart_byte;
-//         } else {
-//             uart_index = 0;  // Overflow protection
-//         }
-//     }
-// }
-
 
 // fomrate PXXXP -  sending XXX as power
 // PVONP - Turn on supercap
@@ -160,49 +99,4 @@ void Supercap_Send(void)
     // supercap_tx[2] = 0x2012;
     // supercap_tx[3] = 0x0112;
     // ! do not write more than 8 bytes to the buffer
-//    supercap_uart_instance_ptr->rx_buffer_size = 40; // Start with 'P' for power command
-//    switch(Referee_System.Robot_State.Chassis_Power_Max) {
-//         case 45:
-//             supercap_uart_instance_ptr->rx_buffer = (uint8_t *)"P045P";
-//             break;
-//         case 50:
-//            supercap_uart_instance_ptr->rx_buffer = (uint8_t *)"P050P";
-//             break;
-//         case 55:
-//            supercap_uart_instance_ptr->rx_buffer = (uint8_t *)"P055P";
-//             break;
-//         // case 60:
-//         //     g_swerve_constants.max_speed = MAX_SPEED_W60;
-//         //     g_spintop_omega = SPINTOP_OMEGA_W60;
-//         //     break;
-//         // case 65:
-//         //     g_swerve_constants.max_speed = MAX_SPEED_W65;
-//         //     g_spintop_omega = SPINTOP_OMEGA_W65;
-//         //     break;
-//         // case 70:
-//         //     g_swerve_constants.max_speed = MAX_SPEED_W70;
-//         //     g_spintop_omega = SPINTOP_OMEGA_W70;
-//         //     break;
-//         // case 75:
-//         //     g_swerve_constants.max_speed = MAX_SPEED_W75;
-//         //     g_spintop_omega = SPINTOP_OMEGA_W75;
-//         //     break;
-//         // case 80:
-//         //     g_swerve_constants.max_speed = MAX_SPEED_W80;
-//         //     g_spintop_omega = SPINTOP_OMEGA_W80;
-//         //     break;
-//         // case 90:
-//         //     g_swerve_constants.max_speed = MAX_SPEED_W90;
-//         //     g_spintop_omega = SPINTOP_OMEGA_W90;
-//         //     break;
-//         // case 100:
-//         //     g_swerve_constants.max_speed = MAX_SPEED_W100;
-//         //     g_spintop_omega = SPINTOP_OMEGA_W100;
-//         //     break;
-//         // default:
-//             g_swerve_constants.max_speed = MAX_SPEED_W45;
-//             g_spintop_omega = SPINTOP_OMEGA_W45;
-//     }
-//     // CAN_Transmit(supercap_can_instance);
-//     UART_Transmit(supercap_uart_instance_ptr, g_supercap.tx_buffer,sizeof(g_supercap.tx_buffer), UART_DMA);
 }
