@@ -7,6 +7,7 @@
 #include "omni_locomotion.h"
 #include "rate_limiter.h"
 #include "pid.h"
+#include "imu_task.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
@@ -26,6 +27,10 @@ omni_chassis_state_t chassis_state;
 
 rate_limiter_t wheel_rate_limiters[4];
 PID_t g_follow_gimbal_pid;                      // chassis following gimbal
+
+pose_2d_t sentry_pose;
+motor_data_t motor_data_odom;
+
 
 void Chassis_Task_Init()
 {
@@ -48,12 +53,19 @@ void Chassis_Task_Init()
         DJI_Motor_Set_Control_Mode(motors[i], VELOCITY_CONTROL);
     }
 
+    pose_2d_t init_pose = {
+        .x = INIT_X_POS,
+        .y = INIT_Y_POS,
+        .theta = INIT_THETA
+    };
+
     // Initialize the omni chassis state
     physical_constants = omni_init(
         CHASSIS_WHEEL_DIAMETER,
         CHASSIS_RADIUS,
         CHASSIS_MOUNTING_ANGLE,
-        CHASSIS_MAX_SPEED
+        CHASSIS_MAX_SPEED,
+        &init_pose
     );
 
     chassis_state.v_x = 0.0f;
@@ -66,7 +78,7 @@ void Chassis_Task_Init()
     }
 
     // Init PID
-    PID_Init(&g_follow_gimbal_pid, 10, 0, 400, 2*PI*30, 0, 0);
+    PID_Init(&g_follow_gimbal_pid, 10, 0, 100, 2*PI*30, 0, 0);
 }
 
 void Chassis_Ctrl_Loop()
@@ -101,4 +113,10 @@ void Chassis_Ctrl_Loop()
     DJI_Motor_Set_Velocity(motors[1], chassis_state.phi_dot_2);
     DJI_Motor_Set_Velocity(motors[2], chassis_state.phi_dot_3);
     DJI_Motor_Set_Velocity(motors[3], chassis_state.phi_dot_4);
+
+    motor_data_odom.front_left = DJI_Motor_Get_Absolute_Angle(motors[0]) * physical_constants.R;
+    motor_data_odom.back_left = DJI_Motor_Get_Total_Angle(motors[1]) * physical_constants.R;
+    motor_data_odom.back_right = DJI_Motor_Get_Total_Angle(motors[2]) * physical_constants.R;
+    motor_data_odom.front_right = DJI_Motor_Get_Total_Angle(motors[3]) * physical_constants.R;
+    Update_Omni_Odometry(&sentry_pose, &physical_constants, &motor_data_odom, g_imu.rad.yaw + PI/2);
 }
