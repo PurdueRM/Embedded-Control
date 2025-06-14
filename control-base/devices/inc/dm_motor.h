@@ -22,6 +22,19 @@
 #define DM_MOTOR_ZERO_CURRENT (0)
 #define DM_MOTOR_HARDWARE_DISABLE (1)
 
+#define DM_MOTOR_SEND_PENDING   (1 << 0)
+#define DM_MOTOR_ENABLE_PENDING (1 << 1)
+#define DM_MOTOR_DISABLE_PENDING (1 << 2)
+#define DM_MOTOR_DISABLED (0x0)
+#define DM_MOTOR_ENABLED (0x1)
+#define DM_MOTOR_OVER_VOLTAGE (0x8)
+#define DM_MOTOR_UNDER_VOLTAGE (0x9)
+#define DM_MOTOR_OVER_CURRENT (0xA)
+#define DM_MOTOR_MOS_OVER_TEMP (0xB)
+#define DM_MOTOR_ROTOR_OVER_TEMP (0xC)
+#define DM_MOTOR_LOST_COMM (0xD)
+#define DM_MOTOR_OVERLOAD (0xE)
+
 typedef struct
 {
     uint8_t id;
@@ -59,7 +72,8 @@ typedef struct _DM_Motor {
     /* CAN Information */
     uint8_t can_bus;
     uint8_t control_mode;
-    uint8_t send_pending_flag;
+    uint8_t enabled; // 0: disabled, 1: enabled
+    uint8_t send_pending_flag; // bitwise flag, see @ref DM_MOTOR_SEND_PENDING and @ref DM_MOTOR_ENABLE_PENDING
     uint16_t tx_id;
     uint16_t rx_id;
     uint8_t disable_behavior;
@@ -80,10 +94,13 @@ void DM_Motor_Disable_Motor(DM_Motor_Handle_t *motor);
 void DM_Motor_Enable_Motor(DM_Motor_Handle_t *motor);
 DM_Motor_Handle_t* DM_Motor_Init(DM_Motor_Config_t *config);
 void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq);
+void DM_Motor_Ctrl_MIT_PD(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq, float kp, float kd);
 void DM_Motor_Set_MIT_PD(DM_Motor_Handle_t *motor, float kp, float kd);
 
 /**
  * Global function to send the motor control data
 */
 void DM_Motor_Send(void);
+
+void DM_Motor_Disable_All(void);
 #endif

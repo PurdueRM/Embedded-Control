@@ -41,7 +41,7 @@ void Chassis_Task_Init()
         .velocity_pid = {
             .kp = 500.0f,
             .kf = 100.0f,
-            .output_limit = M3508_MAX_CURRENT,
+            .output_limit = M3508_MAX_CURRENT_INT,
             .integral_limit = 3000.0f,
     }};
 
