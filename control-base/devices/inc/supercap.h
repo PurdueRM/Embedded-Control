@@ -10,6 +10,7 @@
 
 //todo ask why it is 128
 #define SUPERCAP_RX_BUFFER_SIZE (1) //number of bytes 
+#define SUPERCAP_BUFFER_SIZE (64) // new buffer
 #define SUPERCAP_TX_BUFFER_SIZE (3) //todo finish this
 typedef struct
 {
@@ -17,6 +18,8 @@ typedef struct
     uint16_t tx_id;
     uint16_t rx_id;
     uint8_t send_counter;
+
+    uint8_t receive_counter;
 
     uint8_t supercap_percent;
     uint8_t supercap_enabled_flag;
@@ -32,6 +35,7 @@ typedef struct
     //printf("Vi:%2.2f Vo:%2.2f Pi:%3.2f Ii:%2.2f Io:%2.2f Pa:%3.2f\r\n", VIPMR, VOFWR,POW_IN, IIPWR, IOPWR, pref);
     uint8_t rx_buffer[SUPERCAP_RX_BUFFER_SIZE];
     uint8_t tx_buffer[SUPERCAP_TX_BUFFER_SIZE]; // chnage this to other uint type if possible
+    uint8_t buffer_for_construction[SUPERCAP_BUFFER_SIZE]; //storing each byte unitl \r\n
     // struct {
     //     float input_voltage; // Vi
     //     float output_voltage; // Vo

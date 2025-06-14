@@ -4,7 +4,7 @@
 
 #define SUPERCAP_TIMEOUT_MS (3000)
 Supercap_t g_supercap;
-Daemon_Instance_t *g_supercap_instance_ptr;
+Daemon_Instance_t *g_supercap_daemon_ptr;
 // CAN_Instance_t *supercap_can_instance;
 UART_Instance_t *supercap_uart_instance_ptr;
 extern Jetson_Orin_Data_t g_orin_data;
@@ -31,16 +31,21 @@ void Supercap_Timeout_Callback(void){
 }
 
 void Supercap_Decode_Callback(UART_Instance_t *uart_instance) {
-    static float Vi, Vo, Pi, Io, Ps, Ii;
-    Supercap_Decode(uart_instance, &Vi, &Vo, &Pi, &Ii, &Io, &Ps);
-
-    // Save values to your global struct
-    g_supercap.Vi = Vi;
-    g_supercap.Vo = Vo;
-    g_supercap.Pi = Pi;
-    g_supercap.Ii = Ii;
-    g_supercap.Io = Io;
-    g_supercap.Ps = Ps;
+    // static float Vi, Vo, Pi, Io, Ps, Ii;
+    
+    // uart_instance->rx_buffer[0];
+    if (uart_instance->rx_buffer[0] != '\n') {
+        g_supercap.receive_counter++; // R
+        g_supercap.buffer_for_construction[g_supercap.receive_counter] = uart_instance->rx_buffer[0]; // store the byte in the buffer
+    }
+    else // if the end of frame is reached
+    {
+        g_supercap.receive_counter = 0; // reset counter if \n is received
+        Daemon_Reload(g_supercap_daemon_ptr);
+        // Supercap decode logic
+        sscanf((char *)g_supercap.buffer_for_construction, "Vi:%f Vo:%f Pi:%f Ii:%f Io:%f Ps:%f\r\n",
+               &g_supercap.Vi, &g_supercap.Vo, &g_supercap.Pi, &g_supercap.Ii, &g_supercap.Io, &g_supercap.Ps);
+    }
 }
 
 void Supercap_Init(UART_HandleTypeDef *huartx)
@@ -54,7 +59,7 @@ void Supercap_Init(UART_HandleTypeDef *huartx)
     supercap_uart_instance_ptr = UART_Register(huartx, g_supercap.rx_buffer, SUPERCAP_RX_BUFFER_SIZE, Supercap_Decode_Callback);    // matches expected signature
     uint16_t reload_value = SUPERCAP_TIMEOUT_MS / DAEMON_PERIOD;
     uint16_t intial_counter = reload_value;
-    g_supercap_instance_ptr = Daemon_Register(reload_value, intial_counter, Supercap_Timeout_Callback);
+    g_supercap_daemon_ptr = Daemon_Register(reload_value, intial_counter, Supercap_Timeout_Callback);
     supercap_uart_instance_initialized = 1; //turn on supercap uart 
 }
 
