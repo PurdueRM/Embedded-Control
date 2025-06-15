@@ -9,7 +9,9 @@
 #include "jetson_orin.h"
 #include "bsp_daemon.h"
 #include "launch_task.h"
+#include "omni_locomotion.h"
 
+extern pose_2d_t sentry_pose;
 extern Robot_State_t g_robot_state;
 extern IMU_t g_imu;
 extern Remote_t g_remote;
@@ -40,6 +42,10 @@ void Debug_Task_Loop(void)
         DEBUG_PRINTF(&huart6, "%s", bottom_border);
     }
 #endif
+    DEBUG_PRINTF(&huart6, ">x:%f\n", sentry_pose.x);
+    DEBUG_PRINTF(&huart6, ">y:%f\n", sentry_pose.y);
+    DEBUG_PRINTF(&huart6, ">w:%f\n", sentry_pose.theta);
+    
     // DEBUG_PRINTF(&huart6, ">time:%.1f\n>ref:%f\n",(float) counter / 1000.0f * DEBUG_PERIOD,Referee_Robot_State.Chassis_Power);
     //  DEBUG_PRINTF(&huart6, ">time:%.1f\n>yaw:%f\n>pitch:%f\n>roll:%f\n", (float) counter / 1000.0f * DEBUG_PERIOD,
     //              g_imu.deg.yaw, g_imu.deg.pitch, g_imu.deg.roll);
