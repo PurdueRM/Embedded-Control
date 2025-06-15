@@ -33,8 +33,16 @@ void UI_Task_Loop(void)
         ui_g_1_Autoaim_Select->color = 1;
 
     // Update supercapacitor value
-    ui_g_1_Supercap_Value->number = g_supercap.supercap_percent;
+    __MAX_LIMIT(g_supercap.supercap_percent,0,100); // Ensure supercapacitor percentage is within 0-100%
+    ui_g_1_Supercap_Percent->end_x = g_supercap.supercap_percent/100.0f * 640.0f + 640.0f; // Scale supercapacitor percentage to the UI width
 
+    if(g_supercap.supercap_percent < 30)
+        ui_g_1_Supercap_Percent->color = 5; // Set color to red if supercapacitor is below 30%
+    else if (g_supercap.supercap_percent < 60)
+        ui_g_1_Supercap_Percent->color = 3; // Set color to orange if supercapacitor is below 60%
+    else 
+        ui_g_1_Supercap_Percent->color = 2; // Set color to green if supercapacitor is above 60%
+    
     // Update the UI elements (only group 1 as they are dynamic elements)
     ui_update_g_1();
 }

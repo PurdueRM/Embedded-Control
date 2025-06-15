@@ -6,6 +6,7 @@
 #include "launch_task.h"
 #include "referee_system.h"
 #include "supercap.h"
+#include "user_math.h"
 
 void UI_Task_Loop(void);
 
