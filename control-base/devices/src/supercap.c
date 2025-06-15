@@ -3,6 +3,7 @@
 #include "bsp_daemon.h"
 #include "string.h"
 #include "stdlib.h"
+#include "bsp_serial.h"
 
 #define SUPERCAP_TIMEOUT_MS (3000)
 Supercap_t g_supercap;
@@ -99,4 +100,8 @@ void Supercap_Send(void)
     // supercap_tx[2] = 0x2012;
     // supercap_tx[3] = 0x0112;
     // ! do not write more than 8 bytes to the buffer
+
+	// UART_Transmit(supercap_uart_instance_ptr, g_supercap.tx_buffer, sizeof(g_orin_data.tx_buffer), UART_DMA);
+    uint8_t max_power = 60;
+    DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", max_power);
 }

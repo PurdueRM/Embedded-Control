@@ -6,8 +6,8 @@
 #include "referee_system.h"
 #include "jetson_orin.h"
 #include "bsp_uart.h"
-#define SUPERCAP_POWER (20)
-
+// #define SUPERCAP_POWER (20)
+#define SUPERCAP_SEND_FREQ (1.0f) // Hz
 //todo ask why it is 128
 #define SUPERCAP_RX_BUFFER_SIZE (1) //number of bytes 
 #define SUPERCAP_BUFFER_SIZE (64) // new buffer
@@ -17,7 +17,7 @@ typedef struct
     uint8_t can_bus;
     uint16_t tx_id;
     uint16_t rx_id;
-    uint8_t send_counter;
+    uint16_t send_counter;
 
     uint8_t receive_counter;
     uint8_t final_receive_counter;
