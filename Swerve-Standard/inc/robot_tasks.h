@@ -91,7 +91,7 @@ void Robot_Tasks_UI(void const *argument)
     const TickType_t TimeIncrement = pdMS_TO_TICKS(1);
     while (1)
     {
-        // UI_Task_Loop();
+        UI_Task_Loop();
         vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
     }
 }
