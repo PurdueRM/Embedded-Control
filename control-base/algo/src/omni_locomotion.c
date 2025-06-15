@@ -2,6 +2,13 @@
 
 #include <math.h>
 #include "user_math.h"
+#ifndef COS45
+#define COS45 (0.70710678118f) // cos(PI/4)
+#endif
+
+#ifndef SIN45
+#define SIN45 (0.70710678118f) // sin(PI/4)
+#endif
 
 /**
  * @brief Initialize the physical constants of the omni drive
@@ -127,8 +134,8 @@ void Update_Omni_Odometry(pose_2d_t* pose, omni_physical_constants_t* omni_physi
         };
 
         pose_2d_t pose_inc = {
-            .x = (-motor_inc.front_left + motor_inc.back_left + motor_inc.back_right - motor_inc.front_right) / 4 * cos(PI/4),
-            .y = (-motor_inc.front_left  - motor_inc.back_left + motor_inc.back_right + motor_inc.front_right) / 4 * sin(PI/4),
+            .x = (-motor_inc.front_left + motor_inc.back_left + motor_inc.back_right - motor_inc.front_right) / 4 * COS45,
+            .y = (-motor_inc.front_left  - motor_inc.back_left + motor_inc.back_right + motor_inc.front_right) / 4 * COS45,
             .theta = heading_angle
         };
 

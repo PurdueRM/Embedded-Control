@@ -39,7 +39,7 @@ void Chassis_Task_Init()
         .can_bus = 1,
         .control_mode = VELOCITY_CONTROL,
         .velocity_pid = {
-            .kp = 500.0f,
+            .kp = 300.0f,
             .kf = 100.0f,
             .output_limit = M3508_MAX_CURRENT_INT,
             .integral_limit = 3000.0f,
@@ -83,13 +83,15 @@ void Chassis_Task_Init()
 
 void Chassis_Ctrl_Loop()
 {
-    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
+    //TODO: change this, for odom only
+    gimbal_angle_difference = 0*DJI_Motor_Get_Absolute_Angle(g_yaw);
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         chassis_state.omega = SPIN_TOP_OMEGA;
     } else {
         // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-        chassis_state.omega = PID(&g_follow_gimbal_pid, gimbal_angle_difference);
+        // chassis_state.omega = PID(&g_follow_gimbal_pid, gimbal_angle_difference);
+        chassis_state.omega = g_robot_state.input.vomega;
     }
     
     chassis_state.v_x = g_robot_state.input.vx * cos(gimbal_angle_difference) - g_robot_state.input.vy * sin(gimbal_angle_difference);
@@ -114,7 +116,7 @@ void Chassis_Ctrl_Loop()
     DJI_Motor_Set_Velocity(motors[2], chassis_state.phi_dot_3);
     DJI_Motor_Set_Velocity(motors[3], chassis_state.phi_dot_4);
 
-    motor_data_odom.front_left = DJI_Motor_Get_Absolute_Angle(motors[0]) * physical_constants.R;
+    motor_data_odom.front_left = DJI_Motor_Get_Total_Angle(motors[0]) * physical_constants.R;
     motor_data_odom.back_left = DJI_Motor_Get_Total_Angle(motors[1]) * physical_constants.R;
     motor_data_odom.back_right = DJI_Motor_Get_Total_Angle(motors[2]) * physical_constants.R;
     motor_data_odom.front_right = DJI_Motor_Get_Total_Angle(motors[3]) * physical_constants.R;

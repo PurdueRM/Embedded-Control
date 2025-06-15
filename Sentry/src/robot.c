@@ -100,7 +100,7 @@ void Process_Remote_Input()
 {
     g_robot_state.input.vx = g_remote.controller.left_stick.x/660.0f * 2.0f;
     g_robot_state.input.vy = g_remote.controller.left_stick.y/660.0f * 2.0f;
-    g_robot_state.input.vomega = g_remote.controller.right_stick.x;
+    g_robot_state.input.vomega = -g_remote.controller.right_stick.x/660.0f * 6.28f;
     
     if (__IS_TRANSITIONED(g_remote.controller.left_switch, g_robot_state.input.prev_left_switch, MID))
     {
