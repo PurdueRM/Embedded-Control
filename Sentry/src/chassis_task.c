@@ -49,7 +49,7 @@ void Chassis_Task_Init()
         // configure drive motor
         drive_motor_config.speed_controller_id = drive_esc_id_array[i];
         drive_motor_config.motor_reversal = drive_motor_reversal_array[i];
-        motors[i] = DJI_Motor_Init(&drive_motor_config, M3508);
+        motors[i] = DJI_Motor_Init(&drive_motor_config, M3508_PLANETARY);
         DJI_Motor_Set_Control_Mode(motors[i], VELOCITY_CONTROL);
     }
 
