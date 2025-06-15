@@ -72,4 +72,11 @@
 #define __SLEW_RATE_LIMIT(curr, delta, ramp) \
     curr = (1 - (ramp)) * (curr) + (ramp) * (delta)
 
+// First order filter
+#define __FIRST_ORDER_FILTER(filtering_target, new_value, alpha) \
+    do                                                               \
+    {                                                                \
+        filtering_target = (alpha) * (new_value) + (1 - (alpha)) * (filtering_target); \
+    } while (0);
+
 #endif // USER_MATH_H

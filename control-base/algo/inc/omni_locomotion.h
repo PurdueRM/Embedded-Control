@@ -6,6 +6,9 @@ typedef struct
     float v_x;   // x velocity
     float v_y;   // y velocity
     float omega; // angular velocity
+    float v_x_in_gimbal; // x velocity in gimbal frame
+    float v_y_in_gimbal; // y velocity in gimbal frame
+    float omega_in_gimbal; // angular velocity in gimbal frame
 
     float phi_dot_1; // wheel 1 angular velocity
     float phi_dot_2; // wheel 2 angular velocity

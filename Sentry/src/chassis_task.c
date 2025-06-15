@@ -8,6 +8,7 @@
 #include "rate_limiter.h"
 #include "pid.h"
 #include "imu_task.h"
+#include "jetson_orin.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
@@ -81,18 +82,38 @@ void Chassis_Task_Init()
     PID_Init(&g_follow_gimbal_pid, 10, 0, 100, 2*PI*30, 0, 0);
 }
 
-void Chassis_Ctrl_Loop()
+void Chassis_Process_Target_Velocity()
 {
-    //TODO: change this, for odom only
-    gimbal_angle_difference = 0*DJI_Motor_Get_Absolute_Angle(g_yaw);
+    if (g_remote.controller.right_switch == UP)
+    {
+        chassis_state.v_x_in_gimbal = g_orin_data.receiving.navigation.x_vel;
+        chassis_state.v_y_in_gimbal = g_orin_data.receiving.navigation.y_vel;
+        chassis_state.omega_in_gimbal = g_orin_data.receiving.navigation.yaw_angular_rate; // TODO: move to gimbal task
+    } else {
+        chassis_state.v_x_in_gimbal = g_remote.controller.right_stick.x;
+        chassis_state.v_y_in_gimbal = g_remote.controller.right_stick.y;
+        chassis_state.omega_in_gimbal = g_remote.controller.wheel * MAX_ANGLUAR_SPEED;
+    }
+    float chassis_omega_new_target;
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
-        chassis_state.omega = SPIN_TOP_OMEGA;
+        chassis_omega_new_target = 6*PI;
+        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.002f);
     } else {
         // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
         // chassis_state.omega = PID(&g_follow_gimbal_pid, gimbal_angle_difference);
-        chassis_state.omega = g_robot_state.input.vomega;
+        chassis_omega_new_target = -g_remote.controller.right_stick.x/660.0f * 6 * PI;
+        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.008f);
     }
+    // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.003f);
+
+}
+
+void Chassis_Ctrl_Loop()
+{
+    //TODO: change this, for odom only
+    gimbal_angle_difference = 0*DJI_Motor_Get_Absolute_Angle(g_yaw);
+    Chassis_Process_Target_Velocity();
     
     chassis_state.v_x = g_robot_state.input.vx * cos(gimbal_angle_difference) - g_robot_state.input.vy * sin(gimbal_angle_difference);
     chassis_state.v_y = g_robot_state.input.vx * sin(gimbal_angle_difference) + g_robot_state.input.vy * cos(gimbal_angle_difference);
