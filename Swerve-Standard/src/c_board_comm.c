@@ -10,7 +10,8 @@ CAN_Instance_t *g_board_master; // the master board
 CAN_Instance_t *g_board_slave; // the slave board
 extern Referee_System_t Referee_System;
 extern Supercap_t g_supercap;
-
+uint8_t g_board_comm_package_first_part_established = 0; // flag to check if the first part of the package is established
+uint8_t g_board_comm_package_second_part_established = 0; // flag to check if the second part of the package is established
 /**
  * @brief
  * @param
@@ -37,6 +38,7 @@ void C_Board_Comm_Task_Init() {
  */
 void C_Board_Recv_Ref_Info(CAN_Instance_t *can_instance)
 {
+    g_board_comm_package_first_part_established = 1; //debugging
     memcpy(&g_board_comm_package.power_limit, can_instance->rx_buffer, sizeof(float));
 }
 
@@ -46,6 +48,7 @@ void C_Board_Recv_Ref_Info(CAN_Instance_t *can_instance)
  */
 void C_Board_Recv_Supercap_Info(CAN_Instance_t* can_instance)
 {
+    g_board_comm_package_second_part_established = 1; // debugging
     memcpy(&g_board_comm_package.Vo, &can_instance->rx_buffer[0], sizeof(float));
     memcpy(&g_board_comm_package.Ps, &can_instance->rx_buffer[sizeof(float)], sizeof(float));
 }
