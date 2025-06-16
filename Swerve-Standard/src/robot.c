@@ -67,9 +67,7 @@ void Handle_Starting_Up_State()
         Launch_Task_Init();
         Jetson_Orin_Init(&huart6);
 
-        Remote_Init(&huart3);
-
-        
+        Remote_Init(&huart3);  
     #else
         // Initialize the slave c board for the supercaps
         Supercap_Init(&huart1);

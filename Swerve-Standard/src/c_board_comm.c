@@ -12,6 +12,9 @@ extern Referee_System_t Referee_System;
 extern Supercap_t g_supercap;
 uint8_t g_board_comm_package_first_part_established = 0; // flag to check if the first part of the package is established
 uint8_t g_board_comm_package_second_part_established = 0; // flag to check if the second part of the package is established
+uint8_t master_debug = 0;
+uint8_t slave_debug = 0;
+
 /**
  * @brief
  * @param
@@ -22,12 +25,15 @@ void C_Board_Comm_Task_Init() {
         g_board_master = CAN_Device_Register(1, 0x310, 0x300, C_Board_Recv_Supercap_Info);
         g_board_slave = CAN_Device_Register(1, 0x301, 0x311, C_Board_Recv_Ref_Info);
 
+        master_debug = 1;
+
         //g_board_master = CAN_Device_Register(1, 0x310, 0x300, C_Board_Recv_Supercap_Info);
     #else 
         #pragma message "Slave C_Board_Comm_Task_Init() is compiled"
         g_board_slave = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Supercap_Info);
         g_board_master = CAN_Device_Register(1, 0x311, 0x301, C_Board_Recv_Ref_Info);
 
+        slave_debug = 1;
         //g_board_slave = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Ref_Info);
     #endif
 }
