@@ -75,6 +75,7 @@ void Handle_Starting_Up_State()
         Supercap_Init(&huart1);
     #endif
     CAN_Service_Init();
+    C_Board_Comm_Task_Init();
     g_robot_state.state = DISABLED;
     
 }
