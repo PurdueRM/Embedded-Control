@@ -10,7 +10,7 @@ extern CAN_Instance_t* g_board_communication;
 
 void Motor_Task_Loop() {
     #ifdef MASTER
-        DJI_MOTOR_SEND();
+        DJI_Motor_Send();
         CAN_Transmit(g_board_communication);
     #else 
         Supercap_Send();
