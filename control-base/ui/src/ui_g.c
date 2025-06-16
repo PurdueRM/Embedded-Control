@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "ui_interface.h"
+#include "ui_g.h"
 
 ui_5_frame_t ui_g_0_0;
 
