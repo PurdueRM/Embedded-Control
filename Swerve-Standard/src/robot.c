@@ -78,7 +78,7 @@ void Handle_Enabled_State()
     {
         // Process movement and components in enabled state
         Referee_Set_Robot_State();
-        Process_Remote_Input();
+        // Process_Remote_Input();
         Process_Chassis_Control();
         Process_Gimbal_Control();
         Process_Launch_Control();
@@ -124,11 +124,19 @@ void Process_Remote_Input()
     g_robot_state.gimbal.yaw_angle -= (g_remote.controller.right_stick.x / 50000.0f + g_remote.mouse.x / 10000.0f);    // controller and mouse
     g_robot_state.gimbal.pitch_angle -= (g_remote.controller.right_stick.y / 100000.0f - g_remote.mouse.y / 50000.0f);
 
-    if (__IS_TOGGLED(g_remote.keyboard.V, g_input_state.prev_V))
-    {
-        g_robot_state.UI_ENABLED ^= 0x01; // Toggle UI
-    }
+    // if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B))
+    // {
+    //     g_robot_state.UI_ENABLED ^= 0x01; // Toggle UI
+    // }
 
+    if (g_remote.controller.right_switch == MID)
+    {
+        g_robot_state.UI_ENABLED = 1;
+    }
+    else
+    {
+        g_robot_state.UI_ENABLED = 0;
+    }
     if ((g_remote.keyboard.Shift) || (g_remote.controller.right_switch == UP)) // Hold shift to boost
     {
         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 1;
@@ -152,9 +160,9 @@ void Process_Remote_Input()
         g_robot_state.launch.IS_FIRING_ENABLED ^= 0x01; // Toggle firing with G
     }
 
-    if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B)) { // Toggle spintop with B
-        g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
-    }
+    // if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B)) { // Toggle spintop with B
+    //     g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
+    // }
 
     if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
         //g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
@@ -199,6 +207,7 @@ void Process_Launch_Control()
  */
 void Robot_Command_Loop()
 {
+    Process_Remote_Input();
     switch (g_robot_state.state)
     {
     case STARTING_UP:

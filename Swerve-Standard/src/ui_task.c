@@ -2,7 +2,7 @@
 
 void UI_Task_Loop(void)
 {
-    if(!g_robot_state.UI_ENABLED)
+    if(g_robot_state.UI_ENABLED && !g_robot_state.PREV_UI_ENABLED)
     {
         // If UI is not enabled, remove all UI elements
         ui_remove_g_0();
