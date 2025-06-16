@@ -4,6 +4,7 @@
 #include "string.h"
 #include "stdlib.h"
 #include "bsp_serial.h"
+#include "c_board_comm.h"
 
 #define SUPERCAP_TIMEOUT_MS (3000)
 Supercap_t g_supercap;
@@ -11,6 +12,8 @@ Daemon_Instance_t *g_supercap_daemon_ptr;
 // CAN_Instance_t *supercap_can_instance;
 UART_Instance_t *supercap_uart_instance_ptr;
 extern Jetson_Orin_Data_t g_orin_data;
+extern Board_Comm_Package_t g_board_comm_package; 
+
 char* middle_cpy;
 char uart_buffer[SUPERCAP_RX_BUFFER_SIZE];
 uint8_t uart_byte;
@@ -102,6 +105,7 @@ void Supercap_Send(void)
     // ! do not write more than 8 bytes to the buffer
 
 	// UART_Transmit(supercap_uart_instance_ptr, g_supercap.tx_buffer, sizeof(g_orin_data.tx_buffer), UART_DMA);
-    uint8_t max_power = 60;
-    DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", max_power);
+    // uint8_t max_power = 60;
+    // UART_Transmit(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", g_board_comm_package.Chassis_Power_Max);
+    DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", g_board_comm_package.power_limit);
 }
