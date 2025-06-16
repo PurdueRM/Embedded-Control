@@ -22,8 +22,8 @@ void C_Board_Comm_Task_init() {
         g_board_slave = CAN_Device_Register(1, 0x301, 0x311, C_Board_Recv_Ref_Info);
     #else 
         #pragma message "Slave C_Board_Comm_Task_Init() is compiled"
-        g_board_master = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Supercap_Info);
-        g_board_slave = CAN_Device_Register(1, 0x311, 0x301, C_Board_Recv_Ref_Info);
+        // g_board_master = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Supercap_Info);
+        // g_board_slave = CAN_Device_Register(1, 0x311, 0x301, C_Board_Recv_Ref_Info);
     #endif
 }
 
