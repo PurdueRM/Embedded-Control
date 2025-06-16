@@ -12,6 +12,7 @@
 #include "user_math.h"
 #include "math.h"
 #include "rate_limiter.h"
+#include "c_board_comm.h"
 
 Robot_State_t g_robot_state = {0};
 extern Remote_t g_remote;
@@ -50,18 +51,23 @@ void Robot_Init()
  */
 void Handle_Starting_Up_State()
 {
-    // Initialize all hardware
-    CAN_Service_Init();
-    Referee_System_Init(&huart1);
-    Supercap_Init(&g_supercap);
-    Chassis_Task_Init();
-    Gimbal_Task_Init();
-    Launch_Task_Init();
-    Jetson_Orin_Init(&huart6);
+    #ifdef MASTER
+        // Initialize all hardware for the master c board
+        CAN_Service_Init();
+        Chassis_Task_Init();
+        Gimbal_Task_Init();
+        Launch_Task_Init();
+        Jetson_Orin_Init(&huart6);
 
-    Remote_Init(&huart3);
+        Remote_Init(&huart3);
 
-    g_robot_state.state = DISABLED;
+        g_robot_state.state = DISABLED;
+    #else
+        // Initialize the slave c board for the supercaps
+        CAN_Service_Init();
+        Supercap_Init(&huart1);
+    #endif
+    
 }
 
 /**

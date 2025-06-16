@@ -23,6 +23,6 @@ typedef struct Board_Comm_Package_s
 void C_Board_Comm_Task_Init();
 void C_Board_Recv_Ref_Info();
 void C_Board_Recv_Supercap_Info(); // send 
-void C_Board_Comm_Task_Loop();
+void C_Board_Comm_Send_Loop();
 
 #endif
