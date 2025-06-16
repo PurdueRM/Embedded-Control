@@ -35,13 +35,22 @@ void Robot_Init()
     g_robot_state.state = STARTING_UP;
 
     Buzzer_Init();
-    Melody_t system_init_melody = {
-        .notes = SYSTEM_INITIALIZING,
-        .loudness = 0.5f,
-        .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
-    };
-    Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
-
+    #ifdef MASTER
+        Melody_t system_init_melody = {
+            .notes = MEGALOVANIA_MOTIF,
+            .loudness = 0.5f,
+            .note_num = MEGALOVVANIA_MOTIF_NOTE_NUM,
+        };
+        Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
+    #else
+        Melody_t system_init_melody = {
+            .notes = RM_MAIN_THEME_SHORT_UP_OCTAVE,
+            .loudness = 0.5f,
+            .note_num = RM_MAIN_THEME_SHORT_UP_OCTAVE_NOTE_NUM,
+        };
+        Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
+    #endif
+    
     // Initialize all tasks
     Robot_Tasks_Start();
 }
