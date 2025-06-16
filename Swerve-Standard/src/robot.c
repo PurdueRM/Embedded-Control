@@ -62,7 +62,6 @@ void Handle_Starting_Up_State()
 {
     #ifdef MASTER
         // Initialize all hardware for the master c board
-        CAN_Service_Init();
         Chassis_Task_Init();
         Gimbal_Task_Init();
         Launch_Task_Init();
@@ -70,12 +69,13 @@ void Handle_Starting_Up_State()
 
         Remote_Init(&huart3);
 
-        g_robot_state.state = DISABLED;
+        
     #else
         // Initialize the slave c board for the supercaps
-        CAN_Service_Init();
         Supercap_Init(&huart1);
     #endif
+    CAN_Service_Init();
+    g_robot_state.state = DISABLED;
     
 }
 
