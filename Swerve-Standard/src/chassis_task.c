@@ -44,7 +44,7 @@ void Chassis_Task_Init()
                 .kf = 2000.0f,
                 .feedforward_limit = 5000.0f,
                 .integral_limit = 5000.0f,
-                .output_limit = GM6020_MAX_CURRENT,
+                .output_limit = GM6020_MAX_VOLTAGE_INT,
             }};
 
     // init common PID configuration for drive motors
@@ -54,7 +54,7 @@ void Chassis_Task_Init()
             .kp = 500.0f,
             .kd = 200.0f,
             .kf = 100.0f,
-            .output_limit = M3508_MAX_CURRENT,
+            .output_limit = M3508_MAX_CURRENT_INT,
             .integral_limit = 3000.0f,
         }};
 

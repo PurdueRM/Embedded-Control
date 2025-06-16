@@ -30,13 +30,13 @@
 #define __MAP_ANGLE_TO_UNIT_CIRCLE(x) \
     do                                \
     {                                 \
-        while (error >= PI)           \
+        while (x >= PI)           \
         {                             \
-            error -= 2 * PI;          \
+            x -= 2 * PI;          \
         }                             \
-        while (error < -PI)           \
+        while (x < -PI)           \
         {                             \
-            error += 2 * PI;          \
+            x += 2 * PI;          \
         }                             \
     } while (0);
 

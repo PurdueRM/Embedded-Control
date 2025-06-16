@@ -6,6 +6,10 @@
 #define CHASSIS_WHEEL_DIAMETER (0.15f) // m
 #define CHASSIS_RADIUS (0.21f) // center to wheel, m
 #define CHASSIS_MAX_SPEED (2.0f) // m/s
+#ifndef PI
+#define PI (3.14159265358979323846f)
+#endif // PI
+
 #define CHASSIS_MOUNTING_ANGLE (PI / 4) // rad (45deg)
 #define MAX_ABC (200.0f) // rad/s // TODO rename this macro
 
