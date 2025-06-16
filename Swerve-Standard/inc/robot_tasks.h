@@ -58,7 +58,7 @@ void Robot_Tasks_Start()
     daemon_task_handle = osThreadCreate(osThread(daemon_task), NULL);
 
     osThreadDef(c_board_comm_task, Robot_Tasks_C_Board_Comm, osPriorityAboveNormal, 0, 256);
-    c_board_comm_task_handle = osThreadCreate(osThread(daemon_task), NULL);
+    c_board_comm_task_handle = osThreadCreate(osThread(c_board_comm_task), NULL);
 }
 
 void Robot_Tasks_Robot_Command(void const *argument)
@@ -138,7 +138,7 @@ void Robot_Tasks_Daemon(void const *argument)
     }
 }
 
-void Robot_Tasks_Daemon(void const *argument)
+void Robot_Tasks_C_Board_Comm(void const *argument)
 {
     portTickType xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
