@@ -33,6 +33,10 @@ typedef struct Quaternion_Orientation
   float roll;
 } Quaternion_Orientation_t;
 
+#define IMU_BMI088_YAW_IDX (0)
+#define IMU_BMI088_PITCH_IDX (1)
+#define IMU_BMI088_ROLL_IDX (2)
+
 typedef struct IMU
 {
   BMI088_Raw_t bmi088_raw;

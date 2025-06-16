@@ -50,6 +50,7 @@
             "options": [
                 "Swerve-Standard",
                 "Sentry",
+                "Wheel-Legged-Chassis",
                 //"Template"
                 // Add your other robot projects here
             ]
