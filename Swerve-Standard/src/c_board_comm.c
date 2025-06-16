@@ -53,7 +53,8 @@ void C_Board_Recv_Supercap_Info(CAN_Instance_t* can_instance)
 void C_Board_Comm_Send_Loop()
 {
     #ifdef MASTER
-        memcpy(&(g_board_master->tx_buffer), &(Referee_System.Robot_State.Chassis_Power_Max), sizeof(float)); // Referee_System.Robot_State.Chassis_Power_Max
+        float temp_power_limit = 69.0;
+        memcpy(&(g_board_master->tx_buffer), &(temp_power_limit), sizeof(float)); // &(Referee_System.Robot_State.Chassis_Power_Max)
     #else
         memcpy(&(g_board_slave->tx_buffer[0]), &(g_supercap.Vo), sizeof(float)); // Vo
         memcpy(&(g_board_slave->tx_buffer[sizeof(float)]), &(g_supercap.Ps), sizeof(float)); // Ps
