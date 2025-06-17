@@ -76,21 +76,20 @@ void C_Board_Recv_Supercap_Info(CAN_Instance_t* can_instance)
 void C_Board_Comm_Send_Loop()
 {
     #ifdef MASTER
-        int temp_power_limit = 69;
-        memcpy(&(g_board_communication->tx_buffer[0]), &(temp_power_limit), sizeof(int)); // &(Referee_System.Robot_State.Chassis_Power_Max)
+        memcpy(&(g_board_communication->tx_buffer[0]), &(Referee_System.Robot_State.Chassis_Power_Max), sizeof(float)); // &(Referee_System.Robot_State.Chassis_Power_Max)
         g_board_comm_sending_pending = 1;
     #else
-        // memcpy(&(g_board_communication->tx_buffer[0]), &(g_supercap.Vo), sizeof(float)); // Vo
-        // memcpy(&(g_board_communication->tx_buffer[sizeof(float)]), &(g_supercap.Ps), sizeof(float)); // Ps
-        g_board_communication->tx_buffer[0] = 1;
-        g_board_communication->tx_buffer[1] = 2;
-        g_board_communication->tx_buffer[2] = 3;
-        g_board_communication->tx_buffer[3] = 4;
-        g_board_communication->tx_buffer[4] = 5;
-        g_board_communication->tx_buffer[5] = 6;
-        g_board_communication->tx_buffer[6] = 7;
-        g_board_communication->tx_buffer[7] = 8; // TODO: REMOVE THIS LATER. FOR DEBUGGING PURPOSES
-        g_board_comm_sending_pending = 1;
+        memcpy(&(g_board_communication->tx_buffer[0]), &(g_supercap.Vo), sizeof(float)); // Vo
+        memcpy(&(g_board_communication->tx_buffer[sizeof(float)]), &(g_supercap.Ps), sizeof(float)); // Ps
+        // g_board_communication->tx_buffer[0] = 1;
+        // g_board_communication->tx_buffer[1] = 2;
+        // g_board_communication->tx_buffer[2] = 3;
+        // g_board_communication->tx_buffer[3] = 4;
+        // g_board_communication->tx_buffer[4] = 5;
+        // g_board_communication->tx_buffer[5] = 6;
+        // g_board_communication->tx_buffer[6] = 7;
+        // g_board_communication->tx_buffer[7] = 8; // TODO: REMOVE THIS LATER. FOR DEBUGGING PURPOSES
+        // g_board_comm_sending_pending = 1;
     #endif
 
     // entered_send += 0.0001; // TODO DELETE LATER AFTER DEBUGGING. CAUSES MEMORY ERROR

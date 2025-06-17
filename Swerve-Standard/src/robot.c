@@ -41,7 +41,7 @@ void Robot_Init()
             .loudness = 0.5f,
             .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
         };
-        // Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
+        Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
     #else
         Melody_t system_init_melody = {
             .notes = SYSTEM_INITIALIZING,
@@ -49,7 +49,7 @@ void Robot_Init()
             .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
         };
         Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
-    // #endif
+    #endif
     
     // Initialize all tasks
     Robot_Tasks_Start();
