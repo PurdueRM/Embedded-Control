@@ -50,7 +50,7 @@ void C_Board_Comm_Task_Init() {
 void C_Board_Recv_Ref_Info(CAN_Instance_t *can_instance)
 {
     g_board_comm_package_first_part_established = 1; //debugging
-    memcpy(&g_board_comm_package.power_limit, can_instance->rx_buffer, sizeof(float));
+    memcpy(&g_board_comm_package.power_limit, can_instance->rx_buffer, sizeof(uint16_t));
 }
 
 /**
@@ -89,7 +89,7 @@ void C_Board_Comm_Send_Loop()
         // g_board_communication->tx_buffer[5] = 6;
         // g_board_communication->tx_buffer[6] = 7;
         // g_board_communication->tx_buffer[7] = 8; // TODO: REMOVE THIS LATER. FOR DEBUGGING PURPOSES
-        // g_board_comm_sending_pending = 1;
+        g_board_comm_sending_pending = 1;
     #endif
 
     // entered_send += 0.0001; // TODO DELETE LATER AFTER DEBUGGING. CAUSES MEMORY ERROR
