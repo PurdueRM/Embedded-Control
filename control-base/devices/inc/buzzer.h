@@ -143,6 +143,16 @@
                              {Note_G5, EIGHTH_NOTE_DURATION }, \
                              {Note_C6, FOURTH_NOTE_DURATION }}
 
+#define SYSTEM_INITIALIZING_REVERSE {\
+    {Note_C6, FOURTH_NOTE_DURATION},\
+    {Note_G5, EIGHTH_NOTE_DURATION }, \
+    {Note_E5, EIGHTH_NOTE_DURATION }, \
+    {Note_C5, EIGHTH_NOTE_DURATION }, \
+    {Note_G4, EIGHTH_NOTE_DURATION }, \
+    {Note_E4, EIGHTH_NOTE_DURATION }, \
+    {Note_C4, EIGHTH_NOTE_DURATION },\
+}
+
 #define SYSTEM_READY {{Note_G4, EIGHTH_NOTE_DURATION }, \
                       {Note_E5, EIGHTH_NOTE_DURATION }, \
                       {Note_E5, EIGHTH_NOTE_DURATION }, \
@@ -570,6 +580,7 @@
 }
 
 #define SYSTEM_INITIALIZING_NOTE_NUM (7)
+#define SYSTEM_INITIALIZING_REVERSE_NOTE_NUM (7)
 #define SYSTEM_READY_NOTE_NUM (6)
 #define SYSTEM_ERROR_NOTE_NUM (7)
 #define MARIO_NOTE_NUM (44)
