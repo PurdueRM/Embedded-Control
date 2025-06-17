@@ -37,9 +37,9 @@ void Robot_Init()
     Buzzer_Init();
     #ifdef MASTER
         Melody_t system_init_melody = {
-            .notes = MEGALOVANIA_MOTIF,
+            .notes = SYSTEM_INITIALIZING,
             .loudness = 0.5f,
-            .note_num = MEGALOVVANIA_MOTIF_NOTE_NUM,
+            .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
         };
         Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
     #else
