@@ -17,7 +17,7 @@ typedef struct Board_Comm_Package_s
     float Ps; // power reference from the super cap
 
     // from master to slave
-    float power_limit; //send power from the master to the slave
+    uint16_t power_limit; //send power from the master to the slave
 } Board_Comm_Package_t;
 
 void C_Board_Comm_Task_Init();
