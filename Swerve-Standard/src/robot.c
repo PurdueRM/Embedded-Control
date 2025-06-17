@@ -41,15 +41,15 @@ void Robot_Init()
             .loudness = 0.5f,
             .note_num = MEGALOVVANIA_MOTIF_NOTE_NUM,
         };
-        Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
+        // Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
     #else
         Melody_t system_init_melody = {
-            .notes = RM_MAIN_THEME_SHORT_UP_OCTAVE,
+            .notes = SYSTEM_INITIALIZING,
             .loudness = 0.5f,
-            .note_num = RM_MAIN_THEME_SHORT_UP_OCTAVE_NOTE_NUM,
+            .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
         };
         Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
-    #endif
+    // #endif
     
     // Initialize all tasks
     Robot_Tasks_Start();
@@ -74,7 +74,7 @@ void Handle_Starting_Up_State()
     #endif
     CAN_Service_Init();
     C_Board_Comm_Task_Init();
-    g_robot_state.state = DISABLED;
+    g_robot_state.state = ENABLED;
     
 }
 
