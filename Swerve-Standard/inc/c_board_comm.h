@@ -5,7 +5,7 @@
 // Define/undefine this as needed when flashing 
 // the two c boards on the swerve robot
 // #define MASTER
-#define C_BOARD_COMM_PERIOD (10) // ms
+#define C_BOARD_COMM_PERIOD (100) // ms
 
 #include <stdint.h>
 #include "bsp_uart.h"
