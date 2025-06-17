@@ -76,7 +76,7 @@ void C_Board_Recv_Supercap_Info(CAN_Instance_t* can_instance)
 void C_Board_Comm_Send_Loop()
 {
     #ifdef MASTER
-        memcpy(&(g_board_communication->tx_buffer[0]), &(Referee_System.Robot_State.Chassis_Power_Max), sizeof(float)); // &(Referee_System.Robot_State.Chassis_Power_Max)
+        memcpy(&(g_board_communication->tx_buffer[0]), &(Referee_System.Robot_State.Chassis_Power_Max), sizeof(uint16_t)); // &(Referee_System.Robot_State.Chassis_Power_Max)
         g_board_comm_sending_pending = 1;
     #else
         memcpy(&(g_board_communication->tx_buffer[0]), &(g_supercap.Vo), sizeof(float)); // Vo
