@@ -19,7 +19,8 @@ float entered_send = 0.0;
 uint8_t g_board_comm_sending_pending = 0;
 
 /**
- * @brief
+ * @brief Registers the callback functions and inits the CAN_Instance_t
+ *        depending on if its the master or the slave board
  * @param
  */
 void C_Board_Comm_Task_Init() {
@@ -42,7 +43,8 @@ void C_Board_Comm_Task_Init() {
 }
 
 /**
- * @brief
+ * @brief Callback function for receiving power limit info from 
+ *        the master board
  * @param
  */
 void C_Board_Recv_Ref_Info(CAN_Instance_t *can_instance)
@@ -52,7 +54,8 @@ void C_Board_Recv_Ref_Info(CAN_Instance_t *can_instance)
 }
 
 /**
- * @brief
+ * @brief Callback function for receiving supercap info from
+ *        the slave board
  * @param
  */
 void C_Board_Recv_Supercap_Info(CAN_Instance_t* can_instance)
@@ -63,14 +66,18 @@ void C_Board_Recv_Supercap_Info(CAN_Instance_t* can_instance)
 }
 
 /**
- * @brief
+ * @brief Send the info over the can.
+ *        Make sure you call CAN_Transmit(g_board_communication)
+ *        in the motor_tasks.
+ *        If nothing is sending, please make sure the CAN/Board is powered
+ *        with 5V or more. 3.3V was not enough
  * @param
  */
 void C_Board_Comm_Send_Loop()
 {
     #ifdef MASTER
-        float temp_power_limit = 69.0;
-        memcpy(&(g_board_communication->tx_buffer[0]), &(temp_power_limit), sizeof(float)); // &(Referee_System.Robot_State.Chassis_Power_Max)
+        int temp_power_limit = 69;
+        memcpy(&(g_board_communication->tx_buffer[0]), &(temp_power_limit), sizeof(int)); // &(Referee_System.Robot_State.Chassis_Power_Max)
         g_board_comm_sending_pending = 1;
     #else
         memcpy(&(g_board_communication->tx_buffer[0]), &(g_supercap.Vo), sizeof(float)); // Vo
