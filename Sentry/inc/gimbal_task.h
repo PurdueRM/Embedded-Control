@@ -14,5 +14,5 @@ typedef struct
 // Function prototypes
 void Gimbal_Task_Init(void);
 void Gimbal_Ctrl_Loop(void);
-
+void Gimbal_Task_Disable(void);
 #endif // GIMBAL_TASK_H

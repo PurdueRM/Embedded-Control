@@ -16,7 +16,7 @@ void Gimbal_Task_Init()
     Motor_Config_t yaw_motor_config = {
         .can_bus = 1,
         .speed_controller_id = 1,
-        .offset = 3995,
+        .offset = 6141,
         .control_mode = POSITION_VELOCITY_SERIES,
         .motor_reversal = MOTOR_REVERSAL_NORMAL,
         .use_external_feedback = 1,
@@ -26,17 +26,18 @@ void Gimbal_Task_Init()
         .angle_pid =
             {
                 .kp = 25.0f,
-                .kd = 10.0f,
-                .output_limit = 25,
+                .kd = 100.0f,
+                .output_limit = 20, // max vel
             },
         .velocity_pid =
             {
-                .kp = 1000.0f,
+                .kp = 5000.0f,
                 .ki = 0.0f,
+                .kd = 0.0f,
                 .kf = 0.0f,
-                .feedforward_limit = 5000.0f,
-                .integral_limit = 5000.0f,
-                .output_limit = GM6020_MAX_CURRENT,
+                .feedforward_limit = 10000.0f,
+                .integral_limit = 1000.0f,
+                .output_limit = GM6020_MAX_CURRENT_INT,
             },
     };
     g_yaw = DJI_Motor_Init(&yaw_motor_config, GM6020);
@@ -45,21 +46,31 @@ void Gimbal_Task_Init()
 
 void Gimbal_Ctrl_Loop()
 {
-    if (g_robot_state.launch.IS_AUTO_AIMING_ENABLED) {
-        if (g_orin_data.receiving.auto_aiming.yaw != 0 || g_orin_data.receiving.auto_aiming.pitch != 0)
-        {
-            float imu_yaw_delta = g_imu.rad.yaw + g_orin_data.receiving.auto_aiming.yaw / 180.0f * PI;
-            float imu_pitch_delta = g_imu.rad.pitch + g_orin_data.receiving.auto_aiming.pitch / 180.0f * PI;
-            __SLEW_RATE_LIMIT(g_robot_state.gimbal.yaw_angle, imu_yaw_delta, 0.2);
-            __SLEW_RATE_LIMIT(g_robot_state.gimbal.pitch_angle, imu_pitch_delta, 0.2);
-        }
-    }
+    // if (g_robot_state.launch.IS_AUTO_AIMING_ENABLED) {
+    //     if (g_orin_data.receiving.auto_aiming.yaw != 0 || g_orin_data.receiving.auto_aiming.pitch != 0)
+    //     {
+    //         float imu_yaw_delta = g_imu.rad.yaw + g_orin_data.receiving.auto_aiming.yaw / 180.0f * PI;
+    //         float imu_pitch_delta = g_imu.rad.pitch + g_orin_data.receiving.auto_aiming.pitch / 180.0f * PI;
+    //         __SLEW_RATE_LIMIT(g_robot_state.gimbal.yaw_angle, imu_yaw_delta, 0.2);
+    //         __SLEW_RATE_LIMIT(g_robot_state.gimbal.pitch_angle, imu_pitch_delta, 0.2);
+    //     }
+    // }
 
     // hardware limits for gimbal pitch (prevent self collision)
-    g_robot_state.gimbal.yaw_angle = fmod(g_robot_state.gimbal.yaw_angle, 2 * PI);
-    __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.4f, 0.4f);
+    __MAP_ANGLE_TO_UNIT_CIRCLE(g_robot_state.gimbal.yaw_angle);
+    // __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.4f, 0.4f);
 
     // Control loop for gimbal
     // DJI_Motor_Set_Angle(g_pitch, g_robot_state.gimbal.pitch_angle);
     DJI_Motor_Set_Angle(g_yaw, g_robot_state.gimbal.yaw_angle);
+}
+
+void _Gimbal_Target_Reset()
+{
+    g_robot_state.gimbal.yaw_angle = g_imu.rad.yaw;
+}
+
+void Gimbal_Task_Disable()
+{
+    _Gimbal_Target_Reset();
 }

@@ -49,8 +49,9 @@ void Handle_Starting_Up_State()
     Launch_Task_Init();
     Remote_Init(&huart3);
     CAN_Service_Init();
-    Referee_System_Init(&huart1);
+    // Referee_System_Init(&huart1);
     Supercap_Init(&g_supercap);
+    Jetson_Orin_Init(&huart1);
 
     // Set robot state to disabled
     g_robot_state.state = DISABLED;
@@ -84,6 +85,7 @@ void Handle_Enabled_State()
 void Handle_Disabled_State()
 {
     DJI_Motor_Disable_All();
+    Gimbal_Task_Disable();
     //  Disable all major components
     g_robot_state.launch.IS_FLYWHEEL_ENABLED = 0;
     g_robot_state.chassis.x_speed = 0;
@@ -114,7 +116,6 @@ void Process_Remote_Input()
 
     g_robot_state.input.prev_left_switch = g_remote.controller.left_switch;
 
-    g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f;
 }
 
 void Process_Chassis_Control()

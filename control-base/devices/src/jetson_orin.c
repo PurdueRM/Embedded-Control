@@ -4,7 +4,9 @@
 #include <math.h>
 #include "imu_task.h"
 #include "bsp_daemon.h"
+#include  "omni_locomotion.h"
 
+extern pose_2d_t sentry_pose;
 Jetson_Orin_Data_t g_orin_data;
 
 UART_Instance_t *g_orin_uart_instance_ptr;
@@ -94,11 +96,11 @@ void Jetson_Orin_Send_Data(void)
 	g_orin_data.sending.pitch_angle = g_imu.rad.pitch;
 	g_orin_data.sending.pitch_angular_rate = g_imu.bmi088_raw.gyro[1];
 	g_orin_data.sending.yaw_angular_rate = g_imu.bmi088_raw.gyro[2];
-	g_orin_data.sending.position_x = 0;
-	g_orin_data.sending.position_y = 0;
+	g_orin_data.sending.position_x = sentry_pose.y;
+	g_orin_data.sending.position_y = -sentry_pose.x;
 	g_orin_data.sending.orientation = g_imu.rad.yaw;
-	g_orin_data.sending.velocity_x = 0;
-	g_orin_data.sending.velocity_y = 0;
+	g_orin_data.sending.velocity_x = 7529.0f;
+	g_orin_data.sending.velocity_y = 7529.0f;
 	g_orin_data.sending.game_start_flag = (Referee_System.Game_Status.Progress == 4) ? 1 : 0; // 4 for match begin
 	g_orin_data.sending.enemy_color_flag = (Referee_System.Robot_State.ID > 11) ? 1 : 0;			  // ID > 11 means myself is blue, which means enemy is red
 
