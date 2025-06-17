@@ -8,7 +8,7 @@ extern Supercap_t g_supercap;
 extern CAN_Instance_t* g_board_communication;
 // extern CAN_Instance_t* g_board_master;
 extern uint8_t g_board_comm_sending_pending;
-
+uint8_t result_can = 0;
 void Motor_Task_Loop() {
     #ifdef MASTER
         DJI_Motor_Send();
@@ -20,8 +20,8 @@ void Motor_Task_Loop() {
     #endif
     if (g_board_comm_sending_pending == 1)
     {
-        CAN_Transmit(g_board_communication);
+        result_can = CAN_Transmit(g_board_communication);
+        g_board_comm_sending_pending = 0;
     }
-    g_board_comm_sending_pending = 0;
 }
 

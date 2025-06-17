@@ -36,7 +36,7 @@ void C_Board_Comm_Task_Init() {
         // g_board_slave = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Supercap_Info);
         // g_board_master = CAN_Device_Register(1, 0x311, 0x301, C_Board_Recv_Ref_Info);
 
-        slave_debug = 1;
+        // slave_debug = 1;
         g_board_communication = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Ref_Info);
     #endif
 }
@@ -73,10 +73,18 @@ void C_Board_Comm_Send_Loop()
         memcpy(&(g_board_communication->tx_buffer[0]), &(temp_power_limit), sizeof(float)); // &(Referee_System.Robot_State.Chassis_Power_Max)
         g_board_comm_sending_pending = 1;
     #else
-        memcpy(&(g_board_communication->tx_buffer[0]), &(g_supercap.Vo), sizeof(float)); // Vo
-        memcpy(&(g_board_communication->tx_buffer[sizeof(float)]), &(g_supercap.Ps), sizeof(float)); // Ps
+        // memcpy(&(g_board_communication->tx_buffer[0]), &(g_supercap.Vo), sizeof(float)); // Vo
+        // memcpy(&(g_board_communication->tx_buffer[sizeof(float)]), &(g_supercap.Ps), sizeof(float)); // Ps
+        g_board_communication->tx_buffer[0] = 1;
+        g_board_communication->tx_buffer[1] = 2;
+        g_board_communication->tx_buffer[2] = 3;
+        g_board_communication->tx_buffer[3] = 4;
+        g_board_communication->tx_buffer[4] = 5;
+        g_board_communication->tx_buffer[5] = 6;
+        g_board_communication->tx_buffer[6] = 7;
+        g_board_communication->tx_buffer[7] = 8; // TODO: REMOVE THIS LATER. FOR DEBUGGING PURPOSES
         g_board_comm_sending_pending = 1;
     #endif
 
-    entered_send += 0.0001; // TODO DELETE LATER AFTER DEBUGGING. CAUSES MEMORY ERROR
+    // entered_send += 0.0001; // TODO DELETE LATER AFTER DEBUGGING. CAUSES MEMORY ERROR
 }
