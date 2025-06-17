@@ -120,6 +120,7 @@
                 "Swerve-Standard",
                 "Sentry",
                 "Wheel-Legged-Chassis",
+                "Swerve-Standard-Slave",
                 //"Template"
                 // Add your other robot projects here
             ]
