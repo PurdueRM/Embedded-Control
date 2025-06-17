@@ -7,14 +7,21 @@
 extern Supercap_t g_supercap;
 extern CAN_Instance_t* g_board_communication;
 // extern CAN_Instance_t* g_board_master;
+extern uint8_t g_board_comm_sending_pending;
 
 void Motor_Task_Loop() {
     #ifdef MASTER
         DJI_Motor_Send();
-        CAN_Transmit(g_board_communication);
-    #else 
-        Supercap_Send();
-        CAN_Transmit(g_board_communication);
+    #else
+        if (g_board_comm_sending_pending == 1)
+        {
+            Supercap_Send();
+        }
     #endif
+    if (g_board_comm_sending_pending == 1)
+    {
+        CAN_Transmit(g_board_communication);
+    }
+    g_board_comm_sending_pending = 0;
 }
 
