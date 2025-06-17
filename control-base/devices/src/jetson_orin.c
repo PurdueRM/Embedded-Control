@@ -10,7 +10,7 @@ extern pose_2d_t sentry_pose;
 Jetson_Orin_Data_t g_orin_data;
 
 UART_Instance_t *g_orin_uart_instance_ptr;
-Daemon_Instance_t *g_orin_daemon_instance_ptr;
+Daemon_Instance_t *g_orin_daemon_instance_ptr, *g_orin_daemon_nav_instance_ptr;
 uint8_t g_jetson_orin_initialized;
 
 void Jetson_Orin_Rx_Callback(UART_Instance_t *uart_instance)
@@ -73,6 +73,13 @@ void Jetson_Orin_Timeout_Callback()
 	UART_Service_Init(g_orin_uart_instance_ptr);
 }
 
+void Jetson_Orin_Nav_Timeout_Callback()
+{
+	g_orin_data.receiving.navigation.x_vel = 0.0f;
+	g_orin_data.receiving.navigation.y_vel = 0.0f;
+	g_orin_data.receiving.navigation.yaw_angular_rate = 0.0f;
+}
+
 void Jetson_Orin_Init(UART_HandleTypeDef *huartx)
 {
 	// register UART instance
@@ -83,6 +90,10 @@ void Jetson_Orin_Init(UART_HandleTypeDef *huartx)
 	uint16_t reload_value = ORIN_TIMEOUT_MS / DAEMON_PERIOD;
 	uint16_t initial_counter = reload_value;
 	g_orin_daemon_instance_ptr = Daemon_Register(reload_value, initial_counter, Jetson_Orin_Timeout_Callback);
+
+	reload_value = ORIN_NAV_TIMEOUT_MS / DAEMON_PERIOD;
+	initial_counter = reload_value;
+	g_orin_daemon_nav_instance_ptr = Daemon_Register(reload_value, initial_counter, Jetson_Orin_Nav_Timeout_Callback);
 	g_jetson_orin_initialized = 1;
 }
 
