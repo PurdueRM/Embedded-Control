@@ -79,21 +79,23 @@ void Chassis_Task_Init()
     }
 
     // Init PID
-    PID_Init(&g_follow_gimbal_pid, 10, 0, 100, 2*PI*30, 0, 0);
+    PID_Init(&g_follow_gimbal_pid, 20, 0, 1000, 2*PI*30, 0, 0);
 }
 
 void Chassis_Process_Target_Velocity()
 {
     if (g_remote.controller.right_switch == UP)
     {
-        chassis_state.v_x_in_gimbal = g_orin_data.receiving.navigation.x_vel;
-        chassis_state.v_y_in_gimbal = g_orin_data.receiving.navigation.y_vel;
-        chassis_state.omega_in_gimbal = g_orin_data.receiving.navigation.yaw_angular_rate; // TODO: move to gimbal task
+        chassis_state.v_x_in_gimbal = -g_orin_data.receiving.navigation.y_vel;
+        chassis_state.v_y_in_gimbal = g_orin_data.receiving.navigation.x_vel;
+        g_robot_state.gimbal.yaw_angle += g_orin_data.receiving.navigation.yaw_angular_rate * 0.002f; // TODO: move to gimbal task
     } else {
-        chassis_state.v_x_in_gimbal = g_remote.controller.right_stick.x;
-        chassis_state.v_y_in_gimbal = g_remote.controller.right_stick.y;
+        chassis_state.v_x_in_gimbal = g_remote.controller.left_stick.x / 660.0f * 4.0f;
+        chassis_state.v_y_in_gimbal = g_remote.controller.left_stick.y / 660.0f * 4.0f;
         chassis_state.omega_in_gimbal = g_remote.controller.wheel * MAX_ANGLUAR_SPEED;
+        g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f;
     }
+
     float chassis_omega_new_target;
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         chassis_omega_new_target = 6*PI;
@@ -101,8 +103,8 @@ void Chassis_Process_Target_Velocity()
     } else {
         // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-        // chassis_state.omega = PID(&g_follow_gimbal_pid, gimbal_angle_difference);
-        chassis_omega_new_target = -g_remote.controller.right_stick.x/660.0f * 6 * PI;
+        chassis_omega_new_target = PID(&g_follow_gimbal_pid, gimbal_angle_difference);
+        // chassis_omega_new_target = -g_remote.controller.right_stick.x/660.0f * 6 * PI;
         __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.008f);
     }
     // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.003f);
@@ -112,11 +114,11 @@ void Chassis_Process_Target_Velocity()
 void Chassis_Ctrl_Loop()
 {
     //TODO: change this, for odom only
-    gimbal_angle_difference = 0*DJI_Motor_Get_Absolute_Angle(g_yaw);
+    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
     Chassis_Process_Target_Velocity();
     
-    chassis_state.v_x = g_robot_state.input.vx * cos(gimbal_angle_difference) - g_robot_state.input.vy * sin(gimbal_angle_difference);
-    chassis_state.v_y = g_robot_state.input.vx * sin(gimbal_angle_difference) + g_robot_state.input.vy * cos(gimbal_angle_difference);
+    chassis_state.v_x = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
+    chassis_state.v_y = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
     // chassis_state.v_x = g_robot_state.input.vx;
     // chassis_state.v_y = g_robot_state.input.vy;
 
@@ -141,5 +143,5 @@ void Chassis_Ctrl_Loop()
     motor_data_odom.back_left = DJI_Motor_Get_Total_Angle(motors[1]) * physical_constants.R;
     motor_data_odom.back_right = DJI_Motor_Get_Total_Angle(motors[2]) * physical_constants.R;
     motor_data_odom.front_right = DJI_Motor_Get_Total_Angle(motors[3]) * physical_constants.R;
-    Update_Omni_Odometry(&sentry_pose, &physical_constants, &motor_data_odom, g_imu.rad.yaw + PI/2);
+    Update_Omni_Odometry(&sentry_pose, &physical_constants, &motor_data_odom, g_imu.rad.yaw + PI/2 - gimbal_angle_difference);
 }

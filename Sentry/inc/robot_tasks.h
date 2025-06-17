@@ -45,7 +45,7 @@ void Robot_Tasks_Start()
     osThreadDef(ui_task, Robot_Tasks_UI, osPriorityAboveNormal, 0, 256);
     ui_task_handle = osThreadCreate(osThread(ui_task), NULL);
 
-    osThreadDef(debug_task, Robot_Tasks_Debug, osPriorityIdle, 0, 256);
+    osThreadDef(debug_task, Robot_Tasks_Debug, osPriorityAboveNormal, 0, 256);
     debug_task_handle = osThreadCreate(osThread(debug_task), NULL);
 
     osThreadDef(jetson_orin_task, Robot_Tasks_Jetson_Orin, osPriorityAboveNormal, 0, 256);
