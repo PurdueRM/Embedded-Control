@@ -124,18 +124,9 @@ void Process_Remote_Input()
     g_robot_state.gimbal.yaw_angle -= (g_remote.controller.right_stick.x / 50000.0f + g_remote.mouse.x / 10000.0f);    // controller and mouse
     g_robot_state.gimbal.pitch_angle -= (g_remote.controller.right_stick.y / 100000.0f - g_remote.mouse.y / 50000.0f);
 
-    // if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B))
-    // {
-    //     g_robot_state.UI_ENABLED ^= 0x01; // Toggle UI
-    // }
-
-    if (g_remote.controller.right_switch == MID)
+    if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B))
     {
-        g_robot_state.UI_ENABLED = 1;
-    }
-    else
-    {
-        g_robot_state.UI_ENABLED = 0;
+        g_robot_state.UI_ENABLED ^= 0x01; // Toggle UI
     }
     if ((g_remote.keyboard.Shift) || (g_remote.controller.right_switch == UP)) // Hold shift to boost
     {
