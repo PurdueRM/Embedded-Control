@@ -154,14 +154,16 @@ void Chassis_Ctrl_Loop()
     // g_chassis_state.v_y = g_chassis_state.v_x * sin(theta) + g_chassis_state.v_y * cos(theta);
 
     // If spintop enabled, chassis omega set to spintop value 
-    gimbal_angle_difference = g_robot_state.gimbal.yaw_angle
+    gimbal_angle_difference = g_robot_state.gimbal.yaw_angle;
+    float chassis_omega_new_target;
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
     } 
     else if (g_robot_state.chassis.locked_state == STRAIGHT) {
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
 
-        gimbal_angle_difference = gimbal_angle_difference % (PI / 2);
+        // Compute mod 
+        gimbal_angle_difference = __MOD_F(gimbal_angle_difference, PI / 2);
         if (gimbal_angle_difference > PI / 4) { // might be easier to go by the way of spin top direction
             gimbal_angle_difference = -1 * ((PI / 2) - gimbal_angle_difference);
         }
@@ -173,12 +175,12 @@ void Chassis_Ctrl_Loop()
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
 
         gimbal_angle_difference += PI / 4;
-        gimbal_angle_difference = gimbal_angle_difference % (PI / 2);
+        gimbal_angle_difference = __MOD_F(gimbal_angle_difference, PI / 2);
         if (gimbal_angle_difference > PI / 4) { 
             gimbal_angle_difference = -1 * ((PI / 2) - gimbal_angle_difference);
         }
         chassis_omega_new_target = PID(&angle_locking_pid, gimbal_angle_difference);
-        __MAX_LIMIT(chassis_omega_new_target, -6 * 2 * PI, 6 * 2 * PI); 
+        __MAX_LIMIT(chassis_omega_new_target, -1 * g_spintop_omega, g_spintop_omega); 
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, chassis_omega_new_target);
     } 
     else if (g_robot_state.chassis.locked_state == RANDOM) {

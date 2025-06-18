@@ -70,4 +70,14 @@
 #define __SLEW_RATE_LIMIT(curr, delta, ramp) \
     curr = (1 - (ramp)) * (curr) + (ramp) * (delta)
 
+#define __ABS(x)         \
+    (x < 0 ? -1 * x : x) \
+
+// floor for floats
+#define __FLOOR_F(x)                                                                      \
+    (x < 0 && __ABS(x - ((int) x)) > 0.0001 ? (float)((int) x) - 1.0 : (float)((int) x))  \
+
+#define __MOD_F(a, b)           \
+    a - b * __FLOOR_F((a / b))  \
+
 #endif // USER_MATH_H
