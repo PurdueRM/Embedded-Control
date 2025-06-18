@@ -13,6 +13,7 @@
 #include "bsp_serial.h"
 #include "bsp_daemon.h"
 #include "c_board_comm.h"
+#include "supercap.h"
 
 extern void IMU_Task(void const *pvParameters);
 
@@ -24,6 +25,7 @@ osThreadId debug_task_handle;
 osThreadId jetson_orin_task_handle;
 osThreadId daemon_task_handle;
 osThreadId c_board_comm_task_handle;
+osThreadId supercap_uart_task_handle;
 
 void Robot_Tasks_Robot_Command(void const *argument);
 void Robot_Tasks_Motor(void const *argument);
@@ -33,6 +35,7 @@ void Robot_Tasks_Debug(void const *argument);
 void Robot_Tasks_Jetson_Orin(void const *argument);
 void Robot_Tasks_Daemon(void const *argument);
 void Robot_Tasks_C_Board_Comm(void const *argument);
+void Robot_Tasks_Supercap_Uart(void const *argument);
 
 void Robot_Tasks_Start()
 {
@@ -59,6 +62,9 @@ void Robot_Tasks_Start()
 
     osThreadDef(c_board_comm_task, Robot_Tasks_C_Board_Comm, osPriorityAboveNormal, 0, 256);
     c_board_comm_task_handle = osThreadCreate(osThread(c_board_comm_task), NULL);
+
+    osThreadDef(supercap_uart_task, Robot_Tasks_Supercap_Uart, osPriorityAboveNormal, 0, 256);
+    supercap_uart_task_handle = osThreadCreate(osThread(supercap_uart_task), NULL);
 }
 
 void Robot_Tasks_Robot_Command(void const *argument)
@@ -146,6 +152,18 @@ void Robot_Tasks_C_Board_Comm(void const *argument)
     while (1)
     {
         C_Board_Comm_Send_Loop();
+        vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
+    }
+}
+
+void Robot_Tasks_Supercap_Uart(void const *argument)
+{
+    portTickType xLastWakeTime;
+    xLastWakeTime = xTaskGetTickCount();
+    const TickType_t TimeIncrement = pdMS_TO_TICKS(SUPERCAP_UART_PERIOD_MS);
+    while (1)
+    {
+        Supercap_Send();
         vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
     }
 }

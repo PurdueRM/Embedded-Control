@@ -19,7 +19,6 @@ char uart_buffer[SUPERCAP_RX_BUFFER_SIZE];
 uint8_t uart_byte;
 uint8_t uart_index = 0;
 uint8_t supercap_uart_instance_initialized;
-
 // Parsed values
 //float Vi = 0, Vo = 0, Pi = 0, Io = 0, Ps = 0, Ii = 0;
 
@@ -95,7 +94,6 @@ void Supercap_Send(void)
      if (!supercap_uart_instance_initialized) {
         return;
     }
-
     // Send supercap data
     // uint16_t *supercap_tx = (uint16_t *) supercap_can_instance->tx_buffer;
     // supercap_tx[0] = 0x003C;
