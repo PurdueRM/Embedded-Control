@@ -13,6 +13,8 @@
 #define SUPERCAP_RX_BUFFER_SIZE (1) //number of bytes 
 #define SUPERCAP_BUFFER_SIZE (64) // new buffer
 #define SUPERCAP_TX_BUFFER_SIZE (3) //todo finish this
+#define SUPERCAP_DEPLETED_VOLTAGE (12.0f)
+#define SUPERCAP_FULL_VOLTAGE (24.0f)
 typedef struct
 {
     uint8_t can_bus;

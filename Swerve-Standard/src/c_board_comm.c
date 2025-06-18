@@ -63,6 +63,10 @@ void C_Board_Recv_Supercap_Info(CAN_Instance_t* can_instance)
     g_board_comm_package_second_part_established = 1; // debugging
     memcpy(&g_board_comm_package.Vo, &can_instance->rx_buffer[0], sizeof(float));
     memcpy(&g_board_comm_package.Ps, &can_instance->rx_buffer[sizeof(float)], sizeof(float));
+    g_supercap.Vo = g_board_comm_package.Vo; // update the supercap voltage
+    g_supercap.Ps = g_board_comm_package.Ps; // update the supercap power reference
+    uint8_t supercap_percent = (g_supercap.Vo - SUPERCAP_DEPLETED_VOLTAGE) / (SUPERCAP_FULL_VOLTAGE - SUPERCAP_DEPLETED_VOLTAGE) * 100.0f;
+    g_supercap.supercap_percent = supercap_percent;
 }
 
 /**
