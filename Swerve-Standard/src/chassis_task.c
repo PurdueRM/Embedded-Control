@@ -162,7 +162,6 @@ void Chassis_Ctrl_Loop()
     else if (g_robot_state.chassis.locked_state == STRAIGHT) {
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
 
-        // Compute mod 
         gimbal_angle_difference = __MOD_F(gimbal_angle_difference, PI / 2);
         if (gimbal_angle_difference > PI / 4) { // might be easier to go by the way of spin top direction
             gimbal_angle_difference = -1 * ((PI / 2) - gimbal_angle_difference);
@@ -183,15 +182,10 @@ void Chassis_Ctrl_Loop()
         __MAX_LIMIT(chassis_omega_new_target, -1 * g_spintop_omega, g_spintop_omega); 
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, chassis_omega_new_target);
     } 
-    else if (g_robot_state.chassis.locked_state == RANDOM) {
+    else { // random locking
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, 0);
     }
-    else {
-        // currently there is no way to change the ang. velo of the chassis through controller/keyboard, so g_robot_state.chassis.omega is always 0.
-        // switch locked_state to off when input is detected
-        g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, g_robot_state.chassis.omega * SWERVE_MAX_ANGLUAR_SPEED); 
-    }
-
+    
     // Calculate the kinematics of the chassis
     swerve_calculate_kinematics(&g_chassis_state, &g_swerve_constants);
     swerve_optimize_module_angles(&g_chassis_state, measured_angles);

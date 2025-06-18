@@ -156,6 +156,18 @@ void Process_Remote_Input()
         g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
     }
 
+    if (g_remote.keyboard.R) {
+        g_robot_state.chassis.locked_state = RANDOM;
+    }
+
+    if (g_remote.keyboard.E) {
+        g_robot_state.chassis.locked_state = STRAIGHT;
+    }
+
+    if (g_remote.keyboard.Q) {
+        g_robot_state.chassis.locked_state = ANGLED;
+    }
+
     if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
         //g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
         //g_robtot_state.launch.IS_FIRING_ENABLED = 1;
