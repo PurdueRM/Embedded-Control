@@ -8,7 +8,7 @@
 #include "ui_interface.h"
 
 uint8_t seq = 0;
-int ui_self_id = 1;
+int ui_self_id;
 
 ui_string_frame_t _ui_string_frame;
 ui_1_frame_t _ui_1_frame;
