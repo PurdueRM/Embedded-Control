@@ -7,6 +7,7 @@
 #include "referee_system.h"
 #include "swerve_locomotion.h"
 #include "rate_limiter.h"
+#include "pid.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
@@ -17,6 +18,9 @@ DJI_Motor_Handle_t *g_drive_motors[NUMBER_OF_MODULES];
 swerve_constants_t g_swerve_constants;
 swerve_chassis_state_t g_chassis_state;
 float measured_angles[NUMBER_OF_MODULES];
+
+float gimbal_angle_difference;
+PID_t angle_locking_pid;
 
 rate_limiter_t chassis_vel_limiters[4];
 rate_limiter_t chassis_omega_limiter;
@@ -104,6 +108,9 @@ void Chassis_Task_Init()
     }
     #define SWERVE_MAX_OMEGA_ACCEL (5.0f)
     rate_limiter_init(&chassis_omega_limiter, SWERVE_MAX_OMEGA_ACCEL);
+
+    // Initialize PID for locking
+    PID_Init(&angle_locking_pid, 20, 0, 2500, 2 * PI * 30, 0, 0);
 }
 
 void Chassis_Ctrl_Loop()
@@ -146,11 +153,41 @@ void Chassis_Ctrl_Loop()
     // g_chassis_state.v_x = g_chassis_state.v_x * cos(theta) - g_chassis_state.v_y * sin(theta);
     // g_chassis_state.v_y = g_chassis_state.v_x * sin(theta) + g_chassis_state.v_y * cos(theta);
 
-    // If spintop enabled, chassis omega set to spintop value --> smthn here
+    // If spintop enabled, chassis omega set to spintop value 
+    gimbal_angle_difference = g_robot_state.gimbal.yaw_angle
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
-    } else {
-        g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, g_robot_state.chassis.omega * SWERVE_MAX_ANGLUAR_SPEED);
+    } 
+    else if (g_robot_state.chassis.locked_state == STRAIGHT) {
+        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+
+        gimbal_angle_difference = gimbal_angle_difference % (PI / 2);
+        if (gimbal_angle_difference > PI / 4) { // might be easier to go by the way of spin top direction
+            gimbal_angle_difference = -1 * ((PI / 2) - gimbal_angle_difference);
+        }
+        chassis_omega_new_target = PID(&angle_locking_pid, gimbal_angle_difference);
+        __MAX_LIMIT(chassis_omega_new_target, -1 * g_spintop_omega, g_spintop_omega); // might not need this
+        g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, chassis_omega_new_target);
+    } 
+    else if (g_robot_state.chassis.locked_state == ANGLED) {
+        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+
+        gimbal_angle_difference += PI / 4;
+        gimbal_angle_difference = gimbal_angle_difference % (PI / 2);
+        if (gimbal_angle_difference > PI / 4) { 
+            gimbal_angle_difference = -1 * ((PI / 2) - gimbal_angle_difference);
+        }
+        chassis_omega_new_target = PID(&angle_locking_pid, gimbal_angle_difference);
+        __MAX_LIMIT(chassis_omega_new_target, -6 * 2 * PI, 6 * 2 * PI); 
+        g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, chassis_omega_new_target);
+    } 
+    else if (g_robot_state.chassis.locked_state == RANDOM) {
+        g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, 0);
+    }
+    else {
+        // currently there is no way to change the ang. velo of the chassis through controller/keyboard, so g_robot_state.chassis.omega is always 0.
+        // switch locked_state to off when input is detected
+        g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, g_robot_state.chassis.omega * SWERVE_MAX_ANGLUAR_SPEED); 
     }
 
     // Calculate the kinematics of the chassis
