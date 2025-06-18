@@ -7,7 +7,8 @@
 #include "jetson_orin.h"
 #include "bsp_uart.h"
 // #define SUPERCAP_POWER (20)
-#define SUPERCAP_SEND_FREQ (1.0f) // Hz
+#define SUPERCAP_SEND_FREQ (5.0f) // Hz
+#define SUPERCAP_UART_PERIOD_MS (1000 / SUPERCAP_SEND_FREQ) // ms
 //todo ask why it is 128
 #define SUPERCAP_RX_BUFFER_SIZE (1) //number of bytes 
 #define SUPERCAP_BUFFER_SIZE (64) // new buffer
@@ -51,7 +52,6 @@ typedef struct
 
 
 void Supercap_Init(UART_HandleTypeDef *huartx); // in robot the input element is g_supercap
-void Supercap_Decode(UART_Instance_t *supercap_uart_instance_ptr, float *Vi, float *Vo, float *Pi, float *Ii, float *Io, float *Ps);
 void Supercap_Send(void);
 
 extern Supercap_t g_supercap;
