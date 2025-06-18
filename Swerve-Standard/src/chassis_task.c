@@ -146,7 +146,7 @@ void Chassis_Ctrl_Loop()
     // g_chassis_state.v_x = g_chassis_state.v_x * cos(theta) - g_chassis_state.v_y * sin(theta);
     // g_chassis_state.v_y = g_chassis_state.v_x * sin(theta) + g_chassis_state.v_y * cos(theta);
 
-    // If spintop enabled, chassis omega set to spintop value
+    // If spintop enabled, chassis omega set to spintop value --> smthn here
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
     } else {
