@@ -87,6 +87,7 @@ typedef struct {
 
     uint8_t IS_SUPER_CAPACITOR_ENABLED;
     uint8_t UI_ENABLED;
+    uint8_t PREV_UI_ENABLED; // used to detect UI toggle
     uint8_t IS_SAFELY_STARTED;
 } Robot_State_t;
 

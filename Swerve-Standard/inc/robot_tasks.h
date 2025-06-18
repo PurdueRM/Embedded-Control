@@ -13,6 +13,7 @@
 #include "bsp_serial.h"
 #include "bsp_daemon.h"
 #include "c_board_comm.h"
+#include "ui_task.h"
 
 extern void IMU_Task(void const *pvParameters);
 
@@ -97,7 +98,7 @@ void Robot_Tasks_UI(void const *argument)
     const TickType_t TimeIncrement = pdMS_TO_TICKS(1);
     while (1)
     {
-        // UI_Task_Loop();
+        UI_Task_Loop();
         vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
     }
 }
