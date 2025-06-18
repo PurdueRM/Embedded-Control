@@ -24,6 +24,10 @@ typedef struct
     float x; // x position in meters
     float y; // y position in meters
     float theta; // orientation in radians
+
+    float vx; // x velocity in meters per second
+    float vy; // y velocity in meters per second
+    float omega; // angular velocity in radians per second
 } pose_2d_t;
 
 typedef struct
@@ -54,6 +58,5 @@ void omni_desaturate_wheel_speeds(omni_chassis_state_t *input, omni_physical_con
 void omni_convert_to_rpm(omni_chassis_state_t *chassis_state);
 
 void Init_Omni_Odometry(pose_2d_t* pose, pose_2d_t* init_pose, motor_data_t* curr_motor_data);
-void Update_Omni_Odometry(pose_2d_t* pose, omni_physical_constants_t* omni_physical_constants, motor_data_t* curr_motor_data, float heading_angle);
-
+void Update_Omni_Odometry(pose_2d_t* pose, omni_physical_constants_t* omni_physical_constants, motor_data_t* curr_motor_data, float heading_angle, float gimbal_yaw);
 #endif // OMNI_LOCOMOTION_h

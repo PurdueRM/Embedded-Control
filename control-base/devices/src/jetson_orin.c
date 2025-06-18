@@ -41,6 +41,7 @@ void Jetson_Orin_Rx_Callback(UART_Instance_t *uart_instance)
 			break;
 
 		case 1:
+			Daemon_Reload(g_orin_daemon_nav_instance_ptr);
 			memcpy(&g_orin_data.receiving.float_byte.data[0], &g_orin_data.rx_buffer[4], 12 * sizeof(uint8_t));
 			g_orin_data.receiving.navigation.x_vel = g_orin_data.receiving.float_byte.data[0];
 			g_orin_data.receiving.navigation.y_vel = g_orin_data.receiving.float_byte.data[1];
@@ -110,8 +111,8 @@ void Jetson_Orin_Send_Data(void)
 	g_orin_data.sending.position_x = sentry_pose.y;
 	g_orin_data.sending.position_y = -sentry_pose.x;
 	g_orin_data.sending.orientation = g_imu.rad.yaw;
-	g_orin_data.sending.velocity_x = 7529.0f;
-	g_orin_data.sending.velocity_y = 7529.0f;
+	g_orin_data.sending.velocity_x = sentry_pose.vy;
+	g_orin_data.sending.velocity_y = -sentry_pose.vx;
 	g_orin_data.sending.game_start_flag = (Referee_System.Game_Status.Progress == 4) ? 1 : 0; // 4 for match begin
 	g_orin_data.sending.enemy_color_flag = (Referee_System.Robot_State.ID > 11) ? 1 : 0;			  // ID > 11 means myself is blue, which means enemy is red
 
