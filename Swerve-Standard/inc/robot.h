@@ -12,10 +12,9 @@ typedef enum Robot_State_e {
 } Robot_State_e;
 
 typedef enum Locked_State_e {
-    RANDOM,
     ANGLED,
     STRAIGHT,
-    OFF
+    RANDOM
 } Locked_State_e;
 
 typedef struct {
