@@ -11,12 +11,20 @@ typedef enum Robot_State_e {
     ENABLED
 } Robot_State_e;
 
+typedef enum Locked_State_e {
+    RANDOM,
+    ANGLED,
+    STRAIGHT,
+    OFF
+} Locked_State_e;
+
 typedef struct {
     // chassis motion
     float x_speed;
     float y_speed;
     float omega;
     uint8_t IS_SPINTOP_ENABLED;
+    Locked_State_e locked_state;
 
     // power management
     uint16_t power_index;
