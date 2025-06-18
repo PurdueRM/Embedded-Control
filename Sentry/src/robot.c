@@ -11,6 +11,7 @@
 #include "buzzer.h"
 #include "supercap.h"
 #include "dji_motor.h"
+#include "dm_motor.h"
 
 Robot_State_t g_robot_state = {0};
 extern Remote_t g_remote;
@@ -85,6 +86,8 @@ void Handle_Enabled_State()
 void Handle_Disabled_State()
 {
     DJI_Motor_Disable_All();
+    DM_Motor_Disable_All();
+
     Gimbal_Task_Disable();
     //  Disable all major components
     g_robot_state.launch.IS_FLYWHEEL_ENABLED = 0;

@@ -6,10 +6,12 @@
 #include "dji_motor.h"
 #include "imu_task.h"
 #include "jetson_orin.h"
+#include "dm_motor.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 DJI_Motor_Handle_t *g_yaw;
+DM_Motor_Handle_t *g_pitch;
 
 void Gimbal_Task_Init()
 {
@@ -40,7 +42,18 @@ void Gimbal_Task_Init()
                 .output_limit = GM6020_MAX_CURRENT_INT,
             },
     };
+
+    DM_Motor_Config_t pitch_motor_config = {
+        .can_bus = 2,
+        .control_mode = DM_MOTOR_MIT,
+        .rx_id = 0x51,
+        .tx_id = 0x01,
+        .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .kp = 10.0f,
+        .kd = 1.0f,
+    };
     g_yaw = DJI_Motor_Init(&yaw_motor_config, GM6020);
+    g_pitch = DM_Motor_Init(&pitch_motor_config);
 }
 
 
@@ -63,6 +76,11 @@ void Gimbal_Ctrl_Loop()
     // Control loop for gimbal
     // DJI_Motor_Set_Angle(g_pitch, g_robot_state.gimbal.pitch_angle);
     DJI_Motor_Set_Angle(g_yaw, g_robot_state.gimbal.yaw_angle);
+    g_robot_state.gimbal.pitch_angle += g_remote.controller.right_stick.y / 660.0f * 0.001f;
+    __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.15f, 0.15f);
+    
+    DM_Motor_Enable_Motor(g_pitch);
+    DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 1.0f);
 }
 
 void _Gimbal_Target_Reset()
