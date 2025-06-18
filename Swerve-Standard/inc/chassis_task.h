@@ -3,7 +3,7 @@
 
 // PHYSICAL CONSTANTS
 #define SWERVE_MAX_SPEED 1.4f          // m/s
-#define SPIN_TOP_OMEGA 3.5f            // m/s
+#define SPIN_TOP_OMEGA 4.0f            // m/s
 #define SWERVE_MAX_ANGLUAR_SPEED 3.14f // rad/s
 #define TRACK_WIDTH 0.34f              // m, measured wheel to wheel (side to side)
 #define WHEEL_BASE 0.34f               // m, measured wheel to wheel (up and down)
@@ -23,17 +23,20 @@
 #define MAX_SPEED_W90   1.5f
 #define MAX_SPEED_W100  1.5f
 
-// Spintop Omegas 
-#define SPINTOP_OMEGA_W45   4.0f
-#define SPINTOP_OMEGA_W50   4.5f
-#define SPINTOP_OMEGA_W55   5.0f
-#define SPINTOP_OMEGA_W60   5.5f
-#define SPINTOP_OMEGA_W65   6.0f
-#define SPINTOP_OMEGA_W70   6.5f
-#define SPINTOP_OMEGA_W75   7.0f
-#define SPINTOP_OMEGA_W80   7.5f
-#define SPINTOP_OMEGA_W90   8.0f
-#define SPINTOP_OMEGA_W100  8.5f
+// Spintop Omegas
+// Uses up as much of the wattage as possible
+// Has ~5 watt charging buffer
+// So W100, robot uses 95 watts on average
+#define SPINTOP_OMEGA_W45   4.9f
+#define SPINTOP_OMEGA_W50   5.4f
+#define SPINTOP_OMEGA_W55   6.05f
+#define SPINTOP_OMEGA_W60   6.6f
+#define SPINTOP_OMEGA_W65   7.1f
+#define SPINTOP_OMEGA_W70   7.6f
+#define SPINTOP_OMEGA_W75   8.1f
+#define SPINTOP_OMEGA_W80   8.55f
+#define SPINTOP_OMEGA_W90   9.4f
+#define SPINTOP_OMEGA_W100  9.9f
 
 // Function prototypes
 void Chassis_Task_Init(void);
