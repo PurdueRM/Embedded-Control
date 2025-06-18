@@ -122,7 +122,7 @@ void _Init_Omni_Odometry(pose_2d_t* pose, pose_2d_t* init_pose, motor_data_t* cu
 /**
  * @brief Update the omni robot's odometry data
  */
-void Update_Omni_Odometry(pose_2d_t* pose, omni_physical_constants_t* omni_physical_constants, motor_data_t* curr_motor_data, float heading_angle)
+void Update_Omni_Odometry(pose_2d_t* pose, omni_physical_constants_t* omni_physical_constants, motor_data_t* curr_motor_data, float heading_angle, float gimbal_yaw)
 {
     if (prev != NULL)
     {
@@ -138,11 +138,15 @@ void Update_Omni_Odometry(pose_2d_t* pose, omni_physical_constants_t* omni_physi
             .y = (-motor_inc.front_left  - motor_inc.back_left + motor_inc.back_right + motor_inc.front_right) / 4 * COS45,
             .theta = heading_angle
         };
-
-        pose->x += pose_inc.x * sin(heading_angle) - pose_inc.y * cos(heading_angle);
+        
+        float prev_x = pose->x;
+        float prev_y = pose->y;
+        pose->x += pose_inc.x * sin(heading_angle) + pose_inc.y * cos(heading_angle);
         pose->y += pose_inc.x * -cos(heading_angle) + pose_inc.y * sin(heading_angle);
-        pose->theta = heading_angle;
-
+        pose->theta = gimbal_yaw;
+        
+        pose->vx = (pose->x - prev_x) / 0.002f;
+        pose->vy = (pose->y - prev_y) / 0.002f;
         
         prev->front_left = curr_motor_data->front_left;
         prev->back_left  = curr_motor_data->back_left;

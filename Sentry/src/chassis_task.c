@@ -27,7 +27,7 @@ omni_physical_constants_t physical_constants;
 omni_chassis_state_t chassis_state;
 
 rate_limiter_t wheel_rate_limiters[4];
-PID_t g_follow_gimbal_pid;                      // chassis following gimbal
+PID_t g_follow_gimbal_angle_pid;                      // chassis following gimbal
 
 pose_2d_t sentry_pose;
 motor_data_t motor_data_odom;
@@ -79,7 +79,9 @@ void Chassis_Task_Init()
     }
 
     // Init PID
-    PID_Init(&g_follow_gimbal_pid, 20, 0, 1000, 2*PI*30, 0, 0);
+    PID_Init(&g_follow_gimbal_angle_pid, 20, 0, 2500, 2*PI*30, 0, 0);
+    sentry_pose.x = 0;
+    sentry_pose.y = 0;
 }
 
 void Chassis_Process_Target_Velocity()
@@ -99,13 +101,14 @@ void Chassis_Process_Target_Velocity()
     float chassis_omega_new_target;
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         chassis_omega_new_target = 6*PI;
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.002f);
+        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.004f);
     } else {
         // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-        chassis_omega_new_target = PID(&g_follow_gimbal_pid, gimbal_angle_difference);
+        chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
+        __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
         // chassis_omega_new_target = -g_remote.controller.right_stick.x/660.0f * 6 * PI;
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.008f);
+        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.004f);
     }
     // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.003f);
 
@@ -143,5 +146,5 @@ void Chassis_Ctrl_Loop()
     motor_data_odom.back_left = DJI_Motor_Get_Total_Angle(motors[1]) * physical_constants.R;
     motor_data_odom.back_right = DJI_Motor_Get_Total_Angle(motors[2]) * physical_constants.R;
     motor_data_odom.front_right = DJI_Motor_Get_Total_Angle(motors[3]) * physical_constants.R;
-    Update_Omni_Odometry(&sentry_pose, &physical_constants, &motor_data_odom, g_imu.rad.yaw + PI/2 - gimbal_angle_difference);
+    Update_Omni_Odometry(&sentry_pose, &physical_constants, &motor_data_odom, g_imu.rad.yaw + PI/2 - gimbal_angle_difference, g_imu.rad.yaw);
 }
