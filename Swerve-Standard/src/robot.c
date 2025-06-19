@@ -133,6 +133,7 @@ void Process_Remote_Input()
     {
         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 1;
     } else {
+
         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 0;
     }
 
@@ -173,9 +174,18 @@ void Process_Remote_Input()
         //g_robtot_state.launch.IS_FIRING_ENABLED = 1;
         g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
     } else {
-        //g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
+        g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
         //g_robot_state.launch.IS_FIRING_ENABLED = 0;
         g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
+    }
+
+    if (g_remote.controller.left_switch == MID)
+    {
+        g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
+    }
+    else
+    {
+        g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
     }
 
     // Update previous states keyboard
