@@ -7,16 +7,21 @@
 #include "referee_system.h"
 #include "swerve_locomotion.h"
 #include "rate_limiter.h"
+#include "pid.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 extern Referee_System_t Referee_System;
+extern DJI_Motor_Handle_t *g_yaw;
 
 DJI_Motor_Handle_t *g_azimuth_motors[NUMBER_OF_MODULES];
 DJI_Motor_Handle_t *g_drive_motors[NUMBER_OF_MODULES];
 swerve_constants_t g_swerve_constants;
 swerve_chassis_state_t g_chassis_state;
 float measured_angles[NUMBER_OF_MODULES];
+
+float gimbal_angle_difference;
+PID_t angle_locking_pid;
 
 rate_limiter_t chassis_vel_limiters[4];
 rate_limiter_t chassis_omega_limiter;
@@ -34,15 +39,15 @@ void Chassis_Task_Init()
             {
                 .kp = 400.0f,
                 .kd = 20.0f,
-                .output_limit = 1000.0f,
+                .output_limit = 300.0f,
             },
         .velocity_pid =
             {
-                .kp = 500.0f,
+                .kp = 100.0f,
                 .ki = 0.0f,
-                .kd = 100.0f,
-                .kf = 2000.0f,
-                .feedforward_limit = 15000.0f,
+                .kd = 0.0f,
+                .kf = 000.0f,
+                .feedforward_limit = 5000.0f,
                 .integral_limit = 5000.0f,
                 .output_limit = GM6020_MAX_VOLTAGE_INT,
             }};
@@ -104,6 +109,9 @@ void Chassis_Task_Init()
     }
     #define SWERVE_MAX_OMEGA_ACCEL (5.0f)
     rate_limiter_init(&chassis_omega_limiter, SWERVE_MAX_OMEGA_ACCEL);
+
+    // Initialize PID for locking
+    PID_Init(&angle_locking_pid, 1, 0, 0, 2 * PI * 1, 0, 0.05);
 }
 
 void Chassis_Ctrl_Loop()
@@ -146,11 +154,15 @@ void Chassis_Ctrl_Loop()
     // g_chassis_state.v_x = g_chassis_state.v_x * cos(theta) - g_chassis_state.v_y * sin(theta);
     // g_chassis_state.v_y = g_chassis_state.v_x * sin(theta) + g_chassis_state.v_y * cos(theta);
 
-    // If spintop enabled, chassis omega set to spintop value
+    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
+
+    // if (g_remote.controller.left_switch )
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
     } else {
-        g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, g_robot_state.chassis.omega * SWERVE_MAX_ANGLUAR_SPEED);
+        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+        g_chassis_state.omega = PID(&angle_locking_pid, gimbal_angle_difference);
+
     }
 
     // Calculate the kinematics of the chassis
@@ -230,6 +242,6 @@ void Update_Maxes()
 float Rescale_Chassis_Velocity(void) {
     float translation_speed = sqrtf(powf(g_robot_state.chassis.x_speed, 2) + powf(g_robot_state.chassis.y_speed, 2));
     float spin_coeff = chassis_rad * g_spintop_omega / (translation_speed * 2.0f + chassis_rad * g_spintop_omega);
-    float target_omega = g_spintop_omega * spin_coeff * 0.25f;
+    float target_omega = g_spintop_omega * spin_coeff;
     return target_omega;
 }
