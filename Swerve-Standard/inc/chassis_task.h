@@ -8,7 +8,7 @@
 #define TRACK_WIDTH 0.34f              // m, measured wheel to wheel (side to side)
 #define WHEEL_BASE 0.34f               // m, measured wheel to wheel (up and down)
 #define WHEEL_DIAMETER 0.12f           // m, measured wheel diameter
-#define SWERVE_MAX_WHEEL_ACCEL 0.8f    // m/s^2
+#define SWERVE_MAX_WHEEL_ACCEL 1.8f    // m/s^2
 #define SWERVE_QUICK_STOP_ACCEL 3.0f   // m/s^2
 
 // Max Speeds 

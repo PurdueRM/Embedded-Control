@@ -34,15 +34,15 @@ void Chassis_Task_Init()
             {
                 .kp = 400.0f,
                 .kd = 20.0f,
-                .output_limit = 300.0f,
+                .output_limit = 1000.0f,
             },
         .velocity_pid =
             {
-                .kp = 300.0f,
+                .kp = 500.0f,
                 .ki = 0.0f,
                 .kd = 100.0f,
                 .kf = 2000.0f,
-                .feedforward_limit = 5000.0f,
+                .feedforward_limit = 15000.0f,
                 .integral_limit = 5000.0f,
                 .output_limit = GM6020_MAX_VOLTAGE_INT,
             }};
@@ -230,6 +230,6 @@ void Update_Maxes()
 float Rescale_Chassis_Velocity(void) {
     float translation_speed = sqrtf(powf(g_robot_state.chassis.x_speed, 2) + powf(g_robot_state.chassis.y_speed, 2));
     float spin_coeff = chassis_rad * g_spintop_omega / (translation_speed * 2.0f + chassis_rad * g_spintop_omega);
-    float target_omega = g_spintop_omega * spin_coeff;
+    float target_omega = g_spintop_omega * spin_coeff * 0.25f;
     return target_omega;
 }
