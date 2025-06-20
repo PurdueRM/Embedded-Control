@@ -20,7 +20,11 @@ swerve_constants_t g_swerve_constants;
 swerve_chassis_state_t g_chassis_state;
 float measured_angles[NUMBER_OF_MODULES];
 
+static float filtered_error = 0.0f; // Persistant filtered error
+static float last_snap_angle = 0.0f; // Saved prev angle for Hysteresis
+
 float gimbal_angle_difference;
+
 PID_t angle_locking_pid;
 
 rate_limiter_t chassis_vel_limiters[4];
@@ -111,7 +115,7 @@ void Chassis_Task_Init()
     rate_limiter_init(&chassis_omega_limiter, SWERVE_MAX_OMEGA_ACCEL);
 
     // Initialize PID for locking
-    PID_Init(&angle_locking_pid, 1, 0, 0, 2 * PI * 1, 0, 0.05);
+    PID_Init(&angle_locking_pid, 5, 0, 300, 2 * PI * 0.2, 0, 0.01);
 }
 
 void Chassis_Ctrl_Loop()
@@ -161,13 +165,39 @@ void Chassis_Ctrl_Loop()
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
     } else {
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-        g_chassis_state.omega = PID(&angle_locking_pid, gimbal_angle_difference);
+        
+        // Change to degrees for easier multiple calculation
+        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);  // Now in [-π, π)
 
+        // 2. Check if angle difference exceeds hysteresis threshold
+        float diff_from_last = (gimbal_angle_difference - last_snap_angle);
+        __MAP_ANGLE_TO_UNIT_CIRCLE(diff_from_last);
+        if (fabsf(diff_from_last) > ((PI / 2)) / 2.0f + HYSTERESIS_RAD) {
+            last_snap_angle = roundf(gimbal_angle_difference / (PI / 2)) * (PI / 2);
+        }
+
+        // Snap to nearest 90°
+        // float snap_angle = roundf(gimbal_angle_difference / (PI / 2)) * (PI / 2);
+
+        // Compute error in degrees, then convert back to radians
+        float error_angle = gimbal_angle_difference - last_snap_angle ;
+
+        __MAP_ANGLE_TO_UNIT_CIRCLE(error_angle);
+
+        // Apply low pass filter
+        filtered_error = LPF_ALPHA * error_angle + (1.0 - LPF_ALPHA) * filtered_error;
+
+        gimbal_angle_difference = filtered_error;
+
+        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+
+        // Rotate chassis toward snapped corner
+        g_chassis_state.omega = PID(&angle_locking_pid, gimbal_angle_difference);
     }
 
     // Calculate the kinematics of the chassis
     swerve_calculate_kinematics(&g_chassis_state, &g_swerve_constants);
-    swerve_optimize_module_angles(&g_chassis_state, measured_angles);
+    // swerve_optimize_module_angles(&g_chassis_state, measured_angles);
     //swerve_desaturate_wheel_speeds(&g_chassis_state, &g_swerve_constants);
     
     // rate limit the module speeds
