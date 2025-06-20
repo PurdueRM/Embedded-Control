@@ -35,6 +35,10 @@
 #define SPINTOP_OMEGA_W90   8.0f
 #define SPINTOP_OMEGA_W100  8.5f
 
+// Swerve Gimbal-Chassis Lock Parameters
+#define LPF_ALPHA (0.05)
+#define HYSTERESIS_RAD (0 * (180 / PI))
+
 // Function prototypes
 void Chassis_Task_Init(void);
 void Chassis_Ctrl_Loop(void);

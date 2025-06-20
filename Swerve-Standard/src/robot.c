@@ -185,11 +185,15 @@ void Process_Remote_Input()
         // g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
     }
 
-    // Update previous states keyboard
+    // Swerve Gimbal Chassis Follow Modes
+
+    // Update previous states keyboard letters
     g_input_state.prev_B = g_remote.keyboard.B;
     g_input_state.prev_G = g_remote.keyboard.G;
     g_input_state.prev_V = g_remote.keyboard.V;
     g_input_state.prev_Z = g_remote.keyboard.Z;
+
+    // Update previous states special keys
     g_input_state.prev_Shift = g_remote.keyboard.Shift;
 
     // Update previous states remote
