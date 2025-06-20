@@ -73,6 +73,8 @@ typedef struct
         } float_byte;
     } receiving;
 
+    uint8_t new_data_flag; // 1 for new data received, 0 for no new data
+
 } Jetson_Orin_Data_t;
 
 extern Jetson_Orin_Data_t g_orin_data;
