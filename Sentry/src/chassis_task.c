@@ -90,12 +90,10 @@ void Chassis_Process_Target_Velocity()
     {
         chassis_state.v_x_in_gimbal = -g_orin_data.receiving.navigation.y_vel;
         chassis_state.v_y_in_gimbal = g_orin_data.receiving.navigation.x_vel;
-        g_robot_state.gimbal.yaw_angle += g_orin_data.receiving.navigation.yaw_angular_rate * 0.002f; // TODO: move to gimbal task
     } else {
         chassis_state.v_x_in_gimbal = g_remote.controller.left_stick.x / 660.0f * 4.0f;
         chassis_state.v_y_in_gimbal = g_remote.controller.left_stick.y / 660.0f * 4.0f;
         chassis_state.omega_in_gimbal = g_remote.controller.wheel * MAX_ANGLUAR_SPEED;
-        g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f;
     }
 
     float chassis_omega_new_target;

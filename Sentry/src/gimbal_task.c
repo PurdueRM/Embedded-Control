@@ -68,6 +68,25 @@ void Gimbal_Ctrl_Loop()
     //         __SLEW_RATE_LIMIT(g_robot_state.gimbal.pitch_angle, imu_pitch_delta, 0.2);
     //     }
     // }
+    if (g_remote.controller.right_switch == UP)
+    {
+        // g_robot_state.gimbal.yaw_angle += g_orin_data.receiving.navigation.yaw_angular_rate * 0.002f; // TODO: move to gimbal task
+        // Handled in jetson_orin.c
+        if (g_orin_data.new_data_flag == 1)
+        {
+            if (g_orin_data.receiving.auto_aiming.yaw == 0) { // no target detected
+                ;
+            } else {
+                g_robot_state.gimbal.yaw_angle = g_imu.rad.yaw + g_orin_data.receiving.auto_aiming.yaw / 180.0f * PI;
+                g_robot_state.gimbal.pitch_angle = g_imu.rad.pitch + g_orin_data.receiving.auto_aiming.pitch / 180.0f * PI;
+            }
+            g_orin_data.new_data_flag = 0;
+            
+        }
+    } else {
+        g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f;
+        g_robot_state.gimbal.pitch_angle += g_remote.controller.right_stick.y / 660.0f * 0.01f;
+    }
 
     // hardware limits for gimbal pitch (prevent self collision)
     __MAP_ANGLE_TO_UNIT_CIRCLE(g_robot_state.gimbal.yaw_angle);
@@ -76,8 +95,7 @@ void Gimbal_Ctrl_Loop()
     // Control loop for gimbal
     // DJI_Motor_Set_Angle(g_pitch, g_robot_state.gimbal.pitch_angle);
     DJI_Motor_Set_Angle(g_yaw, g_robot_state.gimbal.yaw_angle);
-    g_robot_state.gimbal.pitch_angle += g_remote.controller.right_stick.y / 660.0f * 0.001f;
-    __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.15f, 0.15f);
+    __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.4f, 0.4f);
     
     DM_Motor_Enable_Motor(g_pitch);
     DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 1.0f);

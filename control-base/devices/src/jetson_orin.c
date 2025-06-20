@@ -38,6 +38,7 @@ void Jetson_Orin_Rx_Callback(UART_Instance_t *uart_instance)
 				g_orin_data.receiving.auto_aiming.pitch = 0;
 			}
 			g_orin_data.receiving.auto_aiming.fire = g_orin_data.receiving.float_byte.data_bytes[8];
+			g_orin_data.new_data_flag = 1;
 			break;
 
 		case 1:
