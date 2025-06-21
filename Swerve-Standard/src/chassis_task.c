@@ -3,14 +3,20 @@
 #include "robot.h"
 #include "remote.h"
 #include "dji_motor.h"
+#include "imu_task.h"
 #include "motor.h"
 #include "referee_system.h"
 #include "swerve_locomotion.h"
+#include "swerve_odometry.h"
 #include "rate_limiter.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 extern Referee_System_t Referee_System;
+extern IMU_t g_imu;
 
 DJI_Motor_Handle_t *g_azimuth_motors[NUMBER_OF_MODULES];
 DJI_Motor_Handle_t *g_drive_motors[NUMBER_OF_MODULES];
@@ -25,8 +31,10 @@ float chassis_rad = WHEEL_BASE * 1.414f; //TODO init?
 
 float g_spintop_omega = SPIN_TOP_OMEGA;
 
-void Chassis_Task_Init()
-{
+float prev_yaw;
+unsigned int last_odom_update;
+
+void Chassis_Task_Init() {
     // init common PID configuration for azimuth motors
     Motor_Config_t azimuth_motor_config = {
         .control_mode = POSITION_VELOCITY_SERIES,
@@ -94,16 +102,21 @@ void Chassis_Task_Init()
         g_drive_motors[i] = DJI_Motor_Init(&drive_motor_config, M3508);
     }
 
-    // Initialize the swerve locomotion constants
+    // // Initialize the swerve locomotion constants
     g_swerve_constants = swerve_init(TRACK_WIDTH, WHEEL_BASE, WHEEL_DIAMETER, SWERVE_MAX_SPEED, SWERVE_MAX_ANGLUAR_SPEED);
 
-    // Initialize the rate limiters
+    // // Initialize the rate limiters
     for (int i = 0; i < NUMBER_OF_MODULES; i++)
     {
         rate_limiter_init(&chassis_vel_limiters[i], SWERVE_MAX_WHEEL_ACCEL);
     }
     #define SWERVE_MAX_OMEGA_ACCEL (5.0f)
     rate_limiter_init(&chassis_omega_limiter, SWERVE_MAX_OMEGA_ACCEL);
+
+    g_robot_state.chassis.pose = (pose_2d){0, 0, 0};
+
+    prev_yaw = g_imu.rad.yaw;
+    last_odom_update = xTaskGetTickCount();
 }
 
 void Chassis_Ctrl_Loop()
@@ -157,6 +170,13 @@ void Chassis_Ctrl_Loop()
     swerve_calculate_kinematics(&g_chassis_state, &g_swerve_constants);
     swerve_optimize_module_angles(&g_chassis_state, measured_angles);
     //swerve_desaturate_wheel_speeds(&g_chassis_state, &g_swerve_constants);
+
+    // Update odometry
+    unsigned int curr_time = xTaskGetTickCount();
+    float dt = (curr_time - last_odom_update) / (float)configTICK_RATE_HZ; // convert to seconds
+    swerve_odometry_update(&g_robot_state.chassis.pose, g_chassis_state.states, &g_swerve_constants, g_robot_state.chassis.yaw, prev_yaw, dt);
+    last_odom_update = curr_time;
+    prev_yaw = g_imu.rad.yaw;
     
     // rate limit the module speeds
     for (int i = 0; i < NUMBER_OF_MODULES; i++) {

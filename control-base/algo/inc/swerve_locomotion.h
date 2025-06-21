@@ -1,6 +1,8 @@
 #ifndef SWERVE_LOCOMOTION_H
 #define SWERVE_LOCOMOTION_H
 
+#include "vec_utils.h"
+
 #define NUMBER_OF_MODULES 4
 
 typedef struct
@@ -25,7 +27,8 @@ typedef struct
     float wheel_diameter;
     float max_speed;
     float max_angular_speed;
-    float kinematics_matrix[8][3];
+    Mat* kinematics_matrix;
+    Mat* forward_kinematics_matrix;
 } swerve_constants_t;
 
 swerve_constants_t swerve_init(float track_width, float wheel_base, float wheel_diameter, float max_speed, float max_angular_speed);

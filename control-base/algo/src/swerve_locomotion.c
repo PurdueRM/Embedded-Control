@@ -1,7 +1,15 @@
 #include "swerve_locomotion.h"
 
 #include <math.h>
+#include <string.h>
 #include "user_math.h"
+#include "vec_utils.h"
+
+float chassis_speeds_data[3];
+float module_states_data[NUMBER_OF_MODULES * 2];
+
+Mat chassis_speeds_mat = {3, 1, chassis_speeds_data};
+Mat module_states_matrix = {NUMBER_OF_MODULES * 2, 1, module_states_data};
 
 /**
  * @brief Initializes the swerve drive constants.
@@ -20,18 +28,24 @@ swerve_constants_t swerve_init(float track_width, float wheel_base, float wheel_
         .wheel_diameter = wheel_diameter,
         .max_speed = max_speed,
         .max_angular_speed = max_angular_speed,
-        .kinematics_matrix = {
-            {0, 1, -(wheel_base / 2)}, // front left
-            {1, 0, -(track_width / 2)},
-            {0, 1, -(wheel_base / 2)}, // rear left
-            {1, 0, +(track_width / 2)},
-            {0, 1, +(wheel_base / 2)}, // rear right
-            {1, 0, +(track_width / 2)},
-            {0, 1, +(wheel_base / 2)}, // front right
-            {1, 0, -(track_width / 2)}
-        }
+        .kinematics_matrix = new_mat(8, 3),
     };
 
+    float kinematics_data[8 * 3] = {
+        1, 0, -(track_width / 2),
+        0, 1, -(wheel_base / 2), // front left
+        1, 0, +(track_width / 2),
+        0, 1, -(wheel_base / 2), // rear left
+        1, 0, +(track_width / 2),
+        0, 1, +(wheel_base / 2), // rear right
+        1, 0, -(track_width / 2),
+        0, 1, +(wheel_base / 2)  // front right
+    };
+    
+    memcpy(swerve_constants.kinematics_matrix->data, kinematics_data, sizeof(kinematics_data));
+    
+    swerve_constants.forward_kinematics_matrix = mat_pseudo_inverse(swerve_constants.kinematics_matrix);
+    
     return swerve_constants;
 }
 
@@ -42,12 +56,12 @@ swerve_constants_t swerve_init(float track_width, float wheel_base, float wheel_
  * @param swerve_constants Pointer to the swerve constants structure.
  */
 void swerve_calculate_kinematics(swerve_chassis_state_t *chassis_state, swerve_constants_t *swerve_constants) {
-    float v_x = chassis_state->v_x;
-    float v_y = chassis_state->v_y;
-    float omega = chassis_state->omega;
-    float(*k_mat)[3] = swerve_constants->kinematics_matrix;
 
-    if (v_x == 0 && v_y == 0 && omega == 0)
+    chassis_speeds_mat.data[0] = chassis_state->v_x;
+    chassis_speeds_mat.data[1] = chassis_state->v_y;
+    chassis_speeds_mat.data[2] = chassis_state->omega;
+
+    if (chassis_state->v_x == 0 && chassis_state->v_y == 0 && chassis_state->omega == 0)
     {
         for (int i = 0; i < NUMBER_OF_MODULES; i++)
         {
@@ -58,34 +72,21 @@ void swerve_calculate_kinematics(swerve_chassis_state_t *chassis_state, swerve_c
     }
 
     // Multiply the inverse kinematics matrix by the chassis speeds vector
-    float module_states_matrix[8] = {
-        k_mat[0][0] * v_x + k_mat[0][1] * v_y + k_mat[0][2] * omega,
-        k_mat[1][0] * v_x + k_mat[1][1] * v_y + k_mat[1][2] * omega,
-        k_mat[2][0] * v_x + k_mat[2][1] * v_y + k_mat[2][2] * omega,
-        k_mat[3][0] * v_x + k_mat[3][1] * v_y + k_mat[3][2] * omega,
-        k_mat[4][0] * v_x + k_mat[4][1] * v_y + k_mat[4][2] * omega,
-        k_mat[5][0] * v_x + k_mat[5][1] * v_y + k_mat[5][2] * omega,
-        k_mat[6][0] * v_x + k_mat[6][1] * v_y + k_mat[6][2] * omega,
-        k_mat[7][0] * v_x + k_mat[7][1] * v_y + k_mat[7][2] * omega,
-    };
-
+    mat_mult_buffer(swerve_constants->kinematics_matrix, &chassis_speeds_mat, &module_states_matrix);
+    
     // Convert module x,y matrix to wheel speed and angle
-    for (int i = 0; i < NUMBER_OF_MODULES; i++)
-    {
-        float x = module_states_matrix[i * 2 + 1];
-        float y = module_states_matrix[i * 2];
+    for (int i = 0; i < NUMBER_OF_MODULES; i++) {
+        float x = MAT_IDX(&module_states_matrix, i * 2, 0);
+        float y = MAT_IDX(&module_states_matrix, i * 2 + 1, 0);
         float speed = hypotf(x, y);
 
         chassis_state->states[i].speed = speed;
 
-        if (speed > 1e-6f)
-        {
+        if (speed > 1e-6f) {
             float angle = atan2f(y, x);
             chassis_state->states[i].angle = angle;
             chassis_state->states[i].last_angle = angle;
-        }
-        else
-        {
+        } else {
             chassis_state->states[i].angle = chassis_state->states[i].last_angle;
         }
     }
