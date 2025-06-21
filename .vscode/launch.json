@@ -49,6 +49,7 @@
             "description": "Select the robot project to debug",
             "options": [
                 "Swerve-Standard",
+                "Swerve-Standard-Slave",
                 "Sentry",
                 "Wheel-Legged-Chassis",
                 //"Template"
