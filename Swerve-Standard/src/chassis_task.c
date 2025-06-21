@@ -22,8 +22,8 @@ swerve_constants_t g_swerve_constants;
 swerve_chassis_state_t g_chassis_state;
 float measured_angles[NUMBER_OF_MODULES];
 
-static float filtered_error = 0.0f; // Persistant filtered error
-static float last_snap_angle = 0.0f; // Saved prev angle for Hysteresis
+// static float filtered_error = 0.0f; // Persistant filtered error
+// static float last_snap_angle = 0.0f; // Saved prev angle for Hysteresis
 
 float gimbal_angle_difference;
 
@@ -49,10 +49,10 @@ void Chassis_Task_Init()
             },
         .velocity_pid =
             {
-                .kp = 100.0f,
+                .kp = 300.0f,
                 .ki = 0.0f,
-                .kd = 0.0f,
-                .kf = 000.0f,
+                .kd = 100.0f,
+                .kf = 2000.0f,
                 .feedforward_limit = 5000.0f,
                 .integral_limit = 5000.0f,
                 .output_limit = GM6020_MAX_VOLTAGE_INT,
@@ -117,7 +117,9 @@ void Chassis_Task_Init()
     rate_limiter_init(&chassis_omega_limiter, SWERVE_MAX_OMEGA_ACCEL);
 
     // Initialize PID for locking
-    PID_Init(&angle_locking_pid, 5, 0, 300, 2 * PI * 0.2, 0, 0.01);
+    PID_Init(&angle_locking_pid, 5, 0, 300, 2 * PI * 1.5, 0, 0.01);
+
+    g_robot_state.chassis.locked_state = DEFAULT_CHASSIS_MODE;
 }
 
 void Chassis_Ctrl_Loop()
@@ -154,88 +156,31 @@ void Chassis_Ctrl_Loop()
     g_chassis_state.v_x = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed;
     g_chassis_state.v_y = g_robot_state.chassis.y_speed * g_swerve_constants.max_speed;
 
-    // Offset chassis orientation based on gimbal direction
-    // Note: commented because currently handled in process remote input
-    // float theta = g_robot_state.gimbal.yaw_angle;
-    // g_chassis_state.v_x = g_chassis_state.v_x * cos(theta) - g_chassis_state.v_y * sin(theta);
-    // g_chassis_state.v_y = g_chassis_state.v_x * sin(theta) + g_chassis_state.v_y * cos(theta);
-
-    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
-
-    // if (g_remote.controller.left_switch ) 
-    // gimbal_angle_difference = g_robot_state.gimbal.yaw_angle;
-    // float chassis_omega_new_target;
-    // if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
-    //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
-    // } 
-    // else if (g_robot_state.chassis.locked_state == STRAIGHT) {
-    //     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-
-    //     gimbal_angle_difference = __MOD_F(gimbal_angle_difference, PI / 2);
-    //     if (gimbal_angle_difference > PI / 4) { // might be easier to go by the way of spin top direction
-    //         gimbal_angle_difference = -1 * ((PI / 2) - gimbal_angle_difference);
-    //     }
-    //     chassis_omega_new_target = PID(&angle_locking_pid, -gimbal_angle_difference);
-    //     __MAX_LIMIT(chassis_omega_new_target, -1 * g_spintop_omega, g_spintop_omega); // might not need this
-    //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, chassis_omega_new_target);
-    // } 
-    // else if (g_robot_state.chassis.locked_state == ANGLED) {
-    //     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-
-    //     gimbal_angle_difference += PI / 4;
-    //     gimbal_angle_difference = __MOD_F(gimbal_angle_difference, PI / 2);
-    //     if (gimbal_angle_difference > PI / 4) { 
-    //         gimbal_angle_difference = -1 * ((PI / 2) - gimbal_angle_difference);
-    //     }
-    //     chassis_omega_new_target = PID(&angle_locking_pid, -gimbal_angle_difference);
-    //     __MAX_LIMIT(chassis_omega_new_target, -1 * g_spintop_omega, g_spintop_omega); 
-    //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, chassis_omega_new_target);
-    // } 
-    // else { // random locking
-    //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, 0);
-    // }
-    float tmpgimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
-    //float chassis_omega_new_target;
-
-    // if (g_remote.controller.left_switch )
+    // Handle locking logic
+    // TODO add an adjustable offset with keyboard
+    float lock_increment = PI / 2;
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
-    } else {
-        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-        
-        // Change to degrees for easier multiple calculation
-        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);  // Now in [-π, π)
-
-        // 2. Check if angle difference exceeds hysteresis threshold
-        float diff_from_last = (gimbal_angle_difference - last_snap_angle);
-        __MAP_ANGLE_TO_UNIT_CIRCLE(diff_from_last);
-        if (fabsf(diff_from_last) > ((PI / 2)) / 2.0f + HYSTERESIS_RAD) {
-            last_snap_angle = roundf(gimbal_angle_difference / (PI / 2)) * (PI / 2);
-        }
-
-        // Snap to nearest 90°
-        // float snap_angle = roundf(gimbal_angle_difference / (PI / 2)) * (PI / 2);
-
-        // Compute error in degrees, then convert back to radians
-        float error_angle = gimbal_angle_difference - last_snap_angle ;
-
-        __MAP_ANGLE_TO_UNIT_CIRCLE(error_angle);
-
-        // Apply low pass filter
-        filtered_error = LPF_ALPHA * error_angle + (1.0 - LPF_ALPHA) * filtered_error;
-
-        gimbal_angle_difference = filtered_error;
-
-        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-
-        // Rotate chassis toward snapped corner
-        g_chassis_state.omega = PID(&angle_locking_pid, gimbal_angle_difference);
+    } else if (g_robot_state.chassis.locked_state == LOCK_ANGLED) 
+    {
+        Lock_Chassis_To_Angle(lock_increment, PI / 4);
+    } else if (g_robot_state.chassis.locked_state == LOCK_STRAIGHT)
+    {
+        Lock_Chassis_To_Angle(lock_increment, 0);
+    } else if (g_robot_state.chassis.locked_state == LOCK_RANDOM)
+    {
+        g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, 0);
     }
 
     // Calculate the kinematics of the chassis
     swerve_calculate_kinematics(&g_chassis_state, &g_swerve_constants);
-    // swerve_optimize_module_angles(&g_chassis_state, measured_angles);
-    //swerve_desaturate_wheel_speeds(&g_chassis_state, &g_swerve_constants);
+
+    // Optimize angles and desaturate wheel speeds at low speeds
+    // Also optimizes angles during spintop
+    if (((get_fastest_wheel_speed() < 1.5f) && (fabs(vx) < 0.5) && (fabs(vy) < .5)) || g_robot_state.chassis.IS_SPINTOP_ENABLED) {
+        swerve_optimize_module_angles(&g_chassis_state, measured_angles);
+        swerve_desaturate_wheel_speeds(&g_chassis_state, &g_swerve_constants);
+    }
     
     // rate limit the module speeds
     for (int i = 0; i < NUMBER_OF_MODULES; i++) {
@@ -250,6 +195,39 @@ void Chassis_Ctrl_Loop()
     }
 
     Update_Maxes();
+}
+
+/**
+ * @brief Locks the chassis at lock_angle increments with a given offset
+ * @param lock_angle: The angle and it's increments which the robot will lock to
+ * @param offset: The chassis offset angle
+ */
+void Lock_Chassis_To_Angle(float lock_angle, float offset_angle)
+{
+    static float prev_error = 0.0f;
+    static float last_snap_angle = 0.0f;
+
+    // Get the angle difference and apply the offset
+    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + offset_angle;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+
+    // 2. Check if angle difference exceeds hysteresis threshold
+    float diff_from_last = (gimbal_angle_difference - last_snap_angle);
+    __MAP_ANGLE_TO_UNIT_CIRCLE(diff_from_last);
+    if (fabsf(diff_from_last) > (lock_angle / 2.0f) + HYSTERESIS_RAD) {
+        last_snap_angle = roundf(gimbal_angle_difference / lock_angle) * lock_angle;
+    }
+
+    float error_angle = gimbal_angle_difference - last_snap_angle ;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(error_angle);
+
+    // Apply low pass filter
+    prev_error = LPF_ALPHA * error_angle + (1.0 - LPF_ALPHA) * prev_error;
+    gimbal_angle_difference = prev_error;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+    
+    // Rotate chassis toward snapped corner
+    g_chassis_state.omega = PID(&angle_locking_pid, gimbal_angle_difference);
 }
 
 void Update_Maxes()
@@ -311,4 +289,22 @@ float Rescale_Chassis_Velocity(void) {
     float spin_coeff = chassis_rad * g_spintop_omega / (translation_speed * 2.0f + chassis_rad * g_spintop_omega);
     float target_omega = g_spintop_omega * spin_coeff;
     return target_omega;
+}
+
+/**
+ * @brief returns the fastest drive speed of all the swerve modules
+ * @return speed in m/s?
+ */
+float get_fastest_wheel_speed()
+{
+    float fastest_speed = 0.0f;
+    for (int i = 0; i < NUMBER_OF_MODULES; i++)
+    {
+        float abs_velocity = fabsf(g_chassis_state.states[i].speed);
+        if (abs_velocity > fastest_speed)
+        {
+            fastest_speed = abs_velocity;
+        }
+    }
+    return fastest_speed;
 }

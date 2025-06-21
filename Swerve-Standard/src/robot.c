@@ -166,26 +166,20 @@ void Process_Remote_Input()
         g_robot_state.launch.IS_FIRING_ENABLED ^= 0x01; // Toggle firing with G
     }
 
-    // if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B)) { // Toggle spintop with B
-    //     g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
-    // }
-
-    if (g_remote.controller.left_switch == MID) {
-        g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
-    } else {
-        g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
+    if (__IS_TOGGLED(g_remote.keyboard.V, g_input_state.prev_V)) { // Toggle spintop with B
+        g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
     }
 
     if (g_remote.keyboard.R) {
-        g_robot_state.chassis.locked_state = RANDOM;
+        g_robot_state.chassis.locked_state = LOCK_RANDOM;
     }
 
     if (g_remote.keyboard.E) {
-        g_robot_state.chassis.locked_state = STRAIGHT;
+        g_robot_state.chassis.locked_state = LOCK_ANGLED;
     }
 
     if (g_remote.keyboard.Q) {
-        g_robot_state.chassis.locked_state = ANGLED;
+        g_robot_state.chassis.locked_state = LOCK_STRAIGHT;
     }
 
     if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
@@ -193,7 +187,7 @@ void Process_Remote_Input()
         g_robot_state.launch.IS_FIRING_ENABLED = 1;
         // g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
     } else {
-        g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
+        //g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
         g_robot_state.launch.IS_FIRING_ENABLED = 0;
         // g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
     }

@@ -12,9 +12,9 @@ typedef enum Robot_State_e {
 } Robot_State_e;
 
 typedef enum Locked_State_e {
-    ANGLED,
-    STRAIGHT,
-    RANDOM
+    LOCK_ANGLED,
+    LOCK_STRAIGHT,
+    LOCK_RANDOM
 } Locked_State_e;
 
 typedef struct {
