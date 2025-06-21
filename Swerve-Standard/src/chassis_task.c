@@ -8,10 +8,12 @@
 #include "swerve_locomotion.h"
 #include "rate_limiter.h"
 #include "pid.h"
+#include "pid.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 extern Referee_System_t Referee_System;
+extern DJI_Motor_Handle_t *g_yaw;
 extern DJI_Motor_Handle_t *g_yaw;
 
 DJI_Motor_Handle_t *g_azimuth_motors[NUMBER_OF_MODULES];
@@ -159,6 +161,41 @@ void Chassis_Ctrl_Loop()
     // g_chassis_state.v_y = g_chassis_state.v_x * sin(theta) + g_chassis_state.v_y * cos(theta);
 
     gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
+
+    // if (g_remote.controller.left_switch ) 
+    // gimbal_angle_difference = g_robot_state.gimbal.yaw_angle;
+    // float chassis_omega_new_target;
+    // if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
+    //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
+    // } 
+    // else if (g_robot_state.chassis.locked_state == STRAIGHT) {
+    //     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+
+    //     gimbal_angle_difference = __MOD_F(gimbal_angle_difference, PI / 2);
+    //     if (gimbal_angle_difference > PI / 4) { // might be easier to go by the way of spin top direction
+    //         gimbal_angle_difference = -1 * ((PI / 2) - gimbal_angle_difference);
+    //     }
+    //     chassis_omega_new_target = PID(&angle_locking_pid, -gimbal_angle_difference);
+    //     __MAX_LIMIT(chassis_omega_new_target, -1 * g_spintop_omega, g_spintop_omega); // might not need this
+    //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, chassis_omega_new_target);
+    // } 
+    // else if (g_robot_state.chassis.locked_state == ANGLED) {
+    //     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+
+    //     gimbal_angle_difference += PI / 4;
+    //     gimbal_angle_difference = __MOD_F(gimbal_angle_difference, PI / 2);
+    //     if (gimbal_angle_difference > PI / 4) { 
+    //         gimbal_angle_difference = -1 * ((PI / 2) - gimbal_angle_difference);
+    //     }
+    //     chassis_omega_new_target = PID(&angle_locking_pid, -gimbal_angle_difference);
+    //     __MAX_LIMIT(chassis_omega_new_target, -1 * g_spintop_omega, g_spintop_omega); 
+    //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, chassis_omega_new_target);
+    // } 
+    // else { // random locking
+    //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, 0);
+    // }
+    float tmpgimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
+    //float chassis_omega_new_target;
 
     // if (g_remote.controller.left_switch )
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
