@@ -106,6 +106,10 @@ void Jetson_Orin_Send_Data(void)
 	}
 
 	// update data to be sent
+	g_orin_data.sending.header = 0xAA; // header byte
+	g_orin_data.sending.enemy_color_is_red = (Referee_System.Robot_State.ID > 11) ? 1 : 0;	// ID > 11 means myself is blue, which means enemy is red
+	g_orin_data.sending.game_status = Referee_System.Game_Status.Progress;
+	g_orin_data.sending.rfid = (Referee_System.RFID.center_zone << 1) | (Referee_System.RFID.resupply_zone); // bit 0 for resupply, bit 1 for center zone
 	g_orin_data.sending.pitch_angle = g_imu.rad.pitch;
 	g_orin_data.sending.pitch_angular_rate = g_imu.bmi088_raw.gyro[1];
 	g_orin_data.sending.yaw_angular_rate = g_imu.bmi088_raw.gyro[2];
@@ -114,22 +118,24 @@ void Jetson_Orin_Send_Data(void)
 	g_orin_data.sending.orientation = g_imu.rad.yaw;
 	g_orin_data.sending.velocity_x = sentry_pose.vy;
 	g_orin_data.sending.velocity_y = -sentry_pose.vx;
-	g_orin_data.sending.game_start_flag = (Referee_System.Game_Status.Progress == 4) ? 1 : 0; // 4 for match begin
-	g_orin_data.sending.enemy_color_flag = (Referee_System.Robot_State.ID > 11) ? 1 : 0;			  // ID > 11 means myself is blue, which means enemy is red
+	g_orin_data.sending.HP = Referee_System.Robot_State.Remaining_HP;
+	g_orin_data.sending.reserved = 7529; // reserved for future use
 
-	// float to byte conversion
-	g_orin_data.sending.float_byte.data[0] = g_orin_data.sending.pitch_angle;
-	g_orin_data.sending.float_byte.data[1] = g_orin_data.sending.pitch_angular_rate;
-	g_orin_data.sending.float_byte.data[2] = g_orin_data.sending.yaw_angular_rate;
-	g_orin_data.sending.float_byte.data[3] = g_orin_data.sending.position_x;
-	g_orin_data.sending.float_byte.data[4] = g_orin_data.sending.position_y;
-	g_orin_data.sending.float_byte.data[5] = g_orin_data.sending.orientation;
-	g_orin_data.sending.float_byte.data[6] = g_orin_data.sending.velocity_x;
-	g_orin_data.sending.float_byte.data[7] = g_orin_data.sending.velocity_y;
+	// // float to byte conversion
+	// g_orin_data.sending.float_byte.data[0] = g_orin_data.sending.pitch_angle;
+	// g_orin_data.sending.float_byte.data[1] = g_orin_data.sending.pitch_angular_rate;
+	// g_orin_data.sending.float_byte.data[2] = g_orin_data.sending.yaw_angular_rate;
+	// g_orin_data.sending.float_byte.data[3] = g_orin_data.sending.position_x;
+	// g_orin_data.sending.float_byte.data[4] = g_orin_data.sending.position_y;
+	// g_orin_data.sending.float_byte.data[5] = g_orin_data.sending.orientation;
+	// g_orin_data.sending.float_byte.data[6] = g_orin_data.sending.velocity_x;
+	// g_orin_data.sending.float_byte.data[7] = g_orin_data.sending.velocity_y;
+	// g_orin_data.sending.float_byte.data[8] 
 
-	g_orin_data.tx_buffer[0] = 0xAA;
-	g_orin_data.tx_buffer[1] = g_orin_data.sending.enemy_color_flag << 1 | g_orin_data.sending.game_start_flag;
-	memcpy(&g_orin_data.tx_buffer[2], &g_orin_data.sending.float_byte.data_bytes[0], 32 * sizeof(uint8_t));
+	// g_orin_data.tx_buffer[0] = 0xAA;
+	// g_orin_data.tx_buffer[1] = 0;
+	// g_orin_data.tx_buffer[1] = g_orin_data.sending.enemy_color_is_red << 7 | (g_orin_data.sending.game_status << g_orin_data.sending.game_status);
+	// memcpy(&g_orin_data.tx_buffer[2], &g_orin_data.sending.float_byte.data_bytes[0], 32 * sizeof(uint8_t));
 
-	UART_Transmit(g_orin_uart_instance_ptr, g_orin_data.tx_buffer, sizeof(g_orin_data.tx_buffer), UART_DMA);
+	UART_Transmit(g_orin_uart_instance_ptr, &(g_orin_data.sending.header), sizeof(g_orin_data.sending), UART_DMA);
 }

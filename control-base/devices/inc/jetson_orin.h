@@ -5,7 +5,7 @@
 #include "referee_system.h"
 
 #define ORIN_DATA_RX_BUFER_SIZE (20)
-#define ORIN_DATA_TX_BUFER_SIZE (34)
+#define ORIN_DATA_TX_BUFER_SIZE (40)
 
 #define ORIN_TIMEOUT_MS (3000)
 #define ORIN_NAV_TIMEOUT_MS (200)
@@ -20,6 +20,10 @@ typedef struct
 
     struct
     {
+        uint8_t header; // header byte 0xAA
+        uint8_t enemy_color_is_red; // 1 for red and 0 for blue
+        uint8_t game_status; // 0 for not started, 1 for preperation stage, 2 for 15 seconds referee check, 3 for 5 seconds count down, 4 for match going, 5 for calculating match result
+        uint8_t rfid; // bit 0 for resupply, bit 1 for center zone
         float pitch_angle;        // rad
         float pitch_angular_rate; // rad/s
         float yaw_angular_rate;   // rad/s
@@ -28,14 +32,8 @@ typedef struct
         float orientation;        // rad
         float velocity_x;         // m/s
         float velocity_y;         // m/s
-        uint8_t game_start_flag; //1 for start and 0 for not start
-		uint8_t enemy_color_flag; //1 for red and 0 for blue
-
-        union
-        {
-            float data[8];
-            uint8_t data_bytes[32];
-        } float_byte;
+        int16_t HP;
+        uint16_t reserved; // reserved for future use
     } sending;
 
     struct
