@@ -53,7 +53,7 @@ void Handle_Starting_Up_State()
     // Referee_System_Init(&huart1);
     Supercap_Init(&g_supercap);
     Jetson_Orin_Init(&huart1);
-
+    Referee_System_Init(&huart6);
     // Set robot state to disabled
     g_robot_state.state = DISABLED;
 }

@@ -95,10 +95,10 @@ void Gimbal_Ctrl_Loop()
     // Control loop for gimbal
     // DJI_Motor_Set_Angle(g_pitch, g_robot_state.gimbal.pitch_angle);
     DJI_Motor_Set_Angle(g_yaw, g_robot_state.gimbal.yaw_angle);
-    __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.4f, 0.4f);
+    __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.45f, 0.4f);
     
     DM_Motor_Enable_Motor(g_pitch);
-    DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 1.0f);
+    DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 8.5f);
 }
 
 void _Gimbal_Target_Reset()
