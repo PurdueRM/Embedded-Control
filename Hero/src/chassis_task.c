@@ -28,7 +28,7 @@ void Chassis_Task_Init()
 {
     // Init chassis hardware
     Motor_Config_t drive_motor_config = {
-        .can_bus = 2,
+        .can_bus = 1,
         .control_mode = VELOCITY_CONTROL,
         .velocity_pid =
             {

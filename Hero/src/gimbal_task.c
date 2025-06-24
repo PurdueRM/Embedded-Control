@@ -27,7 +27,7 @@ void Gimbal_Task_Init()
 
 
     DM_Motor_Config_t pitch_motor_config = {
-        .can_bus = 1,
+        .can_bus = 2,
         .tx_id = 0x01,
         .rx_id = 0x11,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
@@ -41,7 +41,7 @@ void Gimbal_Task_Init()
     // DM_Motor_Enable_Motor(g_pitch_motor);
 
     Motor_Config_t yaw_motor_config = {
-        .can_bus = 2,
+        .can_bus = 1,
         .speed_controller_id = 3,
         .offset = YAW_OFFSET,
         .control_mode = POSITION_VELOCITY_SERIES,
@@ -66,6 +66,19 @@ void Gimbal_Task_Init()
                 .output_limit = GM6020_MAX_CURRENT,
             },
     };
+
+    // g_lower_yaw_motor = DJI_Motor_Init(&lower_yaw_motor_config, GM6020);
+
+    // Motor_Config_t upper_yaw_motor_config = {
+    //     .can_bus = 2,
+    //     .tx_id = 0x01,
+    //     .rx_id = 0x11,
+    //     .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+    //     .pos_offset = PITCH_OFFSET,
+    //     // .kp = 130.0f,
+    //     .kp = 15.0f,
+    //     .kd = 1.0f
+    // };
 
     g_yaw_motor = DJI_Motor_Init(&yaw_motor_config, GM6020);
 
