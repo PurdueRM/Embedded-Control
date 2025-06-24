@@ -142,7 +142,7 @@ void Process_Remote_Input()
     {
         g_robot_state.UI_ENABLED ^= 0x01; // Toggle UI
     }
-    if ((g_remote.keyboard.Ctrl) || (g_remote.controller.right_switch == UP)) // Hold ctrl to boost
+    if ((g_remote.keyboard.Shift) || (g_remote.controller.right_switch == UP)) // Hold ctrl to boost
     {
         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 1;
     } else {
@@ -161,19 +161,20 @@ void Process_Remote_Input()
     } else {
         g_robot_state.launch.fire_mode = NO_FIRE;
     }
-
-    if (__IS_TOGGLED(g_remote.keyboard.G, g_input_state.prev_G)) { 
+    // Thomas Keybind
+    // Spintop G
+    // Flywheel R
+    if (__IS_TOGGLED(g_remote.keyboard.R, g_input_state.prev_R)) { 
         g_robot_state.launch.IS_FIRING_ENABLED ^= 0x01; // Toggle firing with G
     }
 
-    if (__IS_TOGGLED(g_remote.keyboard.V, g_input_state.prev_V)) { // Toggle spintop with B
+    if (__IS_TOGGLED(g_remote.keyboard.G, g_input_state.prev_G)) { // Toggle spintop with B
         g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
     }
 
     if (g_remote.keyboard.R) {
         g_robot_state.chassis.locked_state = LOCK_RANDOM;
     }
-
     if (g_remote.keyboard.E) {
         g_robot_state.chassis.locked_state = LOCK_ANGLED;
     }
@@ -192,15 +193,14 @@ void Process_Remote_Input()
         // g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
     }
 
-    if (g_remote.controller.left_switch == MID)
+    if (g_remote.controller.left_switch == MID && g_input_state.prev_left_switch != MID)
     {
         g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
     }
-    else
+    else if (g_remote.controller.left_switch != MID && g_input_state.prev_left_switch == MID)
     {
         g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
     }
-
     // Swerve Gimbal Chassis Follow Modes
 
     // Update previous states keyboard letters
@@ -208,6 +208,7 @@ void Process_Remote_Input()
     g_input_state.prev_G = g_remote.keyboard.G;
     g_input_state.prev_V = g_remote.keyboard.V;
     g_input_state.prev_Z = g_remote.keyboard.Z;
+    g_input_state.prev_left_switch = g_remote.controller.left_switch;
 
     // Update previous states special keys
     g_input_state.prev_Shift = g_remote.keyboard.Shift;
