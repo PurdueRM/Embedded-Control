@@ -80,6 +80,7 @@ typedef struct {
     // previous key states
     uint8_t prev_B;
     uint8_t prev_G;
+    uint8_t prev_R;
     uint8_t prev_V;
     uint8_t prev_Z;
     uint8_t prev_Shift;

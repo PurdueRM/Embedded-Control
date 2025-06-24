@@ -12,16 +12,16 @@
 #define SWERVE_QUICK_STOP_ACCEL 3.0f   // m/s^2
 
 // Max Speeds 
-#define MAX_SPEED_W45   1.5f
-#define MAX_SPEED_W50   1.5f
-#define MAX_SPEED_W55   1.5f
-#define MAX_SPEED_W60   1.5f
-#define MAX_SPEED_W65   1.5f
-#define MAX_SPEED_W70   1.5f
-#define MAX_SPEED_W75   1.5f
-#define MAX_SPEED_W80   1.5f
-#define MAX_SPEED_W90   1.5f
-#define MAX_SPEED_W100  1.5f
+#define MAX_SPEED_W45   1.50f
+#define MAX_SPEED_W50   1.55f
+#define MAX_SPEED_W55   1.60f
+#define MAX_SPEED_W60   1.65f
+#define MAX_SPEED_W65   1.70f
+#define MAX_SPEED_W70   1.75f
+#define MAX_SPEED_W75   1.80f
+#define MAX_SPEED_W80   1.85f
+#define MAX_SPEED_W90   1.90f
+#define MAX_SPEED_W100  1.95f
 
 // Spintop Omegas 
 #define SPINTOP_OMEGA_W45   4.0f

@@ -157,12 +157,12 @@ void Chassis_Ctrl_Loop()
         return;
     }
     if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
-        g_supercap_linear_boost_rate = g_supercap_linear_boost_rate * 0.9f + 3.0f * 0.1f;
-        g_supercap_spintop_boost_rate = g_supercap_spintop_boost_rate * 0.9f + 3.0f * 0.1f;
+        g_supercap_linear_boost_rate = g_supercap_linear_boost_rate * 0.95f + 3.0f * 0.05f;
+        g_supercap_spintop_boost_rate = g_supercap_spintop_boost_rate * 0.95f + 3.0f * 0.05f;
     }
     else {
-        g_supercap_linear_boost_rate = g_supercap_linear_boost_rate * 0.9f + 1.0f * 0.1f;
-        g_supercap_spintop_boost_rate = g_supercap_spintop_boost_rate * 0.9f + 1.0f * 0.1f;
+        g_supercap_linear_boost_rate = g_supercap_linear_boost_rate * 0.95f + 1.0f * 0.05f;
+        g_supercap_spintop_boost_rate = g_supercap_spintop_boost_rate * 0.95f + 1.0f * 0.05f;
     }
 
     // Control loop for the chassis
