@@ -51,7 +51,7 @@ void Handle_Starting_Up_State()
     Remote_Init(&huart3);
     CAN_Service_Init();
     // Referee_System_Init(&huart1);
-    Supercap_Init(&g_supercap);
+    // Supercap_Init(&g_supercap);
     Jetson_Orin_Init(&huart1);
     Referee_System_Init(&huart6);
     // Set robot state to disabled
