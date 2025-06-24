@@ -16,6 +16,8 @@ extern Remote_t g_remote;
 extern Referee_System_t Referee_System;
 extern DJI_Motor_Handle_t *g_yaw;
 extern DJI_Motor_Handle_t *g_yaw;
+uint16_t delay_counter = 0;
+
 
 DJI_Motor_Handle_t *g_azimuth_motors[NUMBER_OF_MODULES];
 DJI_Motor_Handle_t *g_drive_motors[NUMBER_OF_MODULES];
@@ -52,10 +54,10 @@ void Chassis_Task_Init()
             },
         .velocity_pid =
             {
-                .kp = 300.0f,
+                .kp = 100.0f,
                 .ki = 0.0f,
-                .kd = 100.0f,
-                .kf = 2000.0f,
+                .kd = 0.0f,
+                .kf = 0.0f,
                 .feedforward_limit = 5000.0f,
                 .integral_limit = 5000.0f,
                 .output_limit = GM6020_MAX_VOLTAGE_INT,
@@ -69,7 +71,7 @@ void Chassis_Task_Init()
             .kd = 200.0f,
             .kf = 100.0f,
             .output_limit = M3508_MAX_CURRENT_INT,
-            .integral_limit = 3000.0f,
+            .integral_limit = 0.0f,
         }};
 
     // Initialize the swerve modules
@@ -127,9 +129,33 @@ void Chassis_Task_Init()
 
 void Chassis_Ctrl_Loop()
 {
-    float vx = g_robot_state.input.vx;
-    float vy = g_robot_state.input.vy;
-
+    // float vx = g_robot_state.input.vx;
+    // float vy = g_robot_state.input.vy;
+    if (delay_counter > 0) {
+        delay_counter--;
+    }
+    if ((Referee_System.Robot_State.Chassis_Power_Output == 0) || delay_counter > 0)
+    {
+        if (Referee_System.Robot_State.Chassis_Power_Output == 0)
+        {
+            float delay_time = 0.5f; //seconds
+            delay_counter = delay_time * 500;
+        }
+        // disable turning motor
+        for (int i = 0; i < NUMBER_OF_MODULES; i++)
+        {
+            g_chassis_state.omega = 0;
+            g_chassis_state.v_x = 0;
+            g_chassis_state.v_y = 0;
+            g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
+            DJI_Motor_Disable(g_drive_motors[i]);
+            DJI_Motor_Disable(g_azimuth_motors[i]);
+            PID_Reset(g_azimuth_motors[i]->angle_pid);
+            PID_Reset(g_azimuth_motors[i]->velocity_pid);
+            PID_Reset(g_drive_motors[i]->velocity_pid);
+        }
+        return;
+    }
     if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
         g_supercap_linear_boost_rate = g_supercap_linear_boost_rate * 0.9f + 3.0f * 0.1f;
         g_supercap_spintop_boost_rate = g_supercap_spintop_boost_rate * 0.9f + 3.0f * 0.1f;
@@ -168,9 +194,9 @@ void Chassis_Ctrl_Loop()
 
     // Optimize angles and desaturate wheel speeds at low speeds
     // Also optimizes angles during spintop
-    if (((get_fastest_wheel_speed() < 1.5f) && (fabs(vx) < 0.5) && (fabs(vy) < .5)) || g_robot_state.chassis.IS_SPINTOP_ENABLED) {
-        swerve_optimize_module_angles(&g_chassis_state, measured_angles);
-    }
+    // if (((get_fastest_wheel_speed() < 1.5f) && (fabs(vx) < 0.5) && (fabs(vy) < .5)) || g_robot_state.chassis.IS_SPINTOP_ENABLED) {
+    //     swerve_optimize_module_angles(&g_chassis_state, measured_angles);
+    // }
     
     // // rate limit the module speeds
     // for (int i = 0; i < NUMBER_OF_MODULES; i++) {

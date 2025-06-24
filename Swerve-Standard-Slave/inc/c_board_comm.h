@@ -18,6 +18,8 @@ typedef struct Board_Comm_Package_s
 
     // from master to slave
     uint16_t power_limit; //send power from the master to the slave
+    uint8_t chassis_powered_on; // send chassis power state from master to slave
+
 } Board_Comm_Package_t;
 
 void C_Board_Comm_Task_Init();
