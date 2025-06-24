@@ -9,6 +9,7 @@
 #include "pid.h"
 #include "imu_task.h"
 #include "jetson_orin.h"
+#include <math.h>
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
@@ -31,6 +32,10 @@ PID_t g_follow_gimbal_angle_pid;                      // chassis following gimba
 
 pose_2d_t sentry_pose;
 motor_data_t motor_data_odom;
+
+uint16_t last_hp;
+uint16_t is_hit_counter = 0;
+
 
 
 void Chassis_Task_Init()
@@ -82,10 +87,14 @@ void Chassis_Task_Init()
     PID_Init(&g_follow_gimbal_angle_pid, 20, 0, 2500, 2*PI*30, 0, 0);
     sentry_pose.x = 0;
     sentry_pose.y = 0;
+
+    last_hp = Referee_System.Robot_State.Remaining_HP;
 }
 
 void Chassis_Process_Target_Velocity()
 {
+    // static float time_for_omega = 0.0f;
+    // time_for_omega += 0.001f;
     if (g_remote.controller.right_switch == UP)
     {
         chassis_state.v_x_in_gimbal = -g_orin_data.receiving.navigation.y_vel;
@@ -96,17 +105,43 @@ void Chassis_Process_Target_Velocity()
         chassis_state.omega_in_gimbal = g_remote.controller.wheel * MAX_ANGLUAR_SPEED;
     }
 
-    float chassis_omega_new_target;
+    float chassis_omega_new_target = 0;
+    const float hit_timeout = 5; // seconds
+
+    // If the robot is hit, increase spintop rate
+    if(Referee_System.Robot_State.Remaining_HP < last_hp) {
+        is_hit_counter = 500 * hit_timeout;
+    }
+
+    //TODO：Adjust the data type to reflect the actual value.
+    last_hp = Referee_System.Robot_State.Remaining_HP;
+    
+    // Counter for hit timeout
+    if (is_hit_counter > 0) {
+        is_hit_counter--;
+    }
+
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
-        chassis_omega_new_target = 6*PI;
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.004f);
+        
+        if (is_hit_counter > 0) {
+            chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
+        }
+        else {  //Decrease spintop rate if not hit for a while
+            chassis_omega_new_target = 2 * PI; // 2 * PI rad/s
+        }
+        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
+
+        // float frenquncy = 0.1f;
+        // speed_up_spintop_rate = 8 * PI * sin(2*PI*frenquncy*time_for_omega);
+        // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
+       
     } else {
         // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
         chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
         __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
         // chassis_omega_new_target = -g_remote.controller.right_stick.x/660.0f * 6 * PI;
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.004f);
+        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
     }
     // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.003f);
 
