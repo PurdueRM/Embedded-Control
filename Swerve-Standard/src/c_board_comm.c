@@ -31,14 +31,14 @@ void C_Board_Comm_Task_Init() {
 
         master_debug = 1;
 
-        g_board_communication = CAN_Device_Register(1, 0x310, 0x300, C_Board_Recv_Supercap_Info);
+        g_board_communication = CAN_Device_Register(1, 0x10, 0x00, C_Board_Recv_Supercap_Info);
     #else 
         #pragma message "Slave C_Board_Comm_Task_Init() is compiled"
         // g_board_slave = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Supercap_Info);
         // g_board_master = CAN_Device_Register(1, 0x311, 0x301, C_Board_Recv_Ref_Info);
 
         // slave_debug = 1;
-        g_board_communication = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Ref_Info);
+        g_board_communication = CAN_Device_Register(1, 0x00, 0x10, C_Board_Recv_Ref_Info);
     #endif
 }
 
@@ -80,7 +80,16 @@ void C_Board_Recv_Supercap_Info(CAN_Instance_t* can_instance)
 void C_Board_Comm_Send_Loop()
 {
     #ifdef MASTER
+        uint8_t chassis_powered_on = 0;
+        if (Referee_System.Robot_State.Chassis_Power_Output == 0) {
+            chassis_powered_on = 0;
+        }
+        else {
+            chassis_powered_on = 1;
+        }
+
         memcpy(&(g_board_communication->tx_buffer[0]), &(Referee_System.Robot_State.Chassis_Power_Max), sizeof(uint16_t)); // &(Referee_System.Robot_State.Chassis_Power_Max)
+        memcpy(&(g_board_communication->tx_buffer[sizeof(uint16_t)]), &(chassis_powered_on), sizeof(uint8_t)); // Vi
         g_board_comm_sending_pending = 1;
     #else
         memcpy(&(g_board_communication->tx_buffer[0]), &(g_supercap.Vo), sizeof(float)); // Vo

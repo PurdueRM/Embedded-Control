@@ -91,9 +91,11 @@ void Supercap_Init(UART_HandleTypeDef *huartx)
 // PVOFFP - Turn off supercap
 void Supercap_Send(void)
 {
-     if (!supercap_uart_instance_initialized) {
+    if (!supercap_uart_instance_initialized) {
         return;
     }
+
+    
     // Send supercap data
     // uint16_t *supercap_tx = (uint16_t *) supercap_can_instance->tx_buffer;
     // supercap_tx[0] = 0x003C;
@@ -105,5 +107,18 @@ void Supercap_Send(void)
 	// UART_Transmit(supercap_uart_instance_ptr, g_supercap.tx_buffer, sizeof(g_orin_data.tx_buffer), UART_DMA);
     // uint8_t max_power = 60;
     // UART_Transmit(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", g_board_comm_package.Chassis_Power_Max);
-    DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", g_board_comm_package.power_limit);
+    if(g_board_comm_package.chassis_powered_on)
+    {
+        HAL_Delay(100); // wait for the uart to be ready
+        DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "PVONP\r\n");
+        HAL_Delay(100);
+        DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", g_board_comm_package.power_limit);
+    }
+    else
+    {
+        HAL_Delay(100); // wait for the uart to be ready
+        DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "PVOFP\r\n");
+    }
+    
+
 }

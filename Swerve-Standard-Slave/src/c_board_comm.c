@@ -31,14 +31,14 @@ void C_Board_Comm_Task_Init() {
 
         master_debug = 1;
 
-        g_board_communication = CAN_Device_Register(1, 0x310, 0x300, C_Board_Recv_Supercap_Info);
+        g_board_communication = CAN_Device_Register(1, 0x10, 0x00, C_Board_Recv_Supercap_Info);
     #else 
         #pragma message "Slave C_Board_Comm_Task_Init() is compiled"
         // g_board_slave = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Supercap_Info);
         // g_board_master = CAN_Device_Register(1, 0x311, 0x301, C_Board_Recv_Ref_Info);
 
         // slave_debug = 1;
-        g_board_communication = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Ref_Info);
+        g_board_communication = CAN_Device_Register(1, 0x00, 0x10, C_Board_Recv_Ref_Info);
     #endif
 }
 
@@ -51,6 +51,7 @@ void C_Board_Recv_Ref_Info(CAN_Instance_t *can_instance)
 {
     g_board_comm_package_first_part_established = 1; //debugging
     memcpy(&g_board_comm_package.power_limit, can_instance->rx_buffer, sizeof(uint16_t));
+    memcpy(&g_board_comm_package.chassis_powered_on, &can_instance->rx_buffer[sizeof(uint16_t)], sizeof(uint8_t));
 }
 
 /**
