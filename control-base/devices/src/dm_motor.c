@@ -175,15 +175,6 @@ void DM_Motor_Enable_All()
     }
 }
 
-void DM_Motor_Disable_All()
-{
-    for (int i = 0; i < g_dm_motor_num; i++)
-    {
-        // set the motor state to enabled
-        DM_Motor_Disable_Motor(g_dm_motors[i]);
-    }
-}
-
 void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq)
 {
     uint16_t pos_temp, vel_temp, kp_temp, kd_temp, torq_temp;
