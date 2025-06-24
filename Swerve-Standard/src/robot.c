@@ -142,7 +142,7 @@ void Process_Remote_Input()
     {
         g_robot_state.UI_ENABLED ^= 0x01; // Toggle UI
     }
-    if ((g_remote.keyboard.Shift) || (g_remote.controller.right_switch == UP)) // Hold shift to boost
+    if ((g_remote.keyboard.Ctrl) || (g_remote.controller.right_switch == UP)) // Hold ctrl to boost
     {
         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 1;
     } else {
