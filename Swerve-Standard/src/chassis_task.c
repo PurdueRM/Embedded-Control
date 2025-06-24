@@ -5,6 +5,7 @@
 #include "dji_motor.h"
 #include "motor.h"
 #include "referee_system.h"
+#include "supercap.h"
 #include "swerve_locomotion.h"
 #include "rate_limiter.h"
 #include "pid.h"
@@ -35,6 +36,8 @@ rate_limiter_t chassis_omega_limiter;
 float chassis_rad = WHEEL_BASE * 1.414f; //TODO init?
 
 float g_spintop_omega = SPIN_TOP_OMEGA;
+float g_supercap_linear_boost_rate = 1.0f;
+float g_supercap_spintop_boost_rate = 1.0f;
 
 void Chassis_Task_Init()
 {
@@ -128,38 +131,26 @@ void Chassis_Ctrl_Loop()
     float vy = g_robot_state.input.vy;
 
     if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
-        g_swerve_constants.max_speed = 5.0;
-        for (int i = 0; i < NUMBER_OF_MODULES; i++) {
-            chassis_vel_limiters[i].rate_limit = SWERVE_QUICK_STOP_ACCEL / 2.0f;
-        }
-    } // Quick Deceleration when the joystick is released
-    else if ((vx * vx + vy * vy) < 0.01f) {
-        for (int i = 0; i < NUMBER_OF_MODULES; i++) {
-            chassis_vel_limiters[i].rate_limit = SWERVE_QUICK_STOP_ACCEL;
-        }
-    } else if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
-        // g_swerve_constants.max_speed = MAX_SPEED_W45;
-        for (int i = 0; i < NUMBER_OF_MODULES; i++) {
-            chassis_vel_limiters[i].rate_limit = SWERVE_MAX_WHEEL_ACCEL*0.7f;
-        }
-    } else {
-        // g_swerve_constants.max_speed = MAX_SPEED_W45;
-        for (int i = 0; i < NUMBER_OF_MODULES; i++) {
-            chassis_vel_limiters[i].rate_limit = SWERVE_MAX_WHEEL_ACCEL;
-        }
+        g_supercap_linear_boost_rate = g_supercap_linear_boost_rate * 0.9f + 3.0f * 0.1f;
+        g_supercap_spintop_boost_rate = g_supercap_spintop_boost_rate * 0.9f + 3.0f * 0.1f;
+    }
+    else {
+        g_supercap_linear_boost_rate = g_supercap_linear_boost_rate * 0.9f + 1.0f * 0.1f;
+        g_supercap_spintop_boost_rate = g_supercap_spintop_boost_rate * 0.9f + 1.0f * 0.1f;
     }
 
     // Control loop for the chassis
     for (int i = 0; i < NUMBER_OF_MODULES; i++) {
         measured_angles[i] = DJI_Motor_Get_Absolute_Angle(g_azimuth_motors[i]);
     }
-    g_chassis_state.v_x = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed;
-    g_chassis_state.v_y = g_robot_state.chassis.y_speed * g_swerve_constants.max_speed;
+    g_chassis_state.v_x = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
+    g_chassis_state.v_y = g_robot_state.chassis.y_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
 
     // Handle locking logic
     // TODO add an adjustable offset with keyboard
     float lock_increment = PI / 2;
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
+
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
     } else if (g_robot_state.chassis.locked_state == LOCK_ANGLED) 
     {
@@ -179,13 +170,12 @@ void Chassis_Ctrl_Loop()
     // Also optimizes angles during spintop
     if (((get_fastest_wheel_speed() < 1.5f) && (fabs(vx) < 0.5) && (fabs(vy) < .5)) || g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         swerve_optimize_module_angles(&g_chassis_state, measured_angles);
-        swerve_desaturate_wheel_speeds(&g_chassis_state, &g_swerve_constants);
     }
     
-    // rate limit the module speeds
-    for (int i = 0; i < NUMBER_OF_MODULES; i++) {
-        g_chassis_state.states[i].speed = rate_limiter_iterate(&chassis_vel_limiters[i], g_chassis_state.states[i].speed);   
-    }
+    // // rate limit the module speeds
+    // for (int i = 0; i < NUMBER_OF_MODULES; i++) {
+    //     g_chassis_state.states[i].speed = rate_limiter_iterate(&chassis_vel_limiters[i], g_chassis_state.states[i].speed);   
+    // }
 
     swerve_convert_to_rpm(&g_chassis_state, &g_swerve_constants);
 
@@ -287,7 +277,7 @@ void Update_Maxes()
 float Rescale_Chassis_Velocity(void) {
     float translation_speed = sqrtf(powf(g_robot_state.chassis.x_speed, 2) + powf(g_robot_state.chassis.y_speed, 2));
     float spin_coeff = chassis_rad * g_spintop_omega / (translation_speed * 2.0f + chassis_rad * g_spintop_omega);
-    float target_omega = g_spintop_omega * spin_coeff;
+    float target_omega = g_spintop_omega * spin_coeff * g_supercap_spintop_boost_rate;
     return target_omega;
 }
 
