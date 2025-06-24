@@ -26,7 +26,7 @@ void Launch_Task_Init()
         .velocity_pid =
             {
                 .kp = 500.0f,
-                .output_limit = M3508_MAX_CURRENT,
+                .output_limit = M3508_MAX_CURRENT_INT,
             },
     };
 
@@ -39,7 +39,7 @@ void Launch_Task_Init()
         .velocity_pid =
             {
                 .kp = 500.0f,
-                .output_limit = M3508_MAX_CURRENT,
+                .output_limit = M3508_MAX_CURRENT_INT,
             },
     };
 
@@ -54,14 +54,14 @@ void Launch_Task_Init()
                 .kp = 500.0f,
                 .kd = 200.0f,
                 .kf = 100.0f,
-                .output_limit = M2006_MAX_CURRENT,
+                .output_limit = M2006_MAX_CURRENT_INT,
             },
         .angle_pid =
             {
                 .kp = 500000.0f,
                 .kd = 15000000.0f,
                 .ki = 0.1f,
-                .output_limit = M2006_MAX_CURRENT,
+                .output_limit = M2006_MAX_CURRENT_INT,
                 .integral_limit = 1000.0f,
             }
     };

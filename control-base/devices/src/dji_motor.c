@@ -161,6 +161,29 @@ DJI_Motor_Handle_t *DJI_Motor_Init(Motor_Config_t *config, DJI_Motor_Type_t type
             break;
         }
         break;
+    case M3508_PLANETARY:
+        receiver_can_instance = CAN_Device_Register(config->can_bus, config->tx_id,
+                                                    0x200 + config->speed_controller_id, DJI_Motor_Decode);
+        receiver_can_instance->binding_motor_stats = motor_stats;
+        motor_stats->reduction_ratio = M3508_PLANETARY_REDUCTION_RATIO;
+        switch (motor_handle->speed_controller_id)
+        {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            DJI_Motor_Assign_To_Group(motor_handle, 0x200);
+            break;
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            DJI_Motor_Assign_To_Group(motor_handle, 0x1FF);
+            break;
+        default:
+            break;
+        }
+        break;
     case M2006:
         receiver_can_instance = CAN_Device_Register(config->can_bus, config->tx_id,
                                                     0x200 + config->speed_controller_id, DJI_Motor_Decode);
@@ -267,10 +290,60 @@ void DJI_Motor_Set_Velocity(DJI_Motor_Handle_t *motor_handle, float velocity)
     }
 }
 
+/**
+ * TODO: Implement Close Loop Torque Control using the Feedback Current
+ * right now, this is an open loop torque control
+ * 
+ * @brief Use torque constant, target torque and current range to set the output current
+ * 
+ * @note motor statistics can be found on the following website
+ * @link https://www.robomaster.com/en-US/products/components/general/M3508
+ *       https://www.robomaster.com/en-US/products/components/detail/1277
+ *       https://www.robomaster.com/en-US/products/components/general/gm6020#downloads
+ * @warning GM6020 must be current control mode not voltage control mode
+ */
 void DJI_Motor_Set_Torque(DJI_Motor_Handle_t *motor_handle, float torque)
 {
     motor_handle->disabled = 0;
-    motor_handle->torque_pid->ref = torque;
+    float torque_constant = 0;
+    float current_amps = 0;
+    switch (motor_handle->motor_type)
+    {
+    case GM6020:
+        // get torque constant from the motor type
+        current_amps = (torque / GM6020_TORQUE_CONSTANT);
+        // map the current to integers used in CAN frame
+        __MAP(current_amps, -GM6020_MAX_CURRENT, GM6020_MAX_CURRENT, -GM6020_MAX_CURRENT_INT, GM6020_MAX_CURRENT_INT);
+        // set the output current to the mapped value
+        break;
+    case M3508:
+        torque_constant = M3508_TORQUE_CONSTANT;
+        current_amps = (torque / torque_constant);
+        __MAP(current_amps, -M3508_MAX_CURRENT, M3508_MAX_CURRENT, -M3508_MAX_CURRENT_INT, M3508_MAX_CURRENT_INT);
+        break;
+    case M3508_PLANETARY:
+        torque_constant = M3508_PLANETARY_TORQUE_CONSTANT;
+        current_amps = (torque / torque_constant);
+        __MAP(current_amps, -M3508_MAX_CURRENT, M3508_MAX_CURRENT, -M3508_MAX_CURRENT_INT, M3508_MAX_CURRENT_INT);
+        break;
+    case M2006:
+        torque_constant = M2006_TORQUE_CONSTANT;
+        current_amps = (torque / torque_constant);
+        __MAP(current_amps, -M2006_MAX_CURRENT, M2006_MAX_CURRENT, -M2006_MAX_CURRENT_INT, M2006_MAX_CURRENT_INT);
+        
+        break;
+    }
+    switch (motor_handle->motor_reversal)
+    {
+    case MOTOR_REVERSAL_NORMAL:
+        // normal motor, set output current as is
+        motor_handle->output_current = (int16_t)current_amps;
+        break;
+    case MOTOR_REVERSAL_REVERSED:
+        // reversed motor, set output current to negative value
+        motor_handle->output_current = (int16_t)(-current_amps);
+        break;
+    }
 }
 
 void DJI_Motor_Set_Control_Mode(DJI_Motor_Handle_t *motor_handle, uint8_t control_mode)
@@ -332,6 +405,7 @@ void DJI_Motor_Current_Calc()
             }
             case TORQUE_CONTROL:
             {
+                // open loop torque control, output current is set when calling @ref DJI_Motor_Set_Torque()
                 break;
             }
             case POSITION_VELOCITY_SERIES:

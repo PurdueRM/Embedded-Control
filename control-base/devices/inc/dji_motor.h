@@ -9,22 +9,39 @@
 #define MAX_DJI_MOTOR_GROUPS (6) // realloac will be called to shrink the array
 #define DJI_TX_ID_PLACEHOLDER (0x00)
 
-#define GM6020_MAX_CURRENT (28000) // -30000 ~ 30000
-#define M3508_MAX_CURRENT (16000)  // -16384 ~ 16384
-#define M2006_MAX_CURRENT (9000)   // -10000 ~ 10000
+// Integers uses in CAN Frame
+#define GM6020_MAX_VOLTAGE_INT (28000) // -30000 ~ 30000 -> -24V ~ 24V
+#define GM6020_MAX_CURRENT_INT (16000) // -16384 ~ 16384 -> -3A ~ 3A
+#define M3508_MAX_CURRENT_INT (16000)  // -16384 ~ 16384 -> -20A ~ 20A
+#define M2006_MAX_CURRENT_INT (9000)   // -10000 ~ 10000 -> -10A ~ 10A
+
+// Limits with physical meaning
+#define GM6020_MAX_CURRENT (3.0f) // 3.0A
+#define GM6020_MAX_VOLTAGE (24.0f) // 24.0V IMPORTANT: GM6020 have 2 control mode, Voltage and Current, Check Manual!!!!
+#define M3508_MAX_CURRENT (20.0f) // 20A
+#define M2006_MAX_CURRENT (10.0f) // 10A
 
 #define DJI_MAX_TICKS (8191.0f)
 #define DJI_HALF_MAX_TICKS (4096)
 
+// Reduction Ratios
 #define M3508_REDUCTION_RATIO (187.0f / 3591.0f)
+#define M3508_PLANETARY_REDUCTION_RATIO (17.0f / 268.0f) // 1:36
 #define GM6020_REDUCTION_RATIO (1)
 #define M2006_REDUCTION_RATIO (1.0f / 36.0f)
+
+// Torque Constants
+#define M3508_PLANETARY_TORQUE_CONSTANT (0.246f) // Nm/A
+#define M3508_TORQUE_CONSTANT (0.3f)             // Nm/A
+#define GM6020_TORQUE_CONSTANT (1.2f/1.62)       // Nm/A
+#define M2006_TORQUE_CONSTANT (0.1f)            // Nm/A
 
 typedef enum DJI_Motor_Type
 {
     GM6020, // -30000 to 30000
     M3508,
     M2006,
+    M3508_PLANETARY,
 } DJI_Motor_Type_t;
 
 typedef struct DJI_Motor_Stats_s

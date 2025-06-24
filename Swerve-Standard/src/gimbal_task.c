@@ -39,7 +39,7 @@ void Gimbal_Task_Init()
                 .kf = 1000.0f,
                 .feedforward_limit = 5000.0f,
                 .integral_limit = 5000.0f,
-                .output_limit = GM6020_MAX_CURRENT,
+                .output_limit = GM6020_MAX_VOLTAGE_INT,
             },
     };
 
@@ -64,7 +64,7 @@ void Gimbal_Task_Init()
                 .kp = 4500.0f,
                 .ki = 0.8f,
                 .integral_limit = 4000.0f,
-                .output_limit = GM6020_MAX_CURRENT,
+                .output_limit = GM6020_MAX_VOLTAGE_INT,
             },
     };
 
