@@ -42,7 +42,7 @@ void Gimbal_Task_Init()
     DM_Motor_Config_t top_yaw_motor_config = {
         .can_bus = 2,
         .control_mode = DM_MOTOR_MIT,
-        .pos_offset = -0.48f,
+        .pos_offset = 0.0f,
         .rx_id = 0x15,
         .tx_id = 0x05,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
