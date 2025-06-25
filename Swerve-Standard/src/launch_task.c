@@ -126,8 +126,8 @@ void Feed_Angle_Calc()
 void Launch_Ctrl_Loop()
 {
     if (g_remote.controller.left_switch == UP) {
-        DJI_Motor_Set_Velocity(g_flywheel_left, -100);
-        DJI_Motor_Set_Velocity(g_flywheel_right, -100);
+        DJI_Motor_Set_Velocity(g_flywheel_left, -320);
+        DJI_Motor_Set_Velocity(g_flywheel_right, -320);
     } else {
         DJI_Motor_Set_Velocity(g_flywheel_left, 0);
         DJI_Motor_Set_Velocity(g_flywheel_right, 0);
