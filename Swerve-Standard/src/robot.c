@@ -172,16 +172,19 @@ void Process_Remote_Input()
         g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
     }
 
-    if (g_remote.keyboard.R) {
-        g_robot_state.chassis.locked_state = LOCK_RANDOM;
-    }
-    if (g_remote.keyboard.E) {
-        g_robot_state.chassis.locked_state = LOCK_ANGLED;
-    }
-
-    if (g_remote.keyboard.Q) {
-        g_robot_state.chassis.locked_state = LOCK_STRAIGHT;
-    }
+    // Chassis-Gimbal Locking Mode
+    // if (g_remote.keyboard.R) {
+    //     g_robot_state.chassis.locked_state = LOCK_RANDOM;
+    // }
+    // if (g_remote.keyboard.E) {
+    //     g_robot_state.chassis.locked_state = LOCK_ANGLED;
+    // }
+    // if (g_remote.keyboard.Q) {
+    //     g_robot_state.chassis.locked_state = LOCK_STRAIGHT;
+    // }
+    
+    // ENSURE THAT CHASIS-GIMBAL LOCK IS TO RANDOM
+    g_robot_state.chassis.locked_state = LOCK_RANDOM;
 
     if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
         //g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
