@@ -23,7 +23,7 @@ PID_t g_top_yaw_pid = {
 };
 PID_t g_bottom_yaw_follow_pid = {
     .kp = 50000.0f,
-    .kd = 10000000.0f,
+    .kd = 5000000.0f,
     .ki = 0.0f,
     .integral_limit = 0.0f,
     .output_limit = GM6020_MAX_VOLTAGE_INT,
@@ -42,7 +42,7 @@ void Gimbal_Task_Init()
     DM_Motor_Config_t top_yaw_motor_config = {
         .can_bus = 2,
         .control_mode = DM_MOTOR_MIT,
-        .pos_offset = -0.48f,
+        .pos_offset = 0.0f,
         .rx_id = 0x15,
         .tx_id = 0x05,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
@@ -76,8 +76,9 @@ void Gimbal_Ctrl_Loop()
     __MAX_LIMIT(g_gimbal_angle_difference, -1.0f, 1.0f);
     g_bottom_motor->output_current = PID(&g_bottom_yaw_follow_pid, g_gimbal_angle_difference);
     // // hardware limits for gimbal yaw (prevent self collision)
-    __MAP_ANGLE_TO_UNIT_CIRCLE(g_robot_state.gimbal.yaw_angle);
-    g_top_yaw_torque = PID(&g_top_yaw_pid, g_robot_state.gimbal.yaw_angle - g_imu.rad.yaw);
+    float tmp_yaw_angle_diff = g_robot_state.gimbal.yaw_angle - g_imu.rad.yaw;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(tmp_yaw_angle_diff);
+    g_top_yaw_torque = PID(&g_top_yaw_pid,tmp_yaw_angle_diff );
 
     // __MAX_LIMIT(g_robot_state.gimbal.yaw_angle, -1.05f, 0.33f);
     
