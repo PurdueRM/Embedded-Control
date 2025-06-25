@@ -11,7 +11,7 @@
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
-
+Launch_Target_t g_launch_target;
 DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right, *g_feed_motor;
 
 void Launch_Task_Init()
@@ -43,24 +43,25 @@ void Launch_Task_Init()
             },
     };
 
-    Motor_Config_t feed_speed_config = {
+        Motor_Config_t feed_speed_config = {
         .can_bus = 1,
         .speed_controller_id = 2,
         .offset = 0,
-        .control_mode = VELOCITY_CONTROL | POSITION_CONTROL_TOTAL_ANGLE,
+        .control_mode = VELOCITY_CONTROL | POSITION_CONTROL,
         .motor_reversal = MOTOR_REVERSAL_NORMAL,
         .velocity_pid =
             {
-                .kp = 500.0f,
-                .kd = 200.0f,
+                .kp = 5000.0f,
+                .kd = 20.0f,
                 .kf = 100.0f,
                 .output_limit = M2006_MAX_CURRENT_INT,
             },
         .angle_pid =
             {
-                .kp = 500000.0f,
-                .kd = 15000000.0f,
+                .kp = 450000.0f,
+                .kd = 5000000.0f,
                 .ki = 0.1f,
+                .kf = 1000.0f,
                 .output_limit = M2006_MAX_CURRENT_INT,
                 .integral_limit = 1000.0f,
             }
@@ -73,133 +74,66 @@ void Launch_Task_Init()
     Laser_Init();
 }
 
+void Feed_Angle_Calc()
+{
+    // Update Counter
+    if (g_remote.controller.wheel > 50.0f || g_remote.mouse.left) {
+        g_launch_target.burst_launch_flag = 1;
+    } else {
+        g_launch_target.burst_launch_flag = 0;
+    }
+    
+    g_launch_target.heat_count++;
+    g_launch_target.launch_freq_count++;
+    if (Referee_System.Online_Flag)
+    {
+        if (Referee_System.Robot_State.Shooter_Power_Output == 0 || !g_launch_target.burst_launch_flag)
+        {
+            g_launch_target.feed_angle = g_feed_motor->stats->total_angle_rad;
+        } 
+        if (g_launch_target.heat_count*2 % 100 == 0)
+        {
+            g_launch_target.calculated_heat -= Referee_Robot_State.Cooling_Rate/10;
+            __MAX_LIMIT(g_launch_target.calculated_heat,0,Referee_Robot_State.Heat_Max);
+        }
+        if (g_launch_target.burst_launch_flag && !g_launch_target.reverse_flag) 
+        {
+            if (g_launch_target.launch_freq_count*2 > LAUNCH_PERIOD)
+            {
+                g_launch_target.launch_freq_count = 0;
+                if((Referee_Robot_State.Heat_Max-g_launch_target.calculated_heat) > 20)
+                {
+                    g_launch_target.calculated_heat += 10;
+                    g_launch_target.feed_angle += FEED_1_PROJECTILE_ANGLE;
+                }
+            }
+            DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
+            DJI_Motor_Set_Angle(g_feed_motor,g_launch_target.feed_angle);
+        }
+        if(g_launch_target.reverse_flag && !g_launch_target.prev_reverse_flag)
+        // if (g_launch_target.reverse_burst_launch_pending_flag)
+        {
+            // g_launch_target.reverse_burst_launch_pending_flag = 0;
+            g_launch_target.feed_angle -= FEED_1_PROJECTILE_ANGLE;
+            DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
+            DJI_Motor_Set_Angle(g_feed_motor,g_launch_target.feed_angle);
+        }
+    }
+    g_launch_target.prev_burst_launch_flag = g_launch_target.burst_launch_flag;
+    g_launch_target.prev_reverse_flag = g_launch_target.reverse_flag;
+}
+
 void Launch_Ctrl_Loop()
 {
-    if (!g_robot_state.launch.IS_FIRING_ENABLED)
-    {
-        stopFlywheel();
-        Laser_Off();
-        g_robot_state.launch.IS_FLYWHEEL_ENABLED = 0;
-        return;
+    if (g_remote.controller.left_switch == UP) {
+        DJI_Motor_Set_Velocity(g_flywheel_left, -100);
+        DJI_Motor_Set_Velocity(g_flywheel_right, -100);
     } else {
-        g_robot_state.launch.IS_FLYWHEEL_ENABLED = 1;
-        startFlywheel();
-        Laser_On();
+        DJI_Motor_Set_Velocity(g_flywheel_left, 0);
+        DJI_Motor_Set_Velocity(g_flywheel_right, 0);
     }
 
-    if (g_robot_state.launch.IS_BUSY) { // check if we are in middle of a fire mode
-        switch (g_robot_state.launch.busy_mode)
-        {
-        case REJIGGLE:
-            rejiggle();
-            break;
-        case SINGLE_FIRE:
-            handleSingleFire();
-            break;
-        case BURST_FIRE:
-            break;
-        case FULL_AUTO:
-            handleFullAuto();
-            break;
-        default:
-            break;
-        }
-    } else {
-        // Control loop for launch to see if new mode is set
-        switch (g_robot_state.launch.fire_mode)
-        {
-        case SINGLE_FIRE:
-            handleSingleFire();
-            break;
-        case BURST_FIRE:
-            // TODO: Complete 5 burst
-            break;
-        case FULL_AUTO:
-            handleFullAuto();
-            break;
-        default:
-            break;
-
-        }
-    }
-}
-
-void resetRelPos() {
-    g_robot_state.launch.shooter_state.accum_angle = 0;
-    g_robot_state.launch.shooter_state.prev_time = xTaskGetTickCount();
-}
-
-#define ticksToDegrees(ticks) ((ticks) * 360.0f / DJI_MAX_TICKS)
-#define ticksToRad(ticks) ((ticks) * 360.0f / DJI_MAX_TICKS)
-#define degreesToTicks(degrees) ((degrees) * DJI_MAX_TICKS / 360.0f)
-float g_curr_angle = 0;
-// TODO check if at ref
-void handleSingleFire() {
-    if (g_robot_state.launch.IS_BUSY) {
-        if (DJI_Motor_Is_At_Angle(g_feed_motor, FEED_TOLERANCE)) // if shots fired :O then rejiggle
-        {
-            g_robot_state.launch.IS_BUSY = 0;
-            g_robot_state.launch.busy_mode = IDLE;
-            rejiggle();
-        }
-    }
-    else {
-        g_robot_state.launch.IS_BUSY = 1;
-        g_robot_state.launch.busy_mode = SINGLE_FIRE;
-        // set a new position reference x degrees forward
-        resetRelPos();
-
-        DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
-        g_curr_angle = DJI_Motor_Get_Total_Angle(g_feed_motor); // rad
-        DJI_Motor_Set_Angle(g_feed_motor, g_curr_angle + SHOT_ANGLE_OFFSET_RAD);
-        // DJI_Motor_Set_Velocity(g_feed_motor, FEED_RATE);
-    }
-}
-
-void rejiggle() {
-    //set a position reference slightly back to prevent jams
-    float curr_angle_rad = DJI_Motor_Get_Total_Angle(g_feed_motor); // rad
-
-    if (g_robot_state.launch.IS_BUSY) { // if busy, means we already called so go back
-        if (DJI_Motor_Is_At_Angle(g_feed_motor, FEED_TOLERANCE))
-        {
-            g_robot_state.launch.busy_mode = IDLE;
-            g_robot_state.launch.IS_BUSY = 0;
-            DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
-            DJI_Motor_Set_Angle(g_feed_motor, curr_angle_rad + (SHOT_ANGLE_OFFSET_RAD / 2));
-        }
-    }
-    else {
-        g_robot_state.launch.busy_mode = REJIGGLE;
-        g_robot_state.launch.IS_BUSY = 1;
-        DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
-        DJI_Motor_Set_Angle(g_feed_motor, curr_angle_rad - (SHOT_ANGLE_OFFSET_RAD / 2));
-    }
-}
-
-void handleFullAuto() {
-    if (g_robot_state.launch.IS_BUSY) {
-        if (g_robot_state.launch.fire_mode == NO_FIRE) {
-            DJI_Motor_Set_Control_Mode(g_feed_motor, VELOCITY_CONTROL);
-            DJI_Motor_Set_Velocity(g_feed_motor, 0);
-            g_robot_state.launch.IS_BUSY = 0;
-            g_robot_state.launch.busy_mode = IDLE;
-            rejiggle();
-        }
-    } else {
-        DJI_Motor_Set_Control_Mode(g_feed_motor, VELOCITY_CONTROL);
-        DJI_Motor_Set_Velocity(g_feed_motor, FEED_RATE);
-        g_robot_state.launch.IS_BUSY = 1;
-        g_robot_state.launch.busy_mode = FULL_AUTO;
-    }
-}
-
-void startFlywheel() {
-    DJI_Motor_Set_Velocity(g_flywheel_left, -320);
-    DJI_Motor_Set_Velocity(g_flywheel_right, -320);
-}
-
-void stopFlywheel() {
-    DJI_Motor_Set_Velocity(g_flywheel_left, 0);
-    DJI_Motor_Set_Velocity(g_flywheel_right, 0);
+    DJI_Motor_Set_Velocity(g_feed_motor, g_remote.controller.wheel/660.0f * 100.0f);
+    Feed_Angle_Calc();
+    
 }
