@@ -89,7 +89,7 @@ void Chassis_Task_Init()
 
     swerve_module_config_t module_configs[NUMBER_OF_MODULES] = {
         {2, 1, 2050, MOTOR_REVERSAL_REVERSED, 1, 1, MOTOR_REVERSAL_NORMAL},
-        {2, 2, 1940, MOTOR_REVERSAL_REVERSED, 2, 2, MOTOR_REVERSAL_NORMAL},
+        {2, 2, 3991, MOTOR_REVERSAL_REVERSED, 2, 2, MOTOR_REVERSAL_NORMAL},
         {2, 3, 1430, MOTOR_REVERSAL_REVERSED, 2, 3, MOTOR_REVERSAL_REVERSED},
         {2, 4, 8150, MOTOR_REVERSAL_REVERSED, 2, 4, MOTOR_REVERSAL_REVERSED}};
 
@@ -174,18 +174,10 @@ void Chassis_Ctrl_Loop()
 
     // Handle locking logic
     // TODO add an adjustable offset with keyboard
-    float lock_increment = PI / 2;
+    // float lock_increment = PI / 2;
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
-
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
-    } else if (g_robot_state.chassis.locked_state == LOCK_ANGLED) 
-    {
-        Lock_Chassis_To_Angle(lock_increment, PI / 4);
-    } else if (g_robot_state.chassis.locked_state == LOCK_STRAIGHT)
-    {
-        Lock_Chassis_To_Angle(lock_increment, 0);
-    } else if (g_robot_state.chassis.locked_state == LOCK_RANDOM)
-    {
+    } else {
         g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, 0);
     }
 

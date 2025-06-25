@@ -19,19 +19,19 @@ void UI_Task_Loop(void)
     if(g_robot_state.launch.IS_FLYWHEEL_ENABLED)
         ui_g_1_Flywheel_Select->color = 6;
     else
-        ui_g_1_Flywheel_Select->color = 1;
+        ui_g_1_Flywheel_Select->color = 7;
 
     // Update spintop selection box - yellow if spintop is disabled, cyan if enabled
     if(g_robot_state.chassis.IS_SPINTOP_ENABLED)
         ui_g_1_Spintop_Select->color = 6;
     else
-        ui_g_1_Spintop_Select->color = 1;
+        ui_g_1_Spintop_Select->color = 7;
     
     // Update autoaim selection box - yellow if autoaim is disabled, cyan if enabled
     if(g_robot_state.launch.IS_AUTO_AIMING_ENABLED)
         ui_g_1_Autoaim_Select->color = 6;
     else
-        ui_g_1_Autoaim_Select->color = 1;
+        ui_g_1_Autoaim_Select->color = 7;
 
     // Update supercapacitor value
     __MAX_LIMIT(g_supercap.supercap_percent,0,100); // Ensure supercapacitor percentage is within 0-100%

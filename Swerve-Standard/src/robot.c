@@ -22,7 +22,7 @@ extern DJI_Motor_Handle_t *g_yaw;
 
 Input_State_t g_input_state = {0};
 
-#define KEYBOARD_RAMP_COEF (0.01f)
+#define KEYBOARD_RAMP_COEF (0.002f)
 
 /**
  * @brief This function initializes the robot.
