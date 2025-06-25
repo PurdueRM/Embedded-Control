@@ -21,7 +21,7 @@ void Launch_Task_Init()
     // Init Launch Hardware
     Motor_Config_t flywheel_left_config = {
         .can_bus = 2,
-        .speed_controller_id = 3,
+        .speed_controller_id = 4,
         .offset = 0,
         .control_mode = VELOCITY_CONTROL,
         .motor_reversal = MOTOR_REVERSAL_NORMAL,
@@ -33,7 +33,7 @@ void Launch_Task_Init()
     };
 
     Motor_Config_t flywheel_right_config = {
-        .can_bus = 4,
+        .can_bus = 2,
         .speed_controller_id = 2,
         .offset = 0,
         .control_mode = VELOCITY_CONTROL,
@@ -47,7 +47,7 @@ void Launch_Task_Init()
 
     Motor_Config_t feed_speed_config = {
         .can_bus = 2,
-        .speed_controller_id = 6,
+        .speed_controller_id = 3,
         .offset = 0,
         .control_mode = VELOCITY_CONTROL,// | POSITION_CONTROL_TOTAL_ANGLE,
         .motor_reversal = MOTOR_REVERSAL_NORMAL,
@@ -56,21 +56,21 @@ void Launch_Task_Init()
                 .kp = 500.0f,
                 .kd = 200.0f,
                 .kf = 100.0f,
-                .output_limit = M2006_MAX_CURRENT_INT,
+                .output_limit = M3508_MAX_CURRENT_INT,
             },
         .angle_pid =
             {
-                .kp = 500000.0f,
+                .kp = 1000000.0f,
                 .kd = 15000000.0f,
                 .ki = 0.1f,
-                .output_limit = M2006_MAX_CURRENT_INT,
+                .output_limit = M3508_MAX_CURRENT_INT,
                 .integral_limit = 1000.0f,
             }
     };
 
     g_flywheel_left = DJI_Motor_Init(&flywheel_left_config,M3508);
     g_flywheel_right = DJI_Motor_Init(&flywheel_right_config,M3508);
-    g_feed_motor = DJI_Motor_Init(&feed_speed_config,M2006);
+    g_feed_motor = DJI_Motor_Init(&feed_speed_config,M3508);
 
     Laser_Init();
 }
@@ -129,8 +129,8 @@ void Launch_Ctrl_Loop()
 
     if (g_remote.controller.left_switch == UP)
     {
-        DJI_Motor_Set_Velocity(g_flywheel_left, -300);
-        DJI_Motor_Set_Velocity(g_flywheel_right, -300);
+        DJI_Motor_Set_Velocity(g_flywheel_left, -100);
+        DJI_Motor_Set_Velocity(g_flywheel_right, -100);
 
     }
     else

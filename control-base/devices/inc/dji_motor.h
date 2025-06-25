@@ -88,6 +88,7 @@ typedef struct dji_motor
     PID_t *torque_pid;
 
     int16_t output_current;
+    uint8_t bypass_driver;
 } DJI_Motor_Handle_t;
 
 typedef enum
