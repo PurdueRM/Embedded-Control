@@ -294,7 +294,7 @@ void Update_Maxes()
  */
 float Rescale_Chassis_Velocity(void) {
     float translation_speed = sqrtf(powf(g_robot_state.chassis.x_speed, 2) + powf(g_robot_state.chassis.y_speed, 2));
-    float spin_coeff = chassis_rad * g_spintop_omega / (translation_speed * 2.0f + chassis_rad * g_spintop_omega);
+    float spin_coeff = chassis_rad * g_spintop_omega / (translation_speed * 25.0f + chassis_rad * g_spintop_omega);
     float target_omega = g_spintop_omega * spin_coeff * g_supercap_spintop_boost_rate;
     return target_omega;
 }
