@@ -17,15 +17,15 @@ void UI_Task_Loop(void)
 
     // Update flywheel selection box - yellow if flywheel is disabled, cyan if enabled
     if(g_robot_state.launch.IS_FLYWHEEL_ENABLED)
-        ui_g_1_Spintop_Select->color = 6;
-    else
-        ui_g_1_Spintop_Select->color = 1;
-
-    // Update spintop selection box - yellow if spintop is disabled, cyan if enabled
-    if(g_robot_state.chassis.IS_SPINTOP_ENABLED)
         ui_g_1_Flywheel_Select->color = 6;
     else
         ui_g_1_Flywheel_Select->color = 1;
+
+    // Update spintop selection box - yellow if spintop is disabled, cyan if enabled
+    if(g_robot_state.chassis.IS_SPINTOP_ENABLED)
+        ui_g_1_Spintop_Select->color = 6;
+    else
+        ui_g_1_Spintop_Select->color = 1;
     
     // Update autoaim selection box - yellow if autoaim is disabled, cyan if enabled
     if(g_robot_state.launch.IS_AUTO_AIMING_ENABLED)
