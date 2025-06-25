@@ -31,14 +31,14 @@ void C_Board_Comm_Task_Init() {
 
         master_debug = 1;
 
-        g_board_communication = CAN_Device_Register(1, 0x10, 0x00, C_Board_Recv_Supercap_Info);
+        g_board_communication = CAN_Device_Register(2, 0x10, 0x00, C_Board_Recv_Supercap_Info);
     #else 
         #pragma message "Slave C_Board_Comm_Task_Init() is compiled"
         // g_board_slave = CAN_Device_Register(1, 0x300, 0x310, C_Board_Recv_Supercap_Info);
         // g_board_master = CAN_Device_Register(1, 0x311, 0x301, C_Board_Recv_Ref_Info);
 
         // slave_debug = 1;
-        g_board_communication = CAN_Device_Register(1, 0x00, 0x10, C_Board_Recv_Ref_Info);
+        g_board_communication = CAN_Device_Register(2, 0x00, 0x10, C_Board_Recv_Ref_Info);
     #endif
 }
 

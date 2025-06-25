@@ -143,6 +143,7 @@ void Robot_Tasks_C_Board_Comm(void const *argument)
     portTickType xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
     const TickType_t TimeIncrement = pdMS_TO_TICKS(C_BOARD_COMM_PERIOD);
+    C_Board_Comm_Task_Init();
     while (1)
     {
         C_Board_Comm_Send_Loop();
