@@ -142,7 +142,9 @@ void Process_Remote_Input()
     {
         g_robot_state.UI_ENABLED ^= 0x01; // Toggle UI
     }
-    if ((g_remote.keyboard.Shift) || (g_remote.controller.right_switch == UP)) // Hold ctrl to boost
+
+    // NOTE: Right mouse click is now mapped to supercapcitor
+    if ((g_remote.keyboard.Shift) || (g_remote.mouse.right) || (g_remote.controller.right_switch == UP)) // Hold shift to boost
     {
         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 1;
     } else {
@@ -150,11 +152,13 @@ void Process_Remote_Input()
         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 0;
     }
 
-    if (g_remote.mouse.right) { // Hold right mouse button to enable auto aim
-        g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
-    } else {
-        g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
-    }
+    // TODO/NOTE: Right mouse button is currently bound to supercapcitor
+    // if (g_remote.mouse.right) { // Hold right mouse button to enable auto aim
+    //     g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
+    // } else {
+    //     g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
+    // }
+
 
     if ((g_remote.mouse.left) || (g_remote.controller.wheel > 50.0f)) { // Hold left mouse to fire
         g_robot_state.launch.fire_mode = FULL_AUTO;
