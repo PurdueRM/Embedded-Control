@@ -59,8 +59,8 @@ void Gimbal_Task_Init()
 
 void Gimbal_Ctrl_Loop()
 {
-    g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f;
-    g_robot_state.gimbal.pitch_angle += g_remote.controller.right_stick.y / 660.0f * 0.01f;
+    g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f + g_remote.mouse.x / 10000.0f;
+    g_robot_state.gimbal.pitch_angle += g_remote.controller.right_stick.y / 660.0f * 0.01f + g_remote.mouse.y / 50000.0f;
 
     // hardware limits for gimbal pitch (prevent self collision)
     __MAP_ANGLE_TO_UNIT_CIRCLE(g_robot_state.gimbal.yaw_angle);
