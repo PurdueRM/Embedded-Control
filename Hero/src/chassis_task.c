@@ -10,6 +10,7 @@
 #include "imu_task.h"
 #include "jetson_orin.h"
 #include <math.h>
+#include "dm_motor.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
@@ -36,7 +37,8 @@ motor_data_t motor_data_odom;
 uint16_t last_hp;
 uint16_t is_hit_counter = 0;
 
-
+extern DJI_Motor_Handle_t *g_bottom_motor;
+extern DM_Motor_Handle_t *g_top_yaw;
 
 void Chassis_Task_Init()
 {
@@ -150,7 +152,7 @@ void Chassis_Process_Target_Velocity()
 void Chassis_Ctrl_Loop()
 {
     //TODO: change this, for odom only
-    gimbal_angle_difference = 0;
+    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_bottom_motor) + g_top_yaw->stats->pos;
     Chassis_Process_Target_Velocity();
     
     chassis_state.v_x = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
