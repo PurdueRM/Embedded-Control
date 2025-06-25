@@ -8,6 +8,7 @@
 #include "referee_system.h"
 #include "laser.h"
 #include <stdint.h>
+#include "jetson_orin.h"
 
 // TODO: Copied from Swerve-Standard
 
@@ -77,55 +78,15 @@ void Launch_Task_Init()
 
 void Launch_Ctrl_Loop()
 {
-    // if (!g_robot_state.launch.IS_FIRING_ENABLED)
-    // {
-    //     stopFlywheel();
-    //     Laser_Off();
-    //     g_robot_state.launch.IS_FLYWHEEL_ENABLED = 0;
-    //     return;
-    // } else {
-    //     g_robot_state.launch.IS_FLYWHEEL_ENABLED = 1;
-    //     startFlywheel();
-    //     Laser_On();
-    // }
-
-    // if (g_robot_state.launch.IS_BUSY) { // check if we are in middle of a fire mode
-    //     switch (g_robot_state.launch.busy_mode)
-    //     {
-    //     case REJIGGLE:
-    //         rejiggle();
-    //         break;
-    //     case SINGLE_FIRE:
-    //         handleSingleFire();
-    //         break;
-    //     case BURST_FIRE:
-    //         break;
-    //     case FULL_AUTO:
-    //         handleFullAuto();
-    //         break;
-    //     default:
-    //         break;
-    //     }
-    // } else {
-    //     // Control loop for launch to see if new mode is set
-    //     switch (g_robot_state.launch.fire_mode)
-    //     {
-    //     case SINGLE_FIRE:
-    //         handleSingleFire();
-    //         break;
-    //     case BURST_FIRE:
-    //         // TODO: Complete 5 burst
-    //         break;
-    //     case FULL_AUTO:
-    //         handleFullAuto();
-    //         break;
-    //     default:
-    //         break;
-
-    //     }
-    // }
-
-    DJI_Motor_Set_Velocity(g_feed_motor, g_remote.controller.wheel/660.0f * 100.0f);
+    if (g_orin_data.online_flag && g_remote.controller.right_switch == UP) {
+        if (g_orin_data.receiving.auto_aiming.fire == 1) {
+            DJI_Motor_Set_Velocity(g_feed_motor, 100.0f);
+        } else {
+            DJI_Motor_Set_Velocity(g_feed_motor, 0.0f);
+        }
+    } else {
+        DJI_Motor_Set_Velocity(g_feed_motor, g_remote.controller.wheel/660.0f * 100.0f);
+    }
 
     if (g_remote.controller.left_switch == UP)
     {

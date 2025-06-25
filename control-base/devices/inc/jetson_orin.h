@@ -7,7 +7,7 @@
 #define ORIN_DATA_RX_BUFER_SIZE (20)
 #define ORIN_DATA_TX_BUFER_SIZE (40)
 
-#define ORIN_TIMEOUT_MS (3000)
+#define ORIN_TIMEOUT_MS (500)
 #define ORIN_NAV_TIMEOUT_MS (200)
 #define JETSON_ORIN_PERIOD (4)
 #pragma message "orin period must match with algorithm team"
@@ -72,7 +72,7 @@ typedef struct
     } receiving;
 
     uint8_t new_data_flag; // 1 for new data received, 0 for no new data
-
+    uint8_t online_flag;
 } Jetson_Orin_Data_t;
 
 extern Jetson_Orin_Data_t g_orin_data;

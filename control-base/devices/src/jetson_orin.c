@@ -16,6 +16,7 @@ uint8_t g_jetson_orin_initialized;
 void Jetson_Orin_Rx_Callback(UART_Instance_t *uart_instance)
 {
 	UNUSED(uart_instance);
+	g_orin_data.online_flag = 1;
 	// TODO: update buffer reference from uart_instance
 	if (g_orin_data.rx_buffer[0] == 0xAA)
 	{
@@ -71,6 +72,7 @@ void Jetson_Orin_Rx_Callback(UART_Instance_t *uart_instance)
  */
 void Jetson_Orin_Timeout_Callback()
 {
+	g_orin_data.online_flag = 0;
 	// Attemp to reinitialize UART service
 	UART_Service_Init(g_orin_uart_instance_ptr);
 }
