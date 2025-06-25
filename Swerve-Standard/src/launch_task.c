@@ -195,8 +195,8 @@ void handleFullAuto() {
 }
 
 void startFlywheel() {
-    DJI_Motor_Set_Velocity(g_flywheel_left, -320);
-    DJI_Motor_Set_Velocity(g_flywheel_right, -320);
+    DJI_Motor_Set_Velocity(g_flywheel_left, -50);
+    DJI_Motor_Set_Velocity(g_flywheel_right, -50);
 }
 
 void stopFlywheel() {
