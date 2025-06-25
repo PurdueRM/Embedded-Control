@@ -10,6 +10,9 @@
 #include "imu_task.h"
 #include "jetson_orin.h"
 #include <math.h>
+#include "dm_motor.h"
+
+extern DM_Motor_Handle_t *g_pitch;
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
@@ -120,8 +123,8 @@ void Chassis_Process_Target_Velocity()
     if (is_hit_counter > 0) {
         is_hit_counter--;
     }
-
-    if (g_robot_state.chassis.IS_SPINTOP_ENABLED || g_remote.controller.left_switch == UP) {
+    spintop_safe = g_pitch->stats->pos > -0.4f;
+    if (spintop_safe && (g_robot_state.chassis.IS_SPINTOP_ENABLED || g_remote.controller.left_switch == UP)) {
         
         if (is_hit_counter > 0) {
             chassis_omega_new_target = 6 * PI; // 8 * PI rad/s

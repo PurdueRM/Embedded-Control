@@ -87,8 +87,8 @@ void C_Board_Comm_Send_Loop()
         else {
             chassis_powered_on = 1;
         }
-
-        memcpy(&(g_board_communication->tx_buffer[0]), &(Referee_System.Robot_State.Chassis_Power_Max), sizeof(uint16_t)); // &(Referee_System.Robot_State.Chassis_Power_Max)
+        uint16_t max_power = Referee_System.Robot_State.Chassis_Power_Max >= 100 ? 100 : Referee_System.Robot_State.Chassis_Power_Max;
+        memcpy(&(g_board_communication->tx_buffer[0]), &(max_power), sizeof(uint16_t)); // &(Referee_System.Robot_State.Chassis_Power_Max)
         memcpy(&(g_board_communication->tx_buffer[sizeof(uint16_t)]), &(chassis_powered_on), sizeof(uint8_t)); // Vi
         g_board_comm_sending_pending = 1;
     #else
