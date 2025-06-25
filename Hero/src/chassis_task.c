@@ -16,7 +16,7 @@ extern Remote_t g_remote;
 extern DJI_Motor_Handle_t *g_yaw; // for reading gimbal angle
 float gimbal_angle_difference;
 DJI_Motor_Handle_t *motors[4];
-uint8_t drive_esc_id_array[4] = {1, 2, 5, 4};
+uint8_t drive_esc_id_array[4] = {1, 2, 3, 4};
 Motor_Reversal_t drive_motor_reversal_array[4] = {
     MOTOR_REVERSAL_NORMAL,
     MOTOR_REVERSAL_NORMAL,
@@ -150,7 +150,7 @@ void Chassis_Process_Target_Velocity()
 void Chassis_Ctrl_Loop()
 {
     //TODO: change this, for odom only
-    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
+    gimbal_angle_difference = 0;
     Chassis_Process_Target_Velocity();
     
     chassis_state.v_x = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
