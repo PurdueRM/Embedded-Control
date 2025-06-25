@@ -125,12 +125,12 @@ void Launch_Ctrl_Loop()
     //     }
     // }
 
-    DJI_Motor_Set_Velocity(g_feed_motor, g_remote.controller.wheel/660.0f * 100.0f);
+    DJI_Motor_Set_Velocity(g_feed_motor, -g_remote.controller.wheel/660.0f * 100.0f);
 
     if (g_remote.controller.left_switch == UP)
     {
-        DJI_Motor_Set_Velocity(g_flywheel_left, -100);
-        DJI_Motor_Set_Velocity(g_flywheel_right, -100);
+        DJI_Motor_Set_Velocity(g_flywheel_left, -200);
+        DJI_Motor_Set_Velocity(g_flywheel_right, -200);
 
     }
     else

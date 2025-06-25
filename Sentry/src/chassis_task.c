@@ -127,9 +127,9 @@ void Chassis_Process_Target_Velocity()
             chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
         }
         else {  //Decrease spintop rate if not hit for a while
-            chassis_omega_new_target = 2 * PI; // 2 * PI rad/s
+            chassis_omega_new_target = 3.5 * PI; // 2 * PI rad/s
         }
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
+        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.002f);
 
         // float frenquncy = 0.1f;
         // speed_up_spintop_rate = 8 * PI * sin(2*PI*frenquncy*time_for_omega);

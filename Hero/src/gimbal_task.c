@@ -23,7 +23,7 @@ PID_t g_top_yaw_pid = {
 };
 PID_t g_bottom_yaw_follow_pid = {
     .kp = 50000.0f,
-    .kd = 500000.0f,
+    .kd = 10000000.0f,
     .ki = 0.0f,
     .integral_limit = 0.0f,
     .output_limit = GM6020_MAX_VOLTAGE_INT,
@@ -72,6 +72,8 @@ void Gimbal_Ctrl_Loop()
     g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f + g_remote.mouse.x / 10000.0f;
     // g_robot_state.gimbal.pitch_angle += g_remote.controller.right_stick.y / 660.0f * 0.01f + g_remote.mouse.y / 50000.0f;
     g_gimbal_angle_difference = g_top_yaw->stats->pos;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(g_gimbal_angle_difference);
+    __MAX_LIMIT(g_gimbal_angle_difference, -1.0f, 1.0f);
     g_bottom_motor->output_current = PID(&g_bottom_yaw_follow_pid, g_gimbal_angle_difference);
     // // hardware limits for gimbal yaw (prevent self collision)
     __MAP_ANGLE_TO_UNIT_CIRCLE(g_robot_state.gimbal.yaw_angle);
