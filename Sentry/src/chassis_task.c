@@ -121,13 +121,13 @@ void Chassis_Process_Target_Velocity()
         is_hit_counter--;
     }
 
-    if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
+    if (g_robot_state.chassis.IS_SPINTOP_ENABLED || g_remote.controller.left_switch == UP) {
         
         if (is_hit_counter > 0) {
             chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
         }
         else {  //Decrease spintop rate if not hit for a while
-            chassis_omega_new_target = 2 * PI; // 2 * PI rad/s
+            chassis_omega_new_target = 3.5 * PI; // 2 * PI rad/s
         }
         __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
 
