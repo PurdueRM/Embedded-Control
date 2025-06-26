@@ -319,4 +319,3 @@ void ui_update_g_1() {
 void ui_remove_g_1() {
     _ui_remove_g_1_0();osDelay(SEND_INTERVAL_MS);
 }
-
