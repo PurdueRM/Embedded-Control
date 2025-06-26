@@ -51,6 +51,7 @@ void C_Board_Recv_Ref_Info(CAN_Instance_t *can_instance)
 {
     g_board_comm_package_first_part_established = 1; //debugging
     memcpy(&g_board_comm_package.power_limit, can_instance->rx_buffer, sizeof(uint16_t));
+    memcpy(&g_board_comm_package.chassis_powered_on, &can_instance->rx_buffer[sizeof(uint16_t)], sizeof(uint8_t));
 }
 
 /**
@@ -63,10 +64,6 @@ void C_Board_Recv_Supercap_Info(CAN_Instance_t* can_instance)
     g_board_comm_package_second_part_established = 1; // debugging
     memcpy(&g_board_comm_package.Vo, &can_instance->rx_buffer[0], sizeof(float));
     memcpy(&g_board_comm_package.Ps, &can_instance->rx_buffer[sizeof(float)], sizeof(float));
-    g_supercap.Vo = g_board_comm_package.Vo; // update the supercap voltage
-    g_supercap.Ps = g_board_comm_package.Ps; // update the supercap power reference
-    uint8_t supercap_percent = (g_supercap.Vo - SUPERCAP_DEPLETED_VOLTAGE) / (SUPERCAP_FULL_VOLTAGE - SUPERCAP_DEPLETED_VOLTAGE) * 100.0f;
-    g_supercap.supercap_percent = supercap_percent;
 }
 
 /**
@@ -80,16 +77,7 @@ void C_Board_Recv_Supercap_Info(CAN_Instance_t* can_instance)
 void C_Board_Comm_Send_Loop()
 {
     #ifdef MASTER
-        uint8_t chassis_powered_on = 0;
-        if (Referee_System.Robot_State.Chassis_Power_Output == 0) {
-            chassis_powered_on = 0;
-        }
-        else {
-            chassis_powered_on = 1;
-        }
-
         memcpy(&(g_board_communication->tx_buffer[0]), &(Referee_System.Robot_State.Chassis_Power_Max), sizeof(uint16_t)); // &(Referee_System.Robot_State.Chassis_Power_Max)
-        memcpy(&(g_board_communication->tx_buffer[sizeof(uint16_t)]), &(chassis_powered_on), sizeof(uint8_t)); // Vi
         g_board_comm_sending_pending = 1;
     #else
         memcpy(&(g_board_communication->tx_buffer[0]), &(g_supercap.Vo), sizeof(float)); // Vo
