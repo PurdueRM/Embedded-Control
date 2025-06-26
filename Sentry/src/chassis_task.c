@@ -102,11 +102,13 @@ void Chassis_Process_Target_Velocity()
     // time_for_omega += 0.001f;
     if (g_remote.controller.right_switch == UP)
     {
-        chassis_state.v_x_in_gimbal = -g_orin_data.receiving.navigation.y_vel;
-        chassis_state.v_y_in_gimbal = g_orin_data.receiving.navigation.x_vel;
+        __FIRST_ORDER_FILTER(chassis_state.v_x_in_gimbal, -g_orin_data.receiving.navigation.y_vel, 0.02f);
+        __FIRST_ORDER_FILTER(chassis_state.v_y_in_gimbal, g_orin_data.receiving.navigation.x_vel, 0.02f);
     } else {
-        chassis_state.v_x_in_gimbal = g_remote.controller.left_stick.x / 660.0f * 4.0f;
-        chassis_state.v_y_in_gimbal = g_remote.controller.left_stick.y / 660.0f * 4.0f;
+        __FIRST_ORDER_FILTER(chassis_state.v_x_in_gimbal, g_remote.controller.left_stick.x / 660.0f * 4.0f, 0.01f);
+        __FIRST_ORDER_FILTER(chassis_state.v_y_in_gimbal, g_remote.controller.left_stick.y / 660.0f * 4.0f, 0.0f);
+        // chassis_state.v_x_in_gimbal = g_remote.controller.left_stick.x / 660.0f * 4.0f;
+        // chassis_state.v_y_in_gimbal = g_remote.controller.left_stick.y / 660.0f * 4.0f;
         chassis_state.omega_in_gimbal = g_remote.controller.wheel * MAX_ANGLUAR_SPEED;
     }
 
@@ -137,7 +139,7 @@ void Chassis_Process_Target_Velocity()
             chassis_omega_new_target = 6.5 * PI; // 8 * PI rad/s
         }
         else {  //Decrease spintop rate if not hit for a while
-            chassis_omega_new_target = 2.5 * PI; // 2 * PI rad/s
+            chassis_omega_new_target = 4.5 * PI; // 2 * PI rad/s
         }
         __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
 

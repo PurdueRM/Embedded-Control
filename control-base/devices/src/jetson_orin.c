@@ -44,6 +44,7 @@ void Jetson_Orin_Rx_Callback(UART_Instance_t *uart_instance)
 
 		case 1:
 			Daemon_Reload(g_orin_daemon_nav_instance_ptr);
+			g_orin_data.nav_online_flag = 1;
 			memcpy(&g_orin_data.receiving.float_byte.data[0], &g_orin_data.rx_buffer[4], 12 * sizeof(uint8_t));
 			g_orin_data.receiving.navigation.x_vel = g_orin_data.receiving.float_byte.data[0];
 			g_orin_data.receiving.navigation.y_vel = g_orin_data.receiving.float_byte.data[1];
@@ -82,6 +83,7 @@ void Jetson_Orin_Nav_Timeout_Callback()
 	g_orin_data.receiving.navigation.x_vel = 0.0f;
 	g_orin_data.receiving.navigation.y_vel = 0.0f;
 	g_orin_data.receiving.navigation.yaw_angular_rate = 0.0f;
+	g_orin_data.nav_online_flag = 0;
 }
 
 void Jetson_Orin_Init(UART_HandleTypeDef *huartx)
@@ -117,7 +119,7 @@ void Jetson_Orin_Send_Data(void)
 	g_orin_data.sending.yaw_angular_rate = g_imu.bmi088_raw.gyro[2];
 	g_orin_data.sending.position_x = sentry_pose.y;
 	g_orin_data.sending.position_y = -sentry_pose.x;
-	g_orin_data.sending.orientation = g_imu.rad.yaw;
+	g_orin_data.sending.orientation = sentry_pose.theta;
 	g_orin_data.sending.velocity_x = sentry_pose.vy;
 	g_orin_data.sending.velocity_y = -sentry_pose.vx;
 	g_orin_data.sending.HP = Referee_System.Robot_State.Remaining_HP;

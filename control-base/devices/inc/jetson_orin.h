@@ -73,6 +73,7 @@ typedef struct
 
     uint8_t new_data_flag; // 1 for new data received, 0 for no new data
     uint8_t online_flag;
+    uint8_t nav_online_flag; // 1 for navigation data received, 0 for no navigation data
 } Jetson_Orin_Data_t;
 
 extern Jetson_Orin_Data_t g_orin_data;

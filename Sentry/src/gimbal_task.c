@@ -77,8 +77,8 @@ void Gimbal_Ctrl_Loop()
                 initiate_scanning_counter++;
             }
         }
-        if (lost_target_yaw_counter > 150 && initiate_scanning_counter > 750) {
-            g_robot_state.gimbal.yaw_angle += (2*PI/12);
+        if (lost_target_yaw_counter > 500 && initiate_scanning_counter > 750 && g_orin_data.nav_online_flag == 0) {
+            g_robot_state.gimbal.yaw_angle += (2*PI/24);
             g_robot_state.gimbal.pitch_angle = -0.1f; // reset pitch to current pitch
             lost_target_yaw_counter = 0;
         }
