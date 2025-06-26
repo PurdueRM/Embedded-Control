@@ -140,6 +140,12 @@ void Process_Remote_Input()
         g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
     }
 
+    if (g_remote.controller.right_switch == UP) {
+        g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 1;
+    } else {
+         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 0;
+    }
+
     if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
         //g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
         g_robot_state.launch.IS_FIRING_ENABLED = 1;
