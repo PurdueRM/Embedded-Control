@@ -114,13 +114,11 @@ void Supercap_Send(void)
         HAL_Delay(100); // wait for the uart to be ready
         DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "PVONP\r\n");
         HAL_Delay(100);
-        DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", Referee_System.Robot_State.Chassis_Power_Max);
+        DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", Referee_System.Robot_State.Chassis_Power_Max < 100 ? Referee_System.Robot_State.Chassis_Power_Max : 100);
     }
     else
     {
         HAL_Delay(100); // wait for the uart to be ready
         DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "PVOFP\r\n");
     }
-    
-
 }
