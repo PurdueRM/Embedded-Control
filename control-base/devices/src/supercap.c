@@ -1,6 +1,7 @@
 #include "supercap.h"
 #include "bsp_uart.h"
 #include "bsp_daemon.h"
+#include "referee_system.h"
 #include "string.h"
 #include "stdlib.h"
 #include "bsp_serial.h"
@@ -13,6 +14,7 @@ Daemon_Instance_t *g_supercap_daemon_ptr;
 UART_Instance_t *supercap_uart_instance_ptr;
 extern Jetson_Orin_Data_t g_orin_data;
 extern Board_Comm_Package_t g_board_comm_package; 
+extern Referee_System_t Referee_System;
 
 char* middle_cpy;
 char uart_buffer[SUPERCAP_RX_BUFFER_SIZE];
@@ -107,12 +109,12 @@ void Supercap_Send(void)
 	// UART_Transmit(supercap_uart_instance_ptr, g_supercap.tx_buffer, sizeof(g_orin_data.tx_buffer), UART_DMA);
     // uint8_t max_power = 60;
     // UART_Transmit(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", g_board_comm_package.Chassis_Power_Max);
-    if(g_board_comm_package.chassis_powered_on)
+    if(Referee_System.Robot_State.Chassis_Power_Output)
     {
         HAL_Delay(100); // wait for the uart to be ready
         DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "PVONP\r\n");
         HAL_Delay(100);
-        DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", g_board_comm_package.power_limit);
+        DEBUG_PRINTF(supercap_uart_instance_ptr->uart_handle, "P%03dP\r\n", Referee_System.Robot_State.Chassis_Power_Max);
     }
     else
     {

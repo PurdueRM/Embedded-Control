@@ -9,6 +9,7 @@
 #include "remote.h"
 #include "buzzer.h"
 #include "supercap.h"
+#include "usart.h"
 #include "user_math.h"
 #include "math.h"
 #include "rate_limiter.h"
@@ -75,7 +76,7 @@ void Handle_Starting_Up_State()
     CAN_Service_Init();
     C_Board_Comm_Task_Init();
     g_robot_state.state = ENABLED;
-    
+    Referee_System_Init(&huart6);
 }
 
 /**
