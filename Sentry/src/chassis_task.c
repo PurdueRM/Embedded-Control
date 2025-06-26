@@ -10,10 +10,12 @@
 #include "imu_task.h"
 #include "jetson_orin.h"
 #include <math.h>
+#include <stdint.h>
 #include "dm_motor.h"
+#include "supercap.h"
 
 extern DM_Motor_Handle_t *g_pitch;
-
+uint8_t spintop_safe = 0;
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 extern DJI_Motor_Handle_t *g_yaw; // for reading gimbal angle
@@ -126,8 +128,12 @@ void Chassis_Process_Target_Velocity()
     spintop_safe = g_pitch->stats->pos > -0.4f;
     if (spintop_safe && (g_robot_state.chassis.IS_SPINTOP_ENABLED || g_remote.controller.left_switch == UP)) {
         
-        if (is_hit_counter > 0) {
-            chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
+        if (is_hit_counter > 0 && g_supercap.Vo > 14.0f) {
+            chassis_omega_new_target = 9.5 * PI; // 8 * PI rad/s
+        }
+        else if (is_hit_counter > 0)
+        {
+            chassis_omega_new_target = 4.5 * PI; // 8 * PI rad/s
         }
         else {  //Decrease spintop rate if not hit for a while
             chassis_omega_new_target = 3.5 * PI; // 2 * PI rad/s
