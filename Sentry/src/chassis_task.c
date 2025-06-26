@@ -114,7 +114,7 @@ void Chassis_Process_Target_Velocity()
     const float hit_timeout = 5; // seconds
 
     // If the robot is hit, increase spintop rate
-    if(Referee_System.Robot_State.Remaining_HP < last_hp) {
+    if(Referee_System.Robot_State.Remaining_HP - last_hp < -5) {
         is_hit_counter = 500 * hit_timeout;
     }
 
@@ -127,7 +127,7 @@ void Chassis_Process_Target_Velocity()
     }
     spintop_safe = g_pitch->stats->pos > -0.4f;
     if (spintop_safe && (g_robot_state.chassis.IS_SPINTOP_ENABLED || g_remote.controller.left_switch == UP)) {
-        g_yaw->spintop_feedforward_gain = 1000;
+        g_yaw->spintop_feedforward_gain = 200.0f;
         g_yaw->spintop_velocity = chassis_state.omega; //feedforward spintop
         if (is_hit_counter > 0 && g_supercap.Vo > 15.0f) {
             chassis_omega_new_target = 15.5 * PI; // 8 * PI rad/s

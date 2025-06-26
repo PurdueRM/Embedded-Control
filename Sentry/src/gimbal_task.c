@@ -13,6 +13,7 @@ extern Remote_t g_remote;
 DJI_Motor_Handle_t *g_yaw;
 DM_Motor_Handle_t *g_pitch;
 uint16_t lost_target_yaw_counter = 0;
+uint16_t initiate_scanning_counter = 0;
 void Gimbal_Task_Init()
 {
     Motor_Config_t yaw_motor_config = {
@@ -29,14 +30,14 @@ void Gimbal_Task_Init()
             {
                 .kp = 45.0f,
                 .kd = 2000.0f,
-                .output_limit = 300, // max vel
+                .output_limit = 1000, // max vel
             },
         .velocity_pid =
             {
-                .kp = 9000.0f,
+                .kp = 12000.0f,
                 .ki = 0.0f,
                 .kd = 5000.0f,
-                .kf = 3000.0f,
+                .kf = 1000.0f,
                 .feedforward_limit = 13000.0f,
                 .integral_limit = 1000.0f,
                 .output_limit = GM6020_MAX_CURRENT_INT,
@@ -72,9 +73,13 @@ void Gimbal_Ctrl_Loop()
     {
         if (g_orin_data.receiving.auto_aiming.yaw == 0) {
             lost_target_yaw_counter++;
+            if (initiate_scanning_counter < 10000) { // overflow
+                initiate_scanning_counter++;
+            }
         }
-        if (lost_target_yaw_counter > 150) {
-            g_robot_state.gimbal.yaw_angle += (2*PI/6);
+        if (lost_target_yaw_counter > 150 && initiate_scanning_counter > 750) {
+            g_robot_state.gimbal.yaw_angle += (2*PI/12);
+            g_robot_state.gimbal.pitch_angle = -0.1f; // reset pitch to current pitch
             lost_target_yaw_counter = 0;
         }
         // g_robot_state.gimbal.yaw_angle += g_orin_data.receiving.navigation.yaw_angular_rate * 0.002f; // TODO: move to gimbal task
@@ -85,6 +90,7 @@ void Gimbal_Ctrl_Loop()
 
                 ;
             } else {
+                initiate_scanning_counter = 0;
                 g_robot_state.gimbal.yaw_angle = g_imu.rad.yaw + g_orin_data.receiving.auto_aiming.yaw / 180.0f * PI;
                 g_robot_state.gimbal.pitch_angle = g_imu.rad.pitch + g_orin_data.receiving.auto_aiming.pitch / 180.0f * PI;
             }
