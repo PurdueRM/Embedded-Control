@@ -1,6 +1,7 @@
 #include "chassis_task.h"
 
 #include "motor.h"
+#include "referee_system.h"
 #include "robot.h"
 #include "remote.h"
 #include "dji_motor.h"
@@ -11,6 +12,7 @@
 #include "jetson_orin.h"
 #include <math.h>
 #include "dm_motor.h"
+#include "c_board_comm.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
@@ -24,6 +26,8 @@ Motor_Reversal_t drive_motor_reversal_array[4] = {
     MOTOR_REVERSAL_NORMAL,
     MOTOR_REVERSAL_NORMAL
 };
+
+extern Board_Comm_Package_t g_board_comm_package;
 
 omni_physical_constants_t physical_constants;
 omni_chassis_state_t chassis_state;
@@ -39,6 +43,9 @@ uint16_t is_hit_counter = 0;
 
 extern DJI_Motor_Handle_t *g_bottom_motor;
 extern DM_Motor_Handle_t *g_top_yaw;
+
+float omega = 1;
+int omega_bool = 0;
 
 void Chassis_Task_Init()
 {
@@ -94,7 +101,7 @@ void Chassis_Task_Init()
 }
 
 void Chassis_Process_Target_Velocity()
-{
+{    
     // static float time_for_omega = 0.0f;
     // time_for_omega += 0.001f;
     if (g_remote.controller.right_switch == UP)
@@ -129,7 +136,7 @@ void Chassis_Process_Target_Velocity()
             chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
         }
         else {  //Decrease spintop rate if not hit for a while
-            chassis_omega_new_target = 3.5 * PI; // 2 * PI rad/s
+            chassis_omega_new_target = omega; // 2 * PI rad/s
         }
         __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
 
@@ -146,7 +153,7 @@ void Chassis_Process_Target_Velocity()
         __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
     }
     // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.003f);
-
+    Update_Omega();
 }
 
 void Chassis_Ctrl_Loop()
@@ -182,4 +189,33 @@ void Chassis_Ctrl_Loop()
     motor_data_odom.back_right = DJI_Motor_Get_Total_Angle(motors[2]) * physical_constants.R;
     motor_data_odom.front_right = DJI_Motor_Get_Total_Angle(motors[3]) * physical_constants.R;
     Update_Omni_Odometry(&sentry_pose, &physical_constants, &motor_data_odom, g_imu.rad.yaw + PI/2 - gimbal_angle_difference, g_imu.rad.yaw);
+}
+
+void Update_Omega() 
+{
+    switch ((int) g_board_comm_package.Ps) {
+        case 55:
+            omega = OMEGA_55W;
+            break;
+        case 65:
+            omega = OMEGA_65W;
+            break;
+        case 70:
+            omega = OMEGA_70W;
+            break;
+        case 75:
+            omega = OMEGA_75W;
+            break;
+        case 80:
+            omega = OMEGA_80W;
+            break;
+        case 85:
+            omega = OMEGA_85W;
+            break;
+        case 90:
+            omega = OMEGA_90W;
+            break;
+        default:
+            omega = OMEGA_55W;
+    }
 }
