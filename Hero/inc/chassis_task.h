@@ -4,7 +4,7 @@
 #define SPIN_TOP_OMEGA 6 // rad / s
 #define MAX_ANGLUAR_SPEED 6.28 // rad / s
 #define CHASSIS_WHEEL_DIAMETER (0.15f) // m
-#define CHASSIS_RADIUS (0.29f) // center to wheel, m
+#define CHASSIS_RADIUS (0.305f) // center to wheel, m
 #define CHASSIS_MAX_SPEED (2.0f) // m/s
 #ifndef PI
 #define PI (3.14159265358979323846f)
@@ -29,5 +29,6 @@
 void Chassis_Task_Init(void);
 void Chassis_Ctrl_Loop(void);
 void Update_Omega();
+float Rescale_Omega();
 
 #endif // CHASSIS_TASK_H
