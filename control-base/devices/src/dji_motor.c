@@ -431,6 +431,18 @@ void DJI_Motor_Current_Calc()
                 motor->output_current = angle_pid_output + velocity_pid_output;
                 break;
             }
+            case POSITION_CONTROL_SPINTOP:
+            {
+                // angle pid
+                float error = motor->angle_pid->ref - angle_feedback;
+                __MAP_ANGLE_TO_UNIT_CIRCLE(error);
+                // angle pid output as velocity ref
+                float output_vel = PID(motor->angle_pid, error);
+                // float spintop_feedforward = -motor->spintop_velocity * motor->spintop_feedforward_gain;
+                // velocity pid
+                motor->output_current = PID(motor->velocity_pid, -motor->spintop_velocity + output_vel - velocity_feedback);
+                break;
+            }
             default:
                 break;
             }

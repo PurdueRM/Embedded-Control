@@ -12,14 +12,14 @@ extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 DJI_Motor_Handle_t *g_yaw;
 DM_Motor_Handle_t *g_pitch;
-
+uint16_t lost_target_yaw_counter = 0;
 void Gimbal_Task_Init()
 {
     Motor_Config_t yaw_motor_config = {
         .can_bus = 1,
         .speed_controller_id = 1,
         .offset = 6141,
-        .control_mode = POSITION_VELOCITY_SERIES,
+        .control_mode = POSITION_CONTROL_SPINTOP,
         .motor_reversal = MOTOR_REVERSAL_NORMAL,
         .use_external_feedback = 1,
         .external_feedback_dir = 1,
@@ -27,17 +27,17 @@ void Gimbal_Task_Init()
         .external_velocity_feedback_ptr = &(g_imu.bmi088_raw.gyro[2]),
         .angle_pid =
             {
-                .kp = 25.0f,
-                .kd = 100.0f,
-                .output_limit = 20, // max vel
+                .kp = 45.0f,
+                .kd = 2000.0f,
+                .output_limit = 300, // max vel
             },
         .velocity_pid =
             {
-                .kp = 5000.0f,
+                .kp = 9000.0f,
                 .ki = 0.0f,
-                .kd = 0.0f,
-                .kf = 0.0f,
-                .feedforward_limit = 10000.0f,
+                .kd = 5000.0f,
+                .kf = 3000.0f,
+                .feedforward_limit = 13000.0f,
                 .integral_limit = 1000.0f,
                 .output_limit = GM6020_MAX_CURRENT_INT,
             },
@@ -70,18 +70,25 @@ void Gimbal_Ctrl_Loop()
     // }
     if (g_remote.controller.right_switch == UP)
     {
+        if (g_orin_data.receiving.auto_aiming.yaw == 0) {
+            lost_target_yaw_counter++;
+        }
+        if (lost_target_yaw_counter > 150) {
+            g_robot_state.gimbal.yaw_angle += (2*PI/6);
+            lost_target_yaw_counter = 0;
+        }
         // g_robot_state.gimbal.yaw_angle += g_orin_data.receiving.navigation.yaw_angular_rate * 0.002f; // TODO: move to gimbal task
         // Handled in jetson_orin.c
         if (g_orin_data.new_data_flag == 1)
         {
             if (g_orin_data.receiving.auto_aiming.yaw == 0) { // no target detected
+
                 ;
             } else {
                 g_robot_state.gimbal.yaw_angle = g_imu.rad.yaw + g_orin_data.receiving.auto_aiming.yaw / 180.0f * PI;
                 g_robot_state.gimbal.pitch_angle = g_imu.rad.pitch + g_orin_data.receiving.auto_aiming.pitch / 180.0f * PI;
             }
             g_orin_data.new_data_flag = 0;
-            
         }
     } else {
         g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f;

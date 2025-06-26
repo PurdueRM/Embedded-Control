@@ -88,6 +88,8 @@ typedef struct dji_motor
     PID_t *torque_pid;
 
     int16_t output_current;
+    float spintop_velocity;
+    float spintop_feedforward_gain;
 } DJI_Motor_Handle_t;
 
 typedef enum

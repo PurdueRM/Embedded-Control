@@ -127,16 +127,17 @@ void Chassis_Process_Target_Velocity()
     }
     spintop_safe = g_pitch->stats->pos > -0.4f;
     if (spintop_safe && (g_robot_state.chassis.IS_SPINTOP_ENABLED || g_remote.controller.left_switch == UP)) {
-        
-        if (is_hit_counter > 0 && g_supercap.Vo > 14.0f) {
-            chassis_omega_new_target = 9.5 * PI; // 8 * PI rad/s
+        g_yaw->spintop_feedforward_gain = 1000;
+        g_yaw->spintop_velocity = chassis_state.omega; //feedforward spintop
+        if (is_hit_counter > 0 && g_supercap.Vo > 15.0f) {
+            chassis_omega_new_target = 15.5 * PI; // 8 * PI rad/s
         }
         else if (is_hit_counter > 0)
         {
-            chassis_omega_new_target = 4.5 * PI; // 8 * PI rad/s
+            chassis_omega_new_target = 6.5 * PI; // 8 * PI rad/s
         }
         else {  //Decrease spintop rate if not hit for a while
-            chassis_omega_new_target = 3.5 * PI; // 2 * PI rad/s
+            chassis_omega_new_target = 2.5 * PI; // 2 * PI rad/s
         }
         __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
 
@@ -145,6 +146,8 @@ void Chassis_Process_Target_Velocity()
         // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
        
     } else {
+        g_yaw->spintop_feedforward_gain = 0;
+        g_yaw->spintop_velocity = 0; //feedforward spintop
         // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
         chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
