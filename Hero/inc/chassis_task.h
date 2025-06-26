@@ -17,8 +17,17 @@
 #define INIT_Y_POS (0.0f) // Starting 2d y position
 #define INIT_THETA (0.0f) // Starting Heading
 
+#define OMEGA_55W 5.3f
+#define OMEGA_65W 5.9f
+#define OMEGA_70W 6.7f
+#define OMEGA_75W 7.0f
+#define OMEGA_80W 7.3f
+#define OMEGA_85W 7.5f
+#define OMEGA_90W 7.5f
+
 // Function prototypes
 void Chassis_Task_Init(void);
 void Chassis_Ctrl_Loop(void);
+void Update_Omega();
 
 #endif // CHASSIS_TASK_H
