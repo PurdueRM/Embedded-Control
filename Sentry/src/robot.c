@@ -125,7 +125,7 @@ void Process_Remote_Input()
 
     if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
         //g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
-        g_robot_state.launch.IS_FIRING_ENABLED = 1;
+        g_robot_state.launch.IS_FIRING_ENABLED = 0;
         g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
     } else {
         //g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
