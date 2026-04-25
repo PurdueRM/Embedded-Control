@@ -106,7 +106,7 @@ void Chassis_Process_Target_Velocity()
         __FIRST_ORDER_FILTER(chassis_state.v_y_in_gimbal, g_orin_data.receiving.navigation.x_vel, 0.02f);
     } else {
         __FIRST_ORDER_FILTER(chassis_state.v_x_in_gimbal, g_remote.controller.left_stick.x / 660.0f * 4.0f, 0.01f);
-        __FIRST_ORDER_FILTER(chassis_state.v_y_in_gimbal, g_remote.controller.left_stick.y / 660.0f * 4.0f, 0.0f);
+        __FIRST_ORDER_FILTER(chassis_state.v_y_in_gimbal, g_remote.controller.left_stick.y / 660.0f * 4.0f, 0.01f);
         // chassis_state.v_x_in_gimbal = g_remote.controller.left_stick.x / 660.0f * 4.0f;
         // chassis_state.v_y_in_gimbal = g_remote.controller.left_stick.y / 660.0f * 4.0f;
         chassis_state.omega_in_gimbal = g_remote.controller.wheel * MAX_ANGLUAR_SPEED;

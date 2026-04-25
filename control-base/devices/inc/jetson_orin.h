@@ -32,7 +32,7 @@ typedef struct
         float orientation;        // rad
         float velocity_x;         // m/s
         float velocity_y;         // m/s
-        int16_t HP;
+        uint16_t HP;
         uint16_t reserved; // reserved for future use
     } sending;
 
