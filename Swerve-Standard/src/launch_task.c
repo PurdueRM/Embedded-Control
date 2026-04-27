@@ -16,112 +16,112 @@ DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right, *g_feed_motor;
 
 void Launch_Task_Init()
 {
-    // Init Launch Hardware
-    Motor_Config_t flywheel_left_config = {
-        .can_bus = 1,
-        .speed_controller_id = 4,
-        .offset = 0,
-        .control_mode = VELOCITY_CONTROL,
-        .motor_reversal = MOTOR_REVERSAL_NORMAL,
-        .velocity_pid =
-            {
-                .kp = 500.0f,
-                .output_limit = M3508_MAX_CURRENT_INT,
-            },
-    };
+    // // Init Launch Hardware
+    // Motor_Config_t flywheel_left_config = {
+    //     .can_bus = 1,
+    //     .speed_controller_id = 4,
+    //     .offset = 0,
+    //     .control_mode = VELOCITY_CONTROL,
+    //     .motor_reversal = MOTOR_REVERSAL_NORMAL,
+    //     .velocity_pid =
+    //         {
+    //             .kp = 500.0f,
+    //             .output_limit = M3508_MAX_CURRENT_INT,
+    //         },
+    // };
 
-    Motor_Config_t flywheel_right_config = {
-        .can_bus = 1,
-        .speed_controller_id = 5,
-        .offset = 0,
-        .control_mode = VELOCITY_CONTROL,
-        .motor_reversal = MOTOR_REVERSAL_REVERSED,
-        .velocity_pid =
-            {
-                .kp = 500.0f,
-                .output_limit = M3508_MAX_CURRENT_INT,
-            },
-    };
+    // Motor_Config_t flywheel_right_config = {
+    //     .can_bus = 1,
+    //     .speed_controller_id = 5,
+    //     .offset = 0,
+    //     .control_mode = VELOCITY_CONTROL,
+    //     .motor_reversal = MOTOR_REVERSAL_REVERSED,
+    //     .velocity_pid =
+    //         {
+    //             .kp = 500.0f,
+    //             .output_limit = M3508_MAX_CURRENT_INT,
+    //         },
+    // };
 
-    Motor_Config_t feed_speed_config = {
-        .can_bus = 1,
-        .speed_controller_id = 2,
-        .offset = 0,
-        .control_mode = VELOCITY_CONTROL | POSITION_CONTROL_TOTAL_ANGLE,
-        .motor_reversal = MOTOR_REVERSAL_NORMAL,
-        .velocity_pid =
-            {
-                .kp = 500.0f,
-                .kd = 200.0f,
-                .kf = 100.0f,
-                .output_limit = M2006_MAX_CURRENT_INT,
-            },
-        .angle_pid =
-            {
-                .kp = 500000.0f,
-                .kd = 15000000.0f,
-                .ki = 0.1f,
-                .output_limit = M2006_MAX_CURRENT_INT,
-                .integral_limit = 1000.0f,
-            }
-    };
+    // Motor_Config_t feed_speed_config = {
+    //     .can_bus = 1,
+    //     .speed_controller_id = 2,
+    //     .offset = 0,
+    //     .control_mode = VELOCITY_CONTROL | POSITION_CONTROL_TOTAL_ANGLE,
+    //     .motor_reversal = MOTOR_REVERSAL_NORMAL,
+    //     .velocity_pid =
+    //         {
+    //             .kp = 500.0f,
+    //             .kd = 200.0f,
+    //             .kf = 100.0f,
+    //             .output_limit = M2006_MAX_CURRENT_INT,
+    //         },
+    //     .angle_pid =
+    //         {
+    //             .kp = 500000.0f,
+    //             .kd = 15000000.0f,
+    //             .ki = 0.1f,
+    //             .output_limit = M2006_MAX_CURRENT_INT,
+    //             .integral_limit = 1000.0f,
+    //         }
+    // };
 
-    g_flywheel_left = DJI_Motor_Init(&flywheel_left_config,M3508);
-    g_flywheel_right = DJI_Motor_Init(&flywheel_right_config,M3508);
-    g_feed_motor = DJI_Motor_Init(&feed_speed_config,M2006);
+    // g_flywheel_left = DJI_Motor_Init(&flywheel_left_config,M3508);
+    // g_flywheel_right = DJI_Motor_Init(&flywheel_right_config,M3508);
+    // g_feed_motor = DJI_Motor_Init(&feed_speed_config,M2006);
 
-    Laser_Init();
+    // Laser_Init();
 }
 
 void Launch_Ctrl_Loop()
 {
-    if (!g_robot_state.launch.IS_FIRING_ENABLED)
-    {
-        stopFlywheel();
-        Laser_Off();
-        g_robot_state.launch.IS_FLYWHEEL_ENABLED = 0;
-        return;
-    } else {
-        g_robot_state.launch.IS_FLYWHEEL_ENABLED = 1;
-        startFlywheel();
-        Laser_On();
-    }
+    // if (!g_robot_state.launch.IS_FIRING_ENABLED)
+    // {
+    //     stopFlywheel();
+    //     Laser_Off();
+    //     g_robot_state.launch.IS_FLYWHEEL_ENABLED = 0;
+    //     return;
+    // } else {
+    //     g_robot_state.launch.IS_FLYWHEEL_ENABLED = 1;
+    //     startFlywheel();
+    //     Laser_On();
+    // }
 
-    if (g_robot_state.launch.IS_BUSY) { // check if we are in middle of a fire mode
-        switch (g_robot_state.launch.busy_mode)
-        {
-        case REJIGGLE:
-            rejiggle();
-            break;
-        case SINGLE_FIRE:
-            handleSingleFire();
-            break;
-        case BURST_FIRE:
-            break;
-        case FULL_AUTO:
-            handleFullAuto();
-            break;
-        default:
-            break;
-        }
-    } else {
-        // Control loop for launch to see if new mode is set
-        switch (g_robot_state.launch.fire_mode)
-        {
-        case SINGLE_FIRE:
-            handleSingleFire();
-            break;
-        case BURST_FIRE:
-            // TODO: Complete 5 burst
-            break;
-        case FULL_AUTO:
-            handleFullAuto();
-            break;
-        default:
-            break;
+    // if (g_robot_state.launch.IS_BUSY) { // check if we are in middle of a fire mode
+    //     switch (g_robot_state.launch.busy_mode)
+    //     {
+    //     case REJIGGLE:
+    //         rejiggle();
+    //         break;
+    //     case SINGLE_FIRE:
+    //         handleSingleFire();
+    //         break;
+    //     case BURST_FIRE:
+    //         break;
+    //     case FULL_AUTO:
+    //         handleFullAuto();
+    //         break;
+    //     default:
+    //         break;
+    //     }
+    // } else {
+    //     // Control loop for launch to see if new mode is set
+    //     switch (g_robot_state.launch.fire_mode)
+    //     {
+    //     case SINGLE_FIRE:
+    //         handleSingleFire();
+    //         break;
+    //     case BURST_FIRE:
+    //         // TODO: Complete 5 burst
+    //         break;
+    //     case FULL_AUTO:
+    //         handleFullAuto();
+    //         break;
+    //     default:
+    //         break;
 
-        }
-    }
+    //     }
+    // }
 }
 
 void resetRelPos() {
