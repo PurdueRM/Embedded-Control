@@ -98,65 +98,65 @@ void Chassis_Task_Init()
 
 void Chassis_Process_Target_Velocity()
 {
-    // static float time_for_omega = 0.0f;
-    // time_for_omega += 0.001f;
-    if (g_remote.controller.right_switch == UP)
-    {
-        __FIRST_ORDER_FILTER(chassis_state.v_x_in_gimbal, -g_orin_data.receiving.navigation.y_vel, 0.02f);
-        __FIRST_ORDER_FILTER(chassis_state.v_y_in_gimbal, g_orin_data.receiving.navigation.x_vel, 0.02f);
-    } else {
-        __FIRST_ORDER_FILTER(chassis_state.v_x_in_gimbal, g_remote.controller.left_stick.x / 660.0f * 4.0f, 0.01f);
-        __FIRST_ORDER_FILTER(chassis_state.v_y_in_gimbal, g_remote.controller.left_stick.y / 660.0f * 4.0f, 0.01f);
-        // chassis_state.v_x_in_gimbal = g_remote.controller.left_stick.x / 660.0f * 4.0f;
-        // chassis_state.v_y_in_gimbal = g_remote.controller.left_stick.y / 660.0f * 4.0f;
-        chassis_state.omega_in_gimbal = g_remote.controller.wheel * MAX_ANGLUAR_SPEED;
-    }
+    // // static float time_for_omega = 0.0f;
+    // // time_for_omega += 0.001f;
+    // if (g_remote.controller.right_switch == UP)
+    // {
+    //     __FIRST_ORDER_FILTER(chassis_state.v_x_in_gimbal, -g_orin_data.receiving.navigation.y_vel, 0.02f);
+    //     __FIRST_ORDER_FILTER(chassis_state.v_y_in_gimbal, g_orin_data.receiving.navigation.x_vel, 0.02f);
+    // } else {
+    //     __FIRST_ORDER_FILTER(chassis_state.v_x_in_gimbal, g_remote.controller.left_stick.x / 660.0f * 4.0f, 0.01f);
+    //     __FIRST_ORDER_FILTER(chassis_state.v_y_in_gimbal, g_remote.controller.left_stick.y / 660.0f * 4.0f, 0.01f);
+    //     // chassis_state.v_x_in_gimbal = g_remote.controller.left_stick.x / 660.0f * 4.0f;
+    //     // chassis_state.v_y_in_gimbal = g_remote.controller.left_stick.y / 660.0f * 4.0f;
+    //     chassis_state.omega_in_gimbal = g_remote.controller.wheel * MAX_ANGLUAR_SPEED;
+    // }
 
-    float chassis_omega_new_target = 0;
-    const float hit_timeout = 5; // seconds
+    // float chassis_omega_new_target = 0;
+    // const float hit_timeout = 5; // seconds
 
-    // If the robot is hit, increase spintop rate
-    if(Referee_System.Robot_State.Remaining_HP - last_hp < -5) {
-        is_hit_counter = 500 * hit_timeout;
-    }
+    // // If the robot is hit, increase spintop rate
+    // if(Referee_System.Robot_State.Remaining_HP - last_hp < -5) {
+    //     is_hit_counter = 500 * hit_timeout;
+    // }
 
-    //TODO：Adjust the data type to reflect the actual value.
-    last_hp = Referee_System.Robot_State.Remaining_HP;
+    // //TODO：Adjust the data type to reflect the actual value.
+    // last_hp = Referee_System.Robot_State.Remaining_HP;
     
-    // Counter for hit timeout
-    if (is_hit_counter > 0) {
-        is_hit_counter--;
-    }
-    spintop_safe = g_pitch->stats->pos > -0.4f;
-    if (spintop_safe && (g_robot_state.chassis.IS_SPINTOP_ENABLED || g_remote.controller.left_switch == UP)) {
-        g_yaw->spintop_feedforward_gain = 200.0f;
-        g_yaw->spintop_velocity = chassis_state.omega; //feedforward spintop
-        if (is_hit_counter > 0 && g_supercap.Vo > 15.0f) {
-            chassis_omega_new_target = 15.5 * PI; // 8 * PI rad/s
-        }
-        else if (is_hit_counter > 0)
-        {
-            chassis_omega_new_target = 6.5 * PI; // 8 * PI rad/s
-        }
-        else {  //Decrease spintop rate if not hit for a while
-            chassis_omega_new_target = 4.5 * PI; // 2 * PI rad/s
-        }
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
+    // // Counter for hit timeout
+    // if (is_hit_counter > 0) {
+    //     is_hit_counter--;
+    // }
+    // spintop_safe = g_pitch->stats->pos > -0.4f;
+    // if (spintop_safe && (g_robot_state.chassis.IS_SPINTOP_ENABLED || g_remote.controller.left_switch == UP)) {
+    //     g_yaw->spintop_feedforward_gain = 200.0f;
+    //     g_yaw->spintop_velocity = chassis_state.omega; //feedforward spintop
+    //     if (is_hit_counter > 0 && g_supercap.Vo > 15.0f) {
+    //         chassis_omega_new_target = 15.5 * PI; // 8 * PI rad/s
+    //     }
+    //     else if (is_hit_counter > 0)
+    //     {
+    //         chassis_omega_new_target = 6.5 * PI; // 8 * PI rad/s
+    //     }
+    //     else {  //Decrease spintop rate if not hit for a while
+    //         chassis_omega_new_target = 4.5 * PI; // 2 * PI rad/s
+    //     }
+    //     __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
 
-        // float frenquncy = 0.1f;
-        // speed_up_spintop_rate = 8 * PI * sin(2*PI*frenquncy*time_for_omega);
-        // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
+    //     // float frenquncy = 0.1f;
+    //     // speed_up_spintop_rate = 8 * PI * sin(2*PI*frenquncy*time_for_omega);
+    //     // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
        
-    } else {
-        g_yaw->spintop_feedforward_gain = 0;
-        g_yaw->spintop_velocity = 0; //feedforward spintop
-        // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
-        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-        chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
-        __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
-        // chassis_omega_new_target = -g_remote.controller.right_stick.x/660.0f * 6 * PI;
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
-    }
+    // } else {
+    //     g_yaw->spintop_feedforward_gain = 0;
+    //     g_yaw->spintop_velocity = 0; //feedforward spintop
+    //     // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
+    //     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+    //     chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
+    //     __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
+    //     // chassis_omega_new_target = -g_remote.controller.right_stick.x/660.0f * 6 * PI;
+    //     __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
+    // }
     // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.003f);
 
 }
@@ -164,34 +164,34 @@ void Chassis_Process_Target_Velocity()
 void Chassis_Ctrl_Loop()
 {
     //TODO: change this, for odom only
-    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
-    Chassis_Process_Target_Velocity();
+    // gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
+    // Chassis_Process_Target_Velocity();
     
-    chassis_state.v_x = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
-    chassis_state.v_y = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
-    // chassis_state.v_x = g_robot_state.input.vx;
-    // chassis_state.v_y = g_robot_state.input.vy;
+    // chassis_state.v_x = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
+    // chassis_state.v_y = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
+    // // chassis_state.v_x = g_robot_state.input.vx;
+    // // chassis_state.v_y = g_robot_state.input.vy;
 
-    // Control loop for the chassis
-    omni_calculate_kinematics(&chassis_state, &physical_constants);
-    // omni_desaturate_wheel_speeds(&chassis_state, &physical_constants);
-    omni_convert_to_rpm(&chassis_state);
+    // // Control loop for the chassis
+    // omni_calculate_kinematics(&chassis_state, &physical_constants);
+    // // omni_desaturate_wheel_speeds(&chassis_state, &physical_constants);
+    // omni_convert_to_rpm(&chassis_state);
 
-    // use rate limiter to limit acceleration of the wheels
-    // chassis_state.phi_dot_1 = rate_limiter_iterate(&wheel_rate_limiters[0], chassis_state.phi_dot_1);
-    // chassis_state.phi_dot_2 = rate_limiter_iterate(&wheel_rate_limiters[1], chassis_state.phi_dot_2);
-    // chassis_state.phi_dot_3 = rate_limiter_iterate(&wheel_rate_limiters[2], chassis_state.phi_dot_3);
-    // chassis_state.phi_dot_4 = rate_limiter_iterate(&wheel_rate_limiters[3], chassis_state.phi_dot_4);
+    // // use rate limiter to limit acceleration of the wheels
+    // // chassis_state.phi_dot_1 = rate_limiter_iterate(&wheel_rate_limiters[0], chassis_state.phi_dot_1);
+    // // chassis_state.phi_dot_2 = rate_limiter_iterate(&wheel_rate_limiters[1], chassis_state.phi_dot_2);
+    // // chassis_state.phi_dot_3 = rate_limiter_iterate(&wheel_rate_limiters[2], chassis_state.phi_dot_3);
+    // // chassis_state.phi_dot_4 = rate_limiter_iterate(&wheel_rate_limiters[3], chassis_state.phi_dot_4);
 
-    // set the velocities of the wheels
-    DJI_Motor_Set_Velocity(motors[0], chassis_state.phi_dot_1);
-    DJI_Motor_Set_Velocity(motors[1], chassis_state.phi_dot_2);
-    DJI_Motor_Set_Velocity(motors[2], chassis_state.phi_dot_3);
-    DJI_Motor_Set_Velocity(motors[3], chassis_state.phi_dot_4);
+    // // set the velocities of the wheels
+    // DJI_Motor_Set_Velocity(motors[0], chassis_state.phi_dot_1);
+    // DJI_Motor_Set_Velocity(motors[1], chassis_state.phi_dot_2);
+    // DJI_Motor_Set_Velocity(motors[2], chassis_state.phi_dot_3);
+    // DJI_Motor_Set_Velocity(motors[3], chassis_state.phi_dot_4);
 
-    motor_data_odom.front_left = DJI_Motor_Get_Total_Angle(motors[0]) * physical_constants.R;
-    motor_data_odom.back_left = DJI_Motor_Get_Total_Angle(motors[1]) * physical_constants.R;
-    motor_data_odom.back_right = DJI_Motor_Get_Total_Angle(motors[2]) * physical_constants.R;
-    motor_data_odom.front_right = DJI_Motor_Get_Total_Angle(motors[3]) * physical_constants.R;
-    Update_Omni_Odometry(&sentry_pose, &physical_constants, &motor_data_odom, g_imu.rad.yaw + PI/2 - gimbal_angle_difference, g_imu.rad.yaw);
+    // motor_data_odom.front_left = DJI_Motor_Get_Total_Angle(motors[0]) * physical_constants.R;
+    // motor_data_odom.back_left = DJI_Motor_Get_Total_Angle(motors[1]) * physical_constants.R;
+    // motor_data_odom.back_right = DJI_Motor_Get_Total_Angle(motors[2]) * physical_constants.R;
+    // motor_data_odom.front_right = DJI_Motor_Get_Total_Angle(motors[3]) * physical_constants.R;
+    // Update_Omni_Odometry(&sentry_pose, &physical_constants, &motor_data_odom, g_imu.rad.yaw + PI/2 - gimbal_angle_difference, g_imu.rad.yaw);
 }
