@@ -13,8 +13,18 @@ extern Remote_t g_remote;
 DJI_Motor_Handle_t *g_yaw;
 DM_Motor_Handle_t *g_pitch;
 DM_Motor_Handle_t *g_wrist;
+DM_Motor_Handle_t *g_shoulder;
+DM_Motor_Handle_t *g_elbow;
+
+float elbow_target;
+float shoulder_target;
+float wrist_target;
+
+
 uint16_t lost_target_yaw_counter = 0;
 uint16_t initiate_scanning_counter = 0;
+Arm_Move_State arm_state = SHOULDER;
+
 void Gimbal_Task_Init()
 {
     // Motor_Config_t yaw_motor_config = {
@@ -48,8 +58,28 @@ void Gimbal_Task_Init()
     DM_Motor_Config_t wrist_motor_config = {
         .can_bus = 1,
         .control_mode = DM_MOTOR_MIT,
-        .rx_id = 0x00,
-        .tx_id = 0x01,
+        .rx_id = 0x02,  //Master ID
+        .tx_id = 0x03,  //CAN ID 
+        .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .pos_offset = -1.753,
+        .kp = 10.0f,
+        .kd = 1.0f,
+    };
+    DM_Motor_Config_t shoulder_motor_config = {
+        .can_bus = 1,
+        .control_mode = DM_MOTOR_MIT,
+        .rx_id = 0x12,  //Master ID
+        .tx_id = 0x13,  //CAN ID 
+        .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .kp = 10.0f,
+        .kd = 1.0f,
+    };
+    DM_Motor_Config_t elbow_motor_config = {
+        .can_bus = 1,
+        .control_mode = DM_MOTOR_MIT,
+        .rx_id = 0x00,  //Master ID
+        .tx_id = 0x01,  //CAN ID 
+        .pos_offset = 0.6357,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
         .kp = 10.0f,
         .kd = 1.0f,
@@ -57,6 +87,12 @@ void Gimbal_Task_Init()
     // g_yaw = DJI_Motor_Init(&yaw_motor_config, GM6020);
     // g_pitch = DM_Motor_Init(&pitch_motor_config);
     g_wrist = DM_Motor_Init(&wrist_motor_config);
+    g_shoulder = DM_Motor_Init(&shoulder_motor_config);
+    g_elbow = DM_Motor_Init(&elbow_motor_config);
+
+    shoulder_target = 0.0f;
+    elbow_target = 0.0f;
+    wrist_target = 0.0f;
 }
 
 
@@ -114,7 +150,35 @@ void Gimbal_Ctrl_Loop()
     
     // DM_Motor_Enable_Motor(g_pitch);
     // DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 8.5f);
-    DM_Motor_Ctrl_MIT_PD(g_wrist, 0, 0.0f, 0.0f, 20.0f, 8.5f);
+    // uint8_t l_switch = g_remote.controller.left_switch;
+    // if(l_switch == 1){ // 1 up; 2 down; 3 mid
+    //     arm_state = SHOULDER;
+    // }
+    // else if(l_switch == 3){
+    //     arm_state = ELBOW;
+    // }
+    // else if(l_switch == 2){
+    //     arm_state = WRIST;
+    // }
+
+    // switch(arm_state){
+    //     case SHOULDER:
+
+    //         break;
+    //     case WRIST:
+    //         DM_Motor_Ctrl_MIT_PD(g_wrist, 1.0f, 0.0f, 0.0f, 20.0f, 8.5f);
+    //         break;
+    //     default:
+    //         break;
+    // }
+    elbow_target += g_remote.controller.left_stick.y/660.0f * 0.001;
+    wrist_target += g_remote.controller.right_stick.y/660.0f * 0.001;
+
+    DM_Motor_Enable_Motor(g_elbow);
+    DM_Motor_Ctrl_MIT_PD(g_elbow, elbow_target, 0.0f, 0.0f, 10.0f, 0.0f);
+
+    DM_Motor_Enable_Motor(g_wrist);
+    DM_Motor_Ctrl_MIT_PD(g_wrist, wrist_target, 0.0f, 0.0f, 10.0f, 0.0f);
 }
 
 void _Gimbal_Target_Reset()

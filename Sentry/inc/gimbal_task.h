@@ -11,6 +11,13 @@ typedef struct
     float yaw_angle;
 } Gimbal_Target_t;
 
+typedef enum
+{
+    WRIST,
+    SHOULDER,
+    ELBOW
+} Arm_Move_State;
+
 // Function prototypes
 void Gimbal_Task_Init(void);
 void Gimbal_Ctrl_Loop(void);
