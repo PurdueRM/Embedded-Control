@@ -20,7 +20,7 @@
                 "ROBOT_PROJECT=${input:robotProject}"
             ],
             "windows": {
-                "command": "mingw32-make",
+                "command": "make",
                 "args": [
                     "all_windows",
                     "-j",
@@ -46,7 +46,7 @@
                 "ROBOT_PROJECT=${input:robotProject}"
             ],
             "windows": {
-                "command": "mingw32-make",
+                "command": "make",
                 "args": [
                     "flash_powershell",
                     "ROBOT_PROJECT=${input:robotProject}"
@@ -67,7 +67,7 @@
                 "clean"
             ],
             "windows": {
-                "command": "mingw32-make",
+                "command": "make",
                 "args": [
                     "clean_powershell"
                 ]

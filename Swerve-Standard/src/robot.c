@@ -18,7 +18,7 @@ Robot_State_t g_robot_state = {0};
 extern Remote_t g_remote;
 extern Supercap_t g_supercap;
 
-extern DJI_Motor_Handle_t *g_yaw;
+// extern DJI_Motor_Handle_t *g_yaw;
 
 Input_State_t g_input_state = {0};
 
@@ -131,7 +131,8 @@ void Process_Remote_Input()
 
 
     // Calculate Gimbal Oriented Control
-    float theta = DJI_Motor_Get_Absolute_Angle(g_yaw);
+    // float theta = DJI_Motor_Get_Absolute_Angle(g_yaw);
+    float theta = 0;    //Does this work?
     g_robot_state.chassis.x_speed = -g_robot_state.input.vy * sin(theta) + g_robot_state.input.vx * cos(theta);
     g_robot_state.chassis.y_speed = g_robot_state.input.vy * cos(theta) + g_robot_state.input.vx * sin(theta);
 

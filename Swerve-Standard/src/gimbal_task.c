@@ -6,6 +6,7 @@
 #include "dji_motor.h"
 #include "imu_task.h"
 #include "jetson_orin.h"
+#include "dm_motor.h"
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;

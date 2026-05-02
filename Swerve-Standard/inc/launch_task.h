@@ -41,6 +41,9 @@ typedef struct
 
 void Launch_Task_Init(void);
 void Launch_Ctrl_Loop(void);
+void Servo_Init(void);
+void Servo_SetAngle(float);
+
 
 extern Launch_Target_t g_launch_target;
 extern DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right, *g_motor_feed;

@@ -17,7 +17,8 @@
         "enabled": true,
         "samplesPerSecond": 4
       },
-      "preLaunchTask": "Build"
+      "preLaunchTask": "Build",
+      "gdbPath": "gdb-multiarch"
     },
     {
       "name": "ST-LINK",
@@ -35,7 +36,8 @@
         "enabled": true,
         "samplesPerSecond": 8
       },
-      "preLaunchTask": "Build"
+      "preLaunchTask": "Build",
+      "gdbPath": "gdb-multiarch"
     },
     {
       "name": "C/C++ Runner: Debug Session",

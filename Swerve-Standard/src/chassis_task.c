@@ -14,8 +14,8 @@
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 extern Referee_System_t Referee_System;
-extern DJI_Motor_Handle_t *g_yaw;
-extern DJI_Motor_Handle_t *g_yaw;
+// extern DJI_Motor_Handle_t *g_yaw;
+// extern DJI_Motor_Handle_t *g_yaw;
 uint16_t delay_counter = 0;
 
 
@@ -217,7 +217,8 @@ void Lock_Chassis_To_Angle(float lock_angle, float offset_angle)
     static float last_snap_angle = 0.0f;
 
     // Get the angle difference and apply the offset
-    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + offset_angle;
+    // gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + offset_angle;
+    gimbal_angle_difference = 0 + offset_angle;
     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
 
     // 2. Check if angle difference exceeds hysteresis threshold
