@@ -134,28 +134,28 @@ void Chassis_Ctrl_Loop()
     if (delay_counter > 0) {
         delay_counter--;
     }
-    if ((Referee_System.Robot_State.Chassis_Power_Output == 0) || delay_counter > 0)
-    {
-        if (Referee_System.Robot_State.Chassis_Power_Output == 0)
-        {
-            float delay_time = 0.5f; //seconds
-            delay_counter = delay_time * 500;
-        }
-        // disable turning motor
-        for (int i = 0; i < NUMBER_OF_MODULES; i++)
-        {
-            g_chassis_state.omega = 0;
-            g_chassis_state.v_x = 0;
-            g_chassis_state.v_y = 0;
-            g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
-            DJI_Motor_Disable(g_drive_motors[i]);
-            DJI_Motor_Disable(g_azimuth_motors[i]);
-            PID_Reset(g_azimuth_motors[i]->angle_pid);
-            PID_Reset(g_azimuth_motors[i]->velocity_pid);
-            PID_Reset(g_drive_motors[i]->velocity_pid);
-        }
-        return;
-    }
+    // if ((Referee_System.Robot_State.Chassis_Power_Output == 0) || delay_counter > 0)
+    // {
+    //     if (Referee_System.Robot_State.Chassis_Power_Output == 0)
+    //     {
+    //         float delay_time = 0.5f; //seconds
+    //         delay_counter = delay_time * 500;
+    //     }
+    //     // disable turning motor
+    //     for (int i = 0; i < NUMBER_OF_MODULES; i++)
+    //     {
+    //         g_chassis_state.omega = 0;
+    //         g_chassis_state.v_x = 0;
+    //         g_chassis_state.v_y = 0;
+    //         g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
+    //         DJI_Motor_Disable(g_drive_motors[i]);
+    //         DJI_Motor_Disable(g_azimuth_motors[i]);
+    //         PID_Reset(g_azimuth_motors[i]->angle_pid);
+    //         PID_Reset(g_azimuth_motors[i]->velocity_pid);
+    //         PID_Reset(g_drive_motors[i]->velocity_pid);
+    //     }
+    //     return;
+    // }
     if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
         g_supercap_linear_boost_rate = g_supercap_linear_boost_rate * 0.95f + 3.0f * 0.05f;
         g_supercap_spintop_boost_rate = g_supercap_spintop_boost_rate * 0.95f + 3.0f * 0.05f;
@@ -169,8 +169,11 @@ void Chassis_Ctrl_Loop()
     for (int i = 0; i < NUMBER_OF_MODULES; i++) {
         measured_angles[i] = DJI_Motor_Get_Absolute_Angle(g_azimuth_motors[i]);
     }
-    g_chassis_state.v_x = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
-    g_chassis_state.v_y = g_robot_state.chassis.y_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
+    // g_chassis_state.v_x = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
+    // g_chassis_state.v_y = g_robot_state.chassis.y_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
+    g_chassis_state.v_x = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed;
+    g_chassis_state.v_y = g_robot_state.chassis.y_speed * g_swerve_constants.max_speed;
+    
 
     // Handle locking logic
     // TODO add an adjustable offset with keyboard
@@ -192,9 +195,9 @@ void Chassis_Ctrl_Loop()
     // }
     
     // // rate limit the module speeds
-    // for (int i = 0; i < NUMBER_OF_MODULES; i++) {
-    //     g_chassis_state.states[i].speed = rate_limiter_iterate(&chassis_vel_limiters[i], g_chassis_state.states[i].speed);   
-    // }
+    for (int i = 0; i < NUMBER_OF_MODULES; i++) {
+        g_chassis_state.states[i].speed = rate_limiter_iterate(&chassis_vel_limiters[i], g_chassis_state.states[i].speed);   
+    }
 
     swerve_convert_to_rpm(&g_chassis_state, &g_swerve_constants);
 
@@ -203,7 +206,7 @@ void Chassis_Ctrl_Loop()
         DJI_Motor_Set_Velocity(g_drive_motors[i], g_chassis_state.states[i].speed);
     }
 
-    Update_Maxes();
+    // Update_Maxes();
 }
 
 /**

@@ -43,6 +43,7 @@ void Launch_Task_Init(void);
 void Launch_Ctrl_Loop(void);
 void Servo_Init(void);
 void Servo_SetAngle(float);
+void Disable_Servo(void);
 
 
 extern Launch_Target_t g_launch_target;
