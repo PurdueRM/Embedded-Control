@@ -21,21 +21,25 @@ extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 
 DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right, *g_feed_motor;
+float servo_angle = 0;
 
 void Launch_Task_Init()
 {
     Servo_Init();
+    Disable_Servo();
+    
+    servo_angle = 0;
 }
 
 void Launch_Ctrl_Loop()
 {
-     static uint32_t last_time = 0;
+    //  static uint32_t last_time = 0;
     // static uint8_t state = 0;
 
-    if (HAL_GetTick() - last_time < 1000)
-        return;
+    // if (HAL_GetTick() - last_time < 1000)
+    //     return;
 
-    last_time = HAL_GetTick();
+    // last_time = HAL_GetTick();
 
     // if (state == 0) {
     //     Servo_SetAngle(0);
@@ -47,7 +51,16 @@ void Launch_Ctrl_Loop()
     //     Servo_SetAngle(180);
     //     state = 0;
     // }
-    Servo_SetAngle(0);
+    if(g_remote.controller.left_switch == 1){
+        if(g_remote.controller.right_stick.y >= 100)
+            servo_angle = 180;
+        else if(g_remote.controller.right_stick.y <= -100)
+            servo_angle = 0;
+
+    }
+    Servo_SetAngle(servo_angle);
+
+    // Disable_Servo();
 }
 
 
@@ -76,4 +89,8 @@ void Servo_SetAngle(float angle)
     float duty = pulse_ms / 20.0f;
 
     PWM_Set_Duty_Ratio(servo_pwm, duty);
+}
+
+void Disable_Servo(){
+    PWM_Set_Duty_Ratio(servo_pwm, 0);
 }

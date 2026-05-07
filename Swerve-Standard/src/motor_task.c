@@ -1,6 +1,6 @@
 #include "motor_task.h"
 #include "dji_motor.h"
-// #include "dm_motor.h"
+#include "dm_motor.h"
 // #include "mf_motor.h"
 #include "supercap.h"
 #include "c_board_comm.h"
@@ -29,6 +29,7 @@ void Motor_Task_Loop() {
     Daemon_Reload(g_motor_task_daemon_ptr);
     #ifdef MASTER
         DJI_Motor_Send();
+        DM_Motor_Send();
     #else
         if (g_board_comm_sending_pending == 1)
         {
