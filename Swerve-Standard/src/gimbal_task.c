@@ -14,7 +14,6 @@ extern Remote_t g_remote;
 DM_Motor_Handle_t *g_wrist;
 DM_Motor_Handle_t *g_shoulder;
 DM_Motor_Handle_t *g_elbow;
-
 float elbow_target;
 float shoulder_target;
 float wrist_target;
@@ -56,14 +55,14 @@ void Gimbal_Task_Init()
     g_elbow = DM_Motor_Init(&elbow_motor_config);
 
     shoulder_target = 0.0f;
-    elbow_target = 0.0f;
-    wrist_target = 0.0f;
+    elbow_target = g_elbow->stats->pos;
+    wrist_target = g_wrist->stats->pos;
 }
 
 void Gimbal_Ctrl_Loop()
 {
     if(g_remote.controller.left_switch == 3){   //Mid
-        elbow_target += g_remote.controller.left_stick.y/660.0f * 0.001;
+        elbow_target -= g_remote.controller.left_stick.y/660.0f * 0.001;
 
         DM_Motor_Enable_Motor(g_elbow);
         DM_Motor_Ctrl_MIT_PD(g_elbow, elbow_target, 0.0f, 0.0f, 10.0f, 0.0f);
@@ -74,4 +73,14 @@ void Gimbal_Ctrl_Loop()
         DM_Motor_Ctrl_MIT_PD(g_wrist, wrist_target, 0.0f, 0.0f, 10.0f, 0.0f);
     }
     
+}
+
+void _Gimbal_Target_Reset()
+{
+    // If you are not using yaw/IMU, this can be empty for now
+}
+
+void Gimbal_Task_Disable()
+{
+    _Gimbal_Target_Reset();
 }
