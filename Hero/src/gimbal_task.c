@@ -14,6 +14,9 @@ extern Remote_t g_remote;
 DJI_Motor_Handle_t *g_bottom_motor;
 DM_Motor_Handle_t *g_top_yaw, *g_pitch;
 
+// Put this as global for debuggin gimbal offset issues.
+float tmp_yaw_angle_diff;
+
 PID_t g_top_yaw_pid = {
     .kp = 3.0f,
     .ki = 0.0f,
@@ -23,26 +26,29 @@ PID_t g_top_yaw_pid = {
 };
 PID_t g_bottom_yaw_follow_pid = {
     .kp = 50000.0f,
-    .kd = 5000000.0f,
+    .kd = 3000000.0f,
     .ki = 0.0f,
     .integral_limit = 0.0f,
     .output_limit = GM6020_MAX_VOLTAGE_INT,
 };
 float g_top_yaw_torque = 0.0f;
 float g_gimbal_angle_difference = 0.0f;
+
+
 void Gimbal_Task_Init()
 {
+    // note: 8016 was the orginal offset
     Motor_Config_t yaw_motor_config = {
         .can_bus = 1,
         .speed_controller_id = 3,
-        .offset = 8016,
+        .offset = 6200,
         .bypass_driver = true,
     };
     // Secret message
     DM_Motor_Config_t top_yaw_motor_config = {
         .can_bus = 2,
         .control_mode = DM_MOTOR_MIT,
-        .pos_offset = 0.0f,
+        .pos_offset = -0.977f,
         .rx_id = 0x15,
         .tx_id = 0x05,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
@@ -53,7 +59,7 @@ void Gimbal_Task_Init()
     DM_Motor_Config_t pitch_motor_config = {
         .can_bus = 2,
         .control_mode = DM_MOTOR_MIT,
-        .pos_offset = 0.0f,
+        .pos_offset = -1.2f,
         .rx_id = 0x11,
         .tx_id = 0x01,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
@@ -76,7 +82,7 @@ void Gimbal_Ctrl_Loop()
     __MAX_LIMIT(g_gimbal_angle_difference, -1.0f, 1.0f);
     g_bottom_motor->output_current = PID(&g_bottom_yaw_follow_pid, g_gimbal_angle_difference);
     // // hardware limits for gimbal yaw (prevent self collision)
-    float tmp_yaw_angle_diff = g_robot_state.gimbal.yaw_angle - g_imu.rad.yaw;
+    tmp_yaw_angle_diff = g_robot_state.gimbal.yaw_angle - g_imu.rad.yaw;
     __MAP_ANGLE_TO_UNIT_CIRCLE(tmp_yaw_angle_diff);
     g_top_yaw_torque = PID(&g_top_yaw_pid,tmp_yaw_angle_diff );
 
