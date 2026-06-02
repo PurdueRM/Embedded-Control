@@ -16,6 +16,8 @@ extern Remote_t g_remote;
 
 DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right, *g_feed_motor;
 
+float feed_target_angle = 0;
+
 void Launch_Task_Init()
 {
     // Init Launch Hardware
@@ -49,7 +51,7 @@ void Launch_Task_Init()
         .can_bus = 2,
         .speed_controller_id = 3,
         .offset = 0,
-        .control_mode = VELOCITY_CONTROL,// | POSITION_CONTROL_TOTAL_ANGLE,
+        .control_mode = /*VELOCITY_CONTROL,*/ POSITION_CONTROL_TOTAL_ANGLE,
         .motor_reversal = MOTOR_REVERSAL_NORMAL,
         .velocity_pid =
             {
@@ -89,48 +91,49 @@ void Launch_Ctrl_Loop()
     //     Laser_On();
     // }
 
-    // if (g_robot_state.launch.IS_BUSY) { // check if we are in middle of a fire mode
-    //     switch (g_robot_state.launch.busy_mode)
-    //     {
-    //     case REJIGGLE:
-    //         rejiggle();
-    //         break;
-    //     case SINGLE_FIRE:
-    //         handleSingleFire();
-    //         break;
-    //     case BURST_FIRE:
-    //         break;
-    //     case FULL_AUTO:
-    //         handleFullAuto();
-    //         break;
-    //     default:
-    //         break;
-    //     }
-    // } else {
-    //     // Control loop for launch to see if new mode is set
-    //     switch (g_robot_state.launch.fire_mode)
-    //     {
-    //     case SINGLE_FIRE:
-    //         handleSingleFire();
-    //         break;
-    //     case BURST_FIRE:
-    //         // TODO: Complete 5 burst
-    //         break;
-    //     case FULL_AUTO:
-    //         handleFullAuto();
-    //         break;
-    //     default:
-    //         break;
+    if (g_robot_state.launch.IS_BUSY) { // check if we are in middle of a fire mode
+        switch (g_robot_state.launch.busy_mode)
+        {
+        case REJIGGLE:
+            rejiggle();
+            break;
+        case SINGLE_FIRE:
+            handleSingleFire();
+            break;
+        case BURST_FIRE:
+            break;
+        case FULL_AUTO:
+            handleFullAuto();
+            break;
+        default:
+            break;
+        }
+    } else {
+        // Control loop for launch to see if new mode is set
+        switch (g_robot_state.launch.fire_mode)
+        {
+        case SINGLE_FIRE:
+            handleSingleFire();
+            break;
+        case BURST_FIRE:
+            // TODO: Complete 5 burst
+            break;
+        case FULL_AUTO:
+            handleFullAuto();
+            break;
+        default:
+            break;
 
-    //     }
-    // }
+        }
+    }
 
-    DJI_Motor_Set_Velocity(g_feed_motor, -g_remote.controller.wheel/660.0f * 100.0f);
+    // This is the velo control for debugging feed motor
+    // DJI_Motor_Set_Velocity(g_feed_motor, -g_remote.controller.wheel/660.0f * 100.0f);
 
     if (g_remote.controller.left_switch == UP)
     {
-        DJI_Motor_Set_Velocity(g_flywheel_left, -200);
-        DJI_Motor_Set_Velocity(g_flywheel_right, -200);
+        DJI_Motor_Set_Velocity(g_flywheel_left, -240); // -200 is 11m/s speed
+        DJI_Motor_Set_Velocity(g_flywheel_right, -240);
 
     }
     else
@@ -168,7 +171,8 @@ void handleSingleFire() {
 
         DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
         g_curr_angle = DJI_Motor_Get_Total_Angle(g_feed_motor); // rad
-        DJI_Motor_Set_Angle(g_feed_motor, g_curr_angle + SHOT_ANGLE_OFFSET_RAD);
+        feed_target_angle = g_curr_angle - SHOT_ANGLE_OFFSET_RAD;
+        DJI_Motor_Set_Angle(g_feed_motor, feed_target_angle);
         // DJI_Motor_Set_Velocity(g_feed_motor, FEED_RATE);
     }
 }
