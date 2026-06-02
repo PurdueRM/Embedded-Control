@@ -48,7 +48,7 @@ void Gimbal_Task_Init()
     DM_Motor_Config_t top_yaw_motor_config = {
         .can_bus = 2,
         .control_mode = DM_MOTOR_MIT,
-        .pos_offset = -0.977f,
+        .pos_offset = -0.977f + 1.57f - 0.27f, // offset is usually subtracted (disregard if we reassembled; recalc needed)
         .rx_id = 0x15,
         .tx_id = 0x05,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
@@ -59,7 +59,7 @@ void Gimbal_Task_Init()
     DM_Motor_Config_t pitch_motor_config = {
         .can_bus = 2,
         .control_mode = DM_MOTOR_MIT,
-        .pos_offset = -1.2f,
+        .pos_offset = -1.3f,
         .rx_id = 0x11,
         .tx_id = 0x01,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,

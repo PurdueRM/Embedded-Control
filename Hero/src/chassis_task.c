@@ -124,7 +124,7 @@ void Chassis_Process_Target_Velocity()
         is_hit_counter--;
     }
 
-    if (g_robot_state.chassis.IS_SPINTOP_ENABLED || g_remote.controller.left_switch == UP) {
+    if (g_robot_state.chassis.IS_SPINTOP_ENABLED /*|| g_remote.controller.left_switch == UP*/ ) {
         
         if (is_hit_counter > 0) {
             chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
