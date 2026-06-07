@@ -14,7 +14,7 @@
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 
-DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right, *g_feed_motor;
+DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right, *g_feed_motor, *g_index_motor;
 
 float feed_target_angle = 0;
 
@@ -70,9 +70,33 @@ void Launch_Task_Init()
             }
     };
 
+    Motor_Config_t index_speed_config = {
+        .can_bus = 2,
+        .speed_controller_id = 1,
+        .offset = 0,
+        .control_mode = VELOCITY_CONTROL, /*POSITION_CONTROL_TOTAL_ANGLE,*/
+        .motor_reversal = MOTOR_REVERSAL_NORMAL,
+        .velocity_pid =
+            {
+                .kp = 500.0f,
+                .kd = 200.0f,
+                .kf = 100.0f,
+                .output_limit = M3508_MAX_CURRENT_INT,
+            },
+        .angle_pid =
+            {
+                .kp = 1000000.0f,
+                .kd = 15000000.0f,
+                .ki = 0.1f,
+                .output_limit = M3508_MAX_CURRENT_INT,
+                .integral_limit = 1000.0f,
+            }
+    };
+
     g_flywheel_left = DJI_Motor_Init(&flywheel_left_config,M3508);
     g_flywheel_right = DJI_Motor_Init(&flywheel_right_config,M3508);
     g_feed_motor = DJI_Motor_Init(&feed_speed_config,M3508);
+    g_index_motor = DJI_Motor_Init(&index_speed_config,M3508);
 
     Laser_Init();
 }
@@ -129,6 +153,9 @@ void Launch_Ctrl_Loop()
 
     // This is the velo control for debugging feed motor
     // DJI_Motor_Set_Velocity(g_feed_motor, -g_remote.controller.wheel/660.0f * 100.0f);
+
+    // This is the velo control for debugging index motor
+    // DJI_Motor_Set_Velocity(g_index_motor, -g_remote.controller.wheel/660.0f * 100.0f);
 
     if (g_remote.controller.left_switch == UP)
     {
