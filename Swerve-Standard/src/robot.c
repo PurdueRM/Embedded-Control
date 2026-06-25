@@ -13,6 +13,8 @@
 #include "math.h"
 #include "rate_limiter.h"
 #include "c_board_comm.h"
+#include "FreeRTOS.h"
+#include "dm_motor.h"
 
 Robot_State_t g_robot_state = {0};
 extern Remote_t g_remote;
@@ -23,6 +25,7 @@ extern Supercap_t g_supercap;
 Input_State_t g_input_state = {0};
 
 #define KEYBOARD_RAMP_COEF (0.002f)
+volatile const uint8_t uxTopUsedPriority __attribute__((used)) = configMAX_PRIORITIES;
 
 /**
  * @brief This function initializes the robot.
