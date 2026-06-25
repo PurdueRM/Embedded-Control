@@ -53,7 +53,7 @@ void Launch_Ctrl_Loop()
     // }
     if(g_remote.controller.left_switch == 1){
         if(g_remote.controller.right_stick.y >= 100)
-            servo_angle = 180;
+            servo_angle = 80;
         else if(g_remote.controller.right_stick.y <= -100)
             servo_angle = 0;
 
@@ -81,10 +81,11 @@ void Servo_SetAngle(float angle)
 {
     if (angle < 0.0f)
         angle = 0.0f;
-    if (angle > 180.0f)
-        angle = 180.0f;
+    if (angle > 80.0f)
+        angle = 80.0f;
 
-    float pulse_ms = 1.0f + angle * (1.0f / 180.0f);
+    // float pulse_ms = 1.0f + angle * (1.0f / 180.0f); // 1 ms for 0 degrees, 2 ms for 180 degrees
+     float pulse_ms = 0.5f + angle * (2.0f / 180.0f); // 0.5 ms for 0 degrees, 2.5 ms for 180 degrees
 
     float duty = pulse_ms / 20.0f;
 
