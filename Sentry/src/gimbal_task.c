@@ -12,6 +12,7 @@ extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 DJI_Motor_Handle_t *g_yaw;
 DM_Motor_Handle_t *g_pitch;
+DM_Motor_Handle_t *g_libido;
 
 void Gimbal_Task_Init()
 {
@@ -52,13 +53,29 @@ void Gimbal_Task_Init()
         .kp = 10.0f,
         .kd = 1.0f,
     };
+
+    DM_Motor_Config_t libido_motor_config = {
+        .can_bus = 2,
+        .control_mode = DM_MOTOR_MIT,
+        .pos_offset = 4.29636765,
+        .rx_id = 0x17,
+        .tx_id = 0x07,
+        .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .kp = 10.0f,
+        .kd = 1.0f,
+    };
+
     g_yaw = DJI_Motor_Init(&yaw_motor_config, GM6020);
     g_pitch = DM_Motor_Init(&pitch_motor_config);
+    g_libido = DM_Motor_Init(&libido_motor_config); //Makes the lidar erect 
 }
 
 
 void Gimbal_Ctrl_Loop()
 {
+    DM_Motor_Enable_Motor(g_libido);
+    DM_Motor_Ctrl_MIT_PD(g_libido, 0.0f, 0.0f, 0.0f, 20.0f, 8.5f);
+
     // if (g_robot_state.launch.IS_AUTO_AIMING_ENABLED) {
     //     if (g_orin_data.receiving.auto_aiming.yaw != 0 || g_orin_data.receiving.auto_aiming.pitch != 0)
     //     {
