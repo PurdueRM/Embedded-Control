@@ -35,11 +35,12 @@ else
 endif
 
 # Define mkdir macro according to the OS
-ifeq ($(IS_WINDOWS),1)
-	MKDIR_CMD = if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
-else
-	MKDIR_CMD = mkdir -p "$(BUILD_DIR)"
-endif
+# ifeq ($(IS_WINDOWS),1)
+# 	MKDIR_CMD = if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
+# else
+# 	MKDIR_CMD = mkdir -p "$(BUILD_DIR)"
+# endif
+MKDIR_CMD = mkdir -p "$(BUILD_DIR)" #TEMP because windows sucks
 
 # ======== TOOLCHAIN SETUP ========
 # Compiler and tools
