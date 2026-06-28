@@ -14,6 +14,8 @@
 extern TIM_HandleTypeDef htim1;   // change this if your PWM uses another timer
 
 PWM_Instance_t *servo_pwm;
+PWM_Instance_t *pump_pwm;
+PWM_Instance_t *valve_pwm;
 
 // TODO: Copied from Swerve-Standard
 
@@ -26,7 +28,13 @@ float servo_angle = 0;
 void Launch_Task_Init()
 {
     Servo_Init();
-    Disable_Servo();
+    // Disable_Servo();
+
+    Valve_Init();
+    Pump_Init();
+
+    Valve_TurnOff();
+    Pump_TurnOff();
     
     servo_angle = 0;
 }
@@ -52,17 +60,18 @@ void Launch_Ctrl_Loop()
     //     state = 0;
     // }
     if(g_remote.controller.left_switch == 1){
-        if(g_remote.controller.right_stick.y >= 100)
-            servo_angle = 80;
-        else if(g_remote.controller.right_stick.y <= -100)
-            servo_angle = 0;
+        Valve_TurnOff();
+        Pump_TurnOn();
 
     }
-    Servo_SetAngle(servo_angle);
+    else {
+        Valve_TurnOn();
+        // Pump_TurnOff();
+    }
+    // Servo_SetAngle(servo_angle);
 
     // Disable_Servo();
 }
-
 
 
 void Servo_Init(void)
@@ -77,6 +86,54 @@ void Servo_Init(void)
 
     servo_pwm = PWM_Register(&servo_config);
 }
+
+void Valve_Init(void) {
+    PWM_Config_t valve_config = {
+        .htim = &htim1,
+        .channel = TIM_CHANNEL_2,
+        .period = 0.020f, // 20 ms period
+        .dutyratio = 0.05f, // closed
+        .id = 1
+    };
+
+    valve_pwm = PWM_Register(&valve_config);
+}
+
+void Pump_Init(void) {
+    PWM_Config_t pump_config = {
+        .htim = &htim1,
+        .channel = TIM_CHANNEL_3,
+        .period = 0.020f, // 20 ms period
+        .dutyratio = 0.05f, // off
+        .id = 2
+    };
+
+    pump_pwm = PWM_Register(&pump_config);
+
+}
+
+void Valve_TurnOn() {
+    float duty = 0.10f; // 2000 us pulse / 20000 us period = 0.10 (10%)
+    PWM_Set_Duty_Ratio(valve_pwm, duty);
+}
+
+void Valve_TurnOff() {
+    float duty = 0.05f; // 1000 us pulse / 20000 us period = 0.05 (5%)
+    PWM_Set_Duty_Ratio(valve_pwm, duty);
+}
+
+void Pump_TurnOn() {
+    // 2000 us pulse / 20000 us period = 0.10 (10%)
+    float duty = 0.10f; 
+    PWM_Set_Duty_Ratio(pump_pwm, duty);
+}
+
+void Pump_TurnOff() {
+    // 1000 us pulse / 20000 us period = 0.05 (5%)
+    float duty = 0.05f; 
+    PWM_Set_Duty_Ratio(pump_pwm, duty);
+}
+
 void Servo_SetAngle(float angle)
 {
     if (angle < 0.0f)
