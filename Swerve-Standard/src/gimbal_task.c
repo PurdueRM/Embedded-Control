@@ -19,6 +19,7 @@ DM_Motor_Handle_t *g_elbow;
 float elbow_target;
 float shoulder_target;
 float wrist_target;
+float finger_target;
 
 void Gimbal_Task_Init()
 {
@@ -98,9 +99,9 @@ void Gimbal_Ctrl_Loop()
     DM_Motor_Ctrl_MIT_PD(g_knuckle, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
 
     if(g_remote.controller.left_switch == 3){   //Mid
-        elbow_target -= g_remote.controller.left_stick.y/660.0f * 0.001;
+        finger_target -= g_remote.controller.left_stick.y/660.0f * 0.001;
 
-        DM_Motor_Ctrl_MIT_PD(g_elbow, elbow_target, 0.0f, 0.0f, 10.0f, 0.0f);
+        DM_Motor_Ctrl_MIT_PD(g_finger, finger_target, 0.0f, 0.0f, 10.0f, 0.0f);
 
         wrist_target += g_remote.controller.right_stick.y/660.0f * 0.001;
 
