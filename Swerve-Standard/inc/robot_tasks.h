@@ -18,7 +18,7 @@
 extern void IMU_Task(void const *pvParameters);
 
 osThreadId imu_task_handle;
-osThreadId robot_command_task_handle;
+// REMOVED: robot_command_task_handle
 osThreadId motor_task_handle;
 osThreadId ui_task_handle;
 osThreadId debug_task_handle;
@@ -26,7 +26,7 @@ osThreadId jetson_orin_task_handle;
 osThreadId daemon_task_handle;
 osThreadId c_board_comm_task_handle;
 
-void Robot_Tasks_Robot_Command(void const *argument);
+// REMOVED: Robot_Tasks_Robot_Command forward declaration
 void Robot_Tasks_Motor(void const *argument);
 void Robot_Tasks_IMU(void const *argument);
 void Robot_Tasks_UI(void const *argument);
@@ -40,11 +40,11 @@ void Robot_Tasks_Start()
     osThreadDef(imu_task, Robot_Tasks_IMU, osPriorityAboveNormal, 0, 1024);
     imu_task_handle = osThreadCreate(osThread(imu_task), NULL);
 
-    osThreadDef(motor_task, Robot_Tasks_Motor, osPriorityAboveNormal, 0, 256);
+    // Stack increased to 512 since it now runs both command and motor loops
+    osThreadDef(motor_task, Robot_Tasks_Motor, osPriorityAboveNormal, 0, 2048);
     motor_task_handle = osThreadCreate(osThread(motor_task), NULL);
 
-    osThreadDef(robot_command_task, Robot_Tasks_Robot_Command, osPriorityAboveNormal, 0, 256);
-    robot_command_task_handle = osThreadCreate(osThread(robot_command_task), NULL);
+    // REMOVED: robot_command_task creation
 
     osThreadDef(ui_task, Robot_Tasks_UI, osPriorityAboveNormal, 0, 256);
     ui_task_handle = osThreadCreate(osThread(ui_task), NULL);
@@ -62,23 +62,6 @@ void Robot_Tasks_Start()
     c_board_comm_task_handle = osThreadCreate(osThread(c_board_comm_task), NULL);
 }
 
-void Robot_Tasks_Robot_Command(void const *argument)
-{
-    portTickType xLastWakeTime;
-    xLastWakeTime = xTaskGetTickCount();
-    const TickType_t TimeIncrement = pdMS_TO_TICKS(2);
-    while (1)
-    {
-        Robot_Command_Loop();
-        vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
-    }
-}
-
-__weak void Robot_Tasks_IMU(void const *argument)
-{
-    IMU_Task(argument);
-}
-
 void Robot_Tasks_Motor(void const *argument)
 {
     portTickType xLastWakeTime;
@@ -87,9 +70,15 @@ void Robot_Tasks_Motor(void const *argument)
     Motor_Task_Init();
     while (1)
     {
-        Motor_Task_Loop();
+        Robot_Command_Loop();  // prepares tx_buffer for all motors
+        Motor_Task_Loop();     // immediately transmits before any preemption
         vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
     }
+}
+
+__weak void Robot_Tasks_IMU(void const *argument)
+{
+    IMU_Task(argument);
 }
 
 void Robot_Tasks_UI(void const *argument)
