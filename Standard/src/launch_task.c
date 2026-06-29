@@ -9,49 +9,53 @@
 #include "laser.h"
 #include <stdint.h>
 
-// // TODO: Copied from Swerve-Standard
+// extern Robot_State_t g_robot_state;
+// extern Remote_t g_remote;
+DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right;
+// DJI_Motor_Handle_t *g_feed_motor;
+
 
 void Launch_Task_Init(){
-    
+    // Init Launch Hardware
+    Motor_Config_t flywheel_left_config = {
+        .can_bus = 2,
+        .speed_controller_id = 2,
+        .offset = 0,
+        .control_mode = VELOCITY_CONTROL,
+        .motor_reversal = MOTOR_REVERSAL_NORMAL,
+        .velocity_pid =
+            {
+                .kp = 500.0f,
+                .output_limit = M3508_MAX_CURRENT_INT,
+            },
+    };
+
+    Motor_Config_t flywheel_right_config = {
+        .can_bus = 2,
+        .speed_controller_id = 3,
+        .offset = 0,
+        .control_mode = VELOCITY_CONTROL,
+        .motor_reversal = MOTOR_REVERSAL_REVERSED,
+        .velocity_pid =
+            {
+                .kp = 500.0f,
+                .output_limit = M3508_MAX_CURRENT_INT,
+            },
+    };
+
+    g_flywheel_left = DJI_Motor_Init(&flywheel_left_config,M3508);
+    g_flywheel_right = DJI_Motor_Init(&flywheel_right_config,M3508);
 }
 
 void Launch_Ctrl_Loop(){
-
+    DJI_Motor_Set_Velocity(g_flywheel_left, -100);
+    DJI_Motor_Set_Velocity(g_flywheel_right, -100);
 }
 
-// extern Robot_State_t g_robot_state;
-// extern Remote_t g_remote;
-
-// DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right, *g_feed_motor;
 
 // void Launch_Task_Init()
 // {
-//     // Init Launch Hardware
-//     Motor_Config_t flywheel_left_config = {
-//         .can_bus = 2,
-//         .speed_controller_id = 3,
-//         .offset = 0,
-//         .control_mode = VELOCITY_CONTROL,
-//         .motor_reversal = MOTOR_REVERSAL_NORMAL,
-//         .velocity_pid =
-//             {
-//                 .kp = 500.0f,
-//                 .output_limit = M3508_MAX_CURRENT_INT,
-//             },
-//     };
 
-//     Motor_Config_t flywheel_right_config = {
-//         .can_bus = 2,
-//         .speed_controller_id = 2,
-//         .offset = 0,
-//         .control_mode = VELOCITY_CONTROL,
-//         .motor_reversal = MOTOR_REVERSAL_REVERSED,
-//         .velocity_pid =
-//             {
-//                 .kp = 500.0f,
-//                 .output_limit = M3508_MAX_CURRENT_INT,
-//             },
-//     };
 
 //     Motor_Config_t feed_speed_config = {
 //         .can_bus = 2,
@@ -76,8 +80,6 @@ void Launch_Ctrl_Loop(){
 //             }
 //     };
 
-//     g_flywheel_left = DJI_Motor_Init(&flywheel_left_config,M3508);
-//     g_flywheel_right = DJI_Motor_Init(&flywheel_right_config,M3508);
 //     g_feed_motor = DJI_Motor_Init(&feed_speed_config,M2006);
 
 //     Laser_Init();

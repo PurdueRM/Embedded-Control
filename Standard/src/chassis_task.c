@@ -22,6 +22,7 @@ Motor_Reversal_t drive_motor_reversal_array[4] = {
     MOTOR_REVERSAL_NORMAL
 };
 
+extern DJI_Motor_Handle_t *g_yaw; // for reading gimbal angle
 
 void Chassis_Task_Init(){
     // Init chassis hardware
@@ -57,7 +58,6 @@ void Chassis_Ctrl_Loop(){
 // extern Board_Comm_Package_t g_board_comm_package; // 
 // extern Robot_State_t g_robot_state;
 // extern Remote_t g_remote;
-// extern DJI_Motor_Handle_t *g_yaw; // for reading gimbal angle
 // float gimbal_angle_difference;
 
 
