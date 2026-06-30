@@ -29,6 +29,7 @@ void Gimbal_Task_Init(){
         .control_mode = DM_MOTOR_MIT,
         .rx_id = 0x12,
         .tx_id = 0x02,
+        .pos_offset = 2.526,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
         .kp = 10.0f,
         .kd = 1.0f,
@@ -40,7 +41,7 @@ void Gimbal_Task_Init(){
 
 void Gimbal_Ctrl_Loop(){
     g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f;
-    g_robot_state.gimbal.pitch_angle += g_remote.controller.right_stick.y / 660.0f * 0.01f;
+    g_robot_state.gimbal.pitch_angle -= g_remote.controller.right_stick.y / 660.0f * 0.01f;
 
     // Control loop for gimbal
     DM_Motor_Enable_Motor(g_yaw);

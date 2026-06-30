@@ -9,10 +9,10 @@
 #include "laser.h"
 #include <stdint.h>
 
-// extern Robot_State_t g_robot_state;
-// extern Remote_t g_remote;
+extern Robot_State_t g_robot_state;
+extern Remote_t g_remote;
 DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right;
-// DJI_Motor_Handle_t *g_feed_motor;
+DJI_Motor_Handle_t *g_feed_motor;
 
 
 void Launch_Task_Init(){
@@ -43,44 +43,54 @@ void Launch_Task_Init(){
             },
     };
 
+    Motor_Config_t feed_speed_config = {
+        .can_bus = 2,
+        .speed_controller_id = 6,
+        .offset = 0,
+        .control_mode = VELOCITY_CONTROL,// | POSITION_CONTROL_TOTAL_ANGLE,
+        .motor_reversal = MOTOR_REVERSAL_NORMAL,
+        .velocity_pid =
+            {
+                .kp = 500.0f,
+                .kd = 200.0f,
+                .kf = 100.0f,
+                .output_limit = M2006_MAX_CURRENT_INT,
+            },
+        .angle_pid =
+            {
+                .kp = 500000.0f,
+                .kd = 15000000.0f,
+                .ki = 0.1f,
+                .output_limit = M2006_MAX_CURRENT_INT,
+                .integral_limit = 1000.0f,
+            }
+    };
+
     g_flywheel_left = DJI_Motor_Init(&flywheel_left_config,M3508);
     g_flywheel_right = DJI_Motor_Init(&flywheel_right_config,M3508);
+    g_feed_motor = DJI_Motor_Init(&feed_speed_config,M2006);
 }
 
 void Launch_Ctrl_Loop(){
-    DJI_Motor_Set_Velocity(g_flywheel_left, -100);
-    DJI_Motor_Set_Velocity(g_flywheel_right, -100);
+
+    DJI_Motor_Set_Velocity(g_feed_motor, g_remote.controller.wheel/660.0f * 100.0f);    //TODO: Make launch right
+
+    if (g_remote.controller.left_switch == UP)
+    {
+        DJI_Motor_Set_Velocity(g_flywheel_left, -300);
+        DJI_Motor_Set_Velocity(g_flywheel_right, -300);
+
+    }
+    else
+    {
+        DJI_Motor_Set_Velocity(g_flywheel_left, 0);
+        DJI_Motor_Set_Velocity(g_flywheel_right, 0);
+    }
 }
 
 
 // void Launch_Task_Init()
 // {
-
-
-//     Motor_Config_t feed_speed_config = {
-//         .can_bus = 2,
-//         .speed_controller_id = 6,
-//         .offset = 0,
-//         .control_mode = VELOCITY_CONTROL,// | POSITION_CONTROL_TOTAL_ANGLE,
-//         .motor_reversal = MOTOR_REVERSAL_NORMAL,
-//         .velocity_pid =
-//             {
-//                 .kp = 500.0f,
-//                 .kd = 200.0f,
-//                 .kf = 100.0f,
-//                 .output_limit = M2006_MAX_CURRENT_INT,
-//             },
-//         .angle_pid =
-//             {
-//                 .kp = 500000.0f,
-//                 .kd = 15000000.0f,
-//                 .ki = 0.1f,
-//                 .output_limit = M2006_MAX_CURRENT_INT,
-//                 .integral_limit = 1000.0f,
-//             }
-//     };
-
-//     g_feed_motor = DJI_Motor_Init(&feed_speed_config,M2006);
 
 //     Laser_Init();
 // }
@@ -135,19 +145,7 @@ void Launch_Ctrl_Loop(){
 //     //     }
 //     // }
 
-//     DJI_Motor_Set_Velocity(g_feed_motor, g_remote.controller.wheel/660.0f * 100.0f);
-
-//     if (g_remote.controller.left_switch == UP)
-//     {
-//         DJI_Motor_Set_Velocity(g_flywheel_left, -300);
-//         DJI_Motor_Set_Velocity(g_flywheel_right, -300);
-
-//     }
-//     else
-//     {
-//         DJI_Motor_Set_Velocity(g_flywheel_left, 0);
-//         DJI_Motor_Set_Velocity(g_flywheel_right, 0);
-//     }
+//     
 
 // }
 
