@@ -117,7 +117,7 @@ void Process_Remote_Input()
         g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
     }
 
-    if ((g_remote.mouse.left) || (g_remote.controller.wheel > 50.0f)) { // Hold left mouse to fire
+    if ((g_remote.mouse.left) || (g_remote.controller.wheel < 50.0f && g_remote.controller.right_switch == UP)) { // Hold left mouse to fire
         g_robot_state.launch.fire_mode = SINGLE_FIRE;
     } else {
         g_robot_state.launch.fire_mode = NO_FIRE;
