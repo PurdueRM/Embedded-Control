@@ -57,7 +57,7 @@ void Gimbal_Ctrl_Loop(){
         g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f;
 
     //Gimbal follow imu PID
-    tmp_yaw_angle_diff = g_robot_state.gimbal.yaw_angle - g_imu.rad.yaw - PI/9;
+    tmp_yaw_angle_diff = g_robot_state.gimbal.yaw_angle - g_imu.rad.yaw - PI/9\'';
     __MAP_ANGLE_TO_UNIT_CIRCLE(tmp_yaw_angle_diff);
     g_yaw_torque = PID(&gimbal_imu_pid, tmp_yaw_angle_diff);
     __MAX_LIMIT(g_yaw_torque, -1.5f, 1.5f)
