@@ -13,9 +13,12 @@
 #include "dji_motor.h"
 #include "dm_motor.h"
 
+#define KEYBOARD_RAMP_COEF (0.01f)
+
 Robot_State_t g_robot_state = {0};
 extern Remote_t g_remote;
 extern Supercap_t g_supercap;
+Input_State_t g_input_state = {0};
 
 /**
  * @brief This function initializes the robot.
@@ -103,9 +106,16 @@ void Handle_Disabled_State()
 
 void Process_Remote_Input()
 {
-    g_robot_state.input.vx = g_remote.controller.left_stick.x/660.0f * 2.0f;
-    g_robot_state.input.vy = g_remote.controller.left_stick.y/660.0f * 2.0f;
-    g_robot_state.input.vomega = -g_remote.controller.right_stick.x/660.0f * 6.28f;
+    g_robot_state.input.vy_keyboard = ((1.0f - KEYBOARD_RAMP_COEF) * g_robot_state.input.vy_keyboard + g_remote.keyboard.W * KEYBOARD_RAMP_COEF - g_remote.keyboard.S * KEYBOARD_RAMP_COEF);
+    g_robot_state.input.vx_keyboard = ((1.0f - KEYBOARD_RAMP_COEF) * g_robot_state.input.vx_keyboard - g_remote.keyboard.A * KEYBOARD_RAMP_COEF + g_remote.keyboard.D * KEYBOARD_RAMP_COEF);
+    float temp_x = g_robot_state.input.vx_keyboard + g_remote.controller.left_stick.x/660.0f * 2.0f;
+    float temp_y = g_robot_state.input.vy_keyboard + g_remote.controller.left_stick.y/660.0f * 2.0f;
+    g_robot_state.input.vx = temp_x;
+    g_robot_state.input.vy = temp_y;
+
+    g_robot_state.input.vomega = -g_remote.controller.right_stick.x/660.0f * 6.28f + g_remote.mouse.x / 10000.0f;
+
+    // TODO. Add supercapicitor keys/remote input here
     
     if (__IS_TRANSITIONED(g_remote.controller.left_switch, g_robot_state.input.prev_left_switch, MID))
     {
@@ -117,10 +127,21 @@ void Process_Remote_Input()
         g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
     }
 
-    if ((g_remote.mouse.left) || (g_remote.controller.wheel < 50.0f && g_remote.controller.right_switch == UP)) { // Hold left mouse to fire
+    if ((g_remote.mouse.left) || (g_remote.controller.wheel > 50.0f)) { // Hold left mouse to fire
         g_robot_state.launch.fire_mode = SINGLE_FIRE;
     } else {
         g_robot_state.launch.fire_mode = NO_FIRE;
+    }
+
+    if (__IS_TOGGLED(g_remote.keyboard.B, g_input_state.prev_B))
+    {
+        g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
+    }
+
+    if (g_remote.controller.right_switch == UP) {
+        g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 1;
+    } else {
+         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 0;
     }
 
     if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
@@ -134,6 +155,7 @@ void Process_Remote_Input()
     }
 
     g_robot_state.input.prev_left_switch = g_remote.controller.left_switch;
+    g_robot_state.input.prev_B = g_remote.keyboard.B;
 
 }
 

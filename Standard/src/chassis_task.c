@@ -45,6 +45,8 @@ uint16_t is_hit_counter = 0;
 float omega = 1;
 int omega_bool = 0;
 
+float chassis_omega_new_target = 0;
+
 void Chassis_Task_Init(){
     // Init chassis hardware
     Motor_Config_t drive_motor_config = {
@@ -92,7 +94,7 @@ void Chassis_Task_Init(){
     }
 
     // Init PID
-    PID_Init(&g_follow_gimbal_angle_pid, 10, 0, 2500, 2*PI*30, 0, 0);
+    PID_Init(&g_follow_gimbal_angle_pid, 30, 0, 10000, 2*PI*30, 0, 0);
     sentry_pose.x = 0;
     sentry_pose.y = 0;
 
@@ -101,14 +103,15 @@ void Chassis_Task_Init(){
 
 void Chassis_Process_Target_Velocity()
 {    
-    chassis_state.v_x_in_gimbal = g_remote.controller.left_stick.x / 660.0f * 4.0f;
-    chassis_state.v_y_in_gimbal = g_remote.controller.left_stick.y / 660.0f * 4.0f;
-    // chassis_state.omega_in_gimbal = g_remote.controller.wheel * MAX_ANGLUAR_SPEED;
+    // chassis_state.v_x_in_gimbal = g_remote.controller.left_stick.x / 660.0f * 4.0f;
+    // chassis_state.v_y_in_gimbal = g_remote.controller.left_stick.y / 660.0f * 4.0f;
+    chassis_state.v_x_in_gimbal = g_robot_state.input.vx;
+    chassis_state.v_y_in_gimbal = g_robot_state.input.vy;
 
     gimbal_angle_difference =  g_yaw->stats->pos;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
 
-    // static float time_for_omega = 0.0f;
-    float chassis_omega_new_target = 0;
+    chassis_omega_new_target = 0;
     const float hit_timeout = 5; // seconds
 
     // If the robot is hit, increase spintop rate
@@ -139,28 +142,23 @@ void Chassis_Process_Target_Velocity()
         // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
        
     } else {
-        // chassis_state.omega = g_robot_state.chassis.omega * MAX_ANGLUAR_SPEED;
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
         chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
         __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
-        // chassis_omega_new_target = -g_remote.controller.right_stick.x/660.0f * 6 * PI;
         __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
     }
-    // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.003f);
     Update_Omega();
 }
 
 void Chassis_Ctrl_Loop()
 {
     //TODO: change this, for odom only
-    gimbal_angle_difference = g_yaw->stats->pos; //Convert to abs
-    __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
     Chassis_Process_Target_Velocity();
 
     if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
         physical_constants.max_speed = 5.0f;
         __FIRST_ORDER_FILTER(chassis_state.v_x, 2 * (chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference)), 0.005f);
-        __FIRST_ORDER_FILTER(chassis_state.v_y, 2 * (chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference)), 0.005f)
+        __FIRST_ORDER_FILTER(chassis_state.v_y, 2 * (chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference)), 0.005f);
     } else {
         physical_constants.max_speed = 2.0f;
         chassis_state.v_x = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
@@ -169,7 +167,6 @@ void Chassis_Ctrl_Loop()
 
     // Control loop for the chassis
     omni_calculate_kinematics(&chassis_state, &physical_constants);
-    // omni_desaturate_wheel_speeds(&chassis_state, &physical_constants);2
     omni_convert_to_rpm(&chassis_state);
 
     // use rate limiter to limit acceleration of the wheels
