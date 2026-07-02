@@ -146,6 +146,7 @@ void Chassis_Process_Target_Velocity()
         chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
         __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
         __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
+        chassis_state.omega = 0;
     }
     Update_Omega();
 }
@@ -154,6 +155,7 @@ void Chassis_Ctrl_Loop()
 {
     //TODO: change this, for odom only
     Chassis_Process_Target_Velocity();
+    // gimbal_angle_difference = -gimbal_angle_difference;
 
     if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
         physical_constants.max_speed = 5.0f;

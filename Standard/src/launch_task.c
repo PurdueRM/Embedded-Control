@@ -80,7 +80,7 @@ void Launch_Ctrl_Loop()
         DJI_Motor_Set_Velocity(g_feed_motor, 100);
     }
     else{
-        DJI_Motor_Set_Velocity(g_flywheel_left, -00);
+        DJI_Motor_Set_Velocity(g_flywheel_left, -00 );
         DJI_Motor_Set_Velocity(g_flywheel_right, -00);
 
         DJI_Motor_Set_Velocity(g_feed_motor, 0);

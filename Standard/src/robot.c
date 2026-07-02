@@ -113,7 +113,7 @@ void Process_Remote_Input()
     g_robot_state.input.vx = temp_x;
     g_robot_state.input.vy = temp_y;
 
-    g_robot_state.input.vomega = -g_remote.controller.right_stick.x/660.0f * 6.28f + g_remote.mouse.x / 10000.0f;
+    g_robot_state.input.vomega = -g_remote.controller.right_stick.x/660.0f * 6.28f + g_remote.mouse.x / 10.0f;
 
     // TODO. Add supercapicitor keys/remote input here
     
