@@ -95,7 +95,7 @@ void Handle_Enabled_State()
     {
         // Process movement and components in enabled state
         Referee_Set_Robot_State();
-        // Process_Remote_Input();
+        Process_Remote_Input();
         Process_Chassis_Control();
         Process_Gimbal_Control();
         Process_Launch_Control();
