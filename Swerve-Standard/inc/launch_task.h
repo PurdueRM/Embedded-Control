@@ -45,6 +45,13 @@ void Servo_Init(void);
 void Servo_SetAngle(float);
 void Disable_Servo(void);
 
+void Valve_Init(void);
+void Valve_TurnOn(void);
+void Valve_TurnOff(void);
+
+void Pump_Init(void);
+void Pump_TurnOn(void);
+void Pump_TurnOff(void);
 
 extern Launch_Target_t g_launch_target;
 extern DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right, *g_motor_feed;
