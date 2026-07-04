@@ -92,11 +92,11 @@ void Gimbal_Task_Init()
 
 void Gimbal_Ctrl_Loop()
 {
-    DM_Motor_Ctrl_MIT_PD(g_shoulder, 0.0f, 0.0f, 0.1f, 5.0f, 0.5f);
-    DM_Motor_Ctrl_MIT_PD(g_elbow, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
-    DM_Motor_Ctrl_MIT_PD(g_wrist, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
-    DM_Motor_Ctrl_MIT_PD(g_finger, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
-    DM_Motor_Ctrl_MIT_PD(g_knuckle, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
+    // DM_Motor_Ctrl_MIT_PD(g_shoulder, 0.0f, 0.0f, 0.1f, 5.0f, 0.5f);
+    // DM_Motor_Ctrl_MIT_PD(g_elbow, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
+    // DM_Motor_Ctrl_MIT_PD(g_wrist, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
+    // DM_Motor_Ctrl_MIT_PD(g_finger, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
+    // DM_Motor_Ctrl_MIT_PD(g_knuckle, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
 
     if(g_remote.controller.left_switch == 3){   //Mid
         finger_target -= g_remote.controller.left_stick.y/660.0f * 0.001;
