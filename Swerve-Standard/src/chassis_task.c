@@ -134,28 +134,7 @@ void Chassis_Ctrl_Loop()
     if (delay_counter > 0) {
         delay_counter--;
     }
-    // if ((Referee_System.Robot_State.Chassis_Power_Output == 0) || delay_counter > 0)
-    // {
-    //     if (Referee_System.Robot_State.Chassis_Power_Output == 0)
-    //     {
-    //         float delay_time = 0.5f; //seconds
-    //         delay_counter = delay_time * 500;
-    //     }
-    //     // disable turning motor
-    //     for (int i = 0; i < NUMBER_OF_MODULES; i++)
-    //     {
-    //         g_chassis_state.omega = 0;
-    //         g_chassis_state.v_x = 0;
-    //         g_chassis_state.v_y = 0;
-    //         g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
-    //         DJI_Motor_Disable(g_drive_motors[i]);
-    //         DJI_Motor_Disable(g_azimuth_motors[i]);
-    //         PID_Reset(g_azimuth_motors[i]->angle_pid);
-    //         PID_Reset(g_azimuth_motors[i]->velocity_pid);
-    //         PID_Reset(g_drive_motors[i]->velocity_pid);
-    //     }
-    //     return;
-    // }
+
     if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
         g_supercap_linear_boost_rate = g_supercap_linear_boost_rate * 0.95f + 3.0f * 0.05f;
         g_supercap_spintop_boost_rate = g_supercap_spintop_boost_rate * 0.95f + 3.0f * 0.05f;
@@ -171,8 +150,9 @@ void Chassis_Ctrl_Loop()
     }
     // g_chassis_state.v_x = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
     // g_chassis_state.v_y = g_robot_state.chassis.y_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
-    g_chassis_state.v_x = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed;
-    g_chassis_state.v_y = g_robot_state.chassis.y_speed * g_swerve_constants.max_speed;
+    g_chassis_state.v_y = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed; //Can't be bothered to figure out heading. Jank changes to make engineer move correctly
+    g_chassis_state.v_x = -g_robot_state.chassis.y_speed * g_swerve_constants.max_speed;
+    g_chassis_state.omega = -g_robot_state.chassis.omega;
     
 
     // Handle locking logic
@@ -183,7 +163,6 @@ void Chassis_Ctrl_Loop()
     // } else {
     //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, 0);
     // }
-    g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, 0);    //For engineer, don't need swerve to spintop
 
     // Calculate the kinematics of the chassis
     swerve_calculate_kinematics(&g_chassis_state, &g_swerve_constants);
