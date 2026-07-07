@@ -35,11 +35,12 @@ else
 endif
 
 # Define mkdir macro according to the OS
-ifeq ($(IS_WINDOWS),1)
-	MKDIR_CMD = if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
-else
-	MKDIR_CMD = mkdir -p "$(BUILD_DIR)"
-endif
+# ifeq ($(IS_WINDOWS),1)
+# 	MKDIR_CMD = if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
+# else
+# 	MKDIR_CMD = mkdir -p "$(BUILD_DIR)"
+# endif
+MKDIR_CMD = mkdir -p "$(BUILD_DIR)" #TEMP because windows sucks
 
 # ======== TOOLCHAIN SETUP ========
 # Compiler and tools
@@ -85,6 +86,7 @@ C_INCLUDES = \
 -I$(CONTROL_BASE)/algo/inc \
 -I$(CONTROL_BASE)/devices/inc \
 -I$(CONTROL_BASE)/bsp/inc \
+-I$(CONTROL_BASE)/ui/inc \
 -I$(ROBOT_PROJECT)/inc
 
 CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -fmessage-length=0 -Werror
@@ -158,6 +160,7 @@ $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port
 $(wildcard $(CONTROL_BASE)/algo/src/*.c) \
 $(wildcard $(CONTROL_BASE)/bsp/src/*.c) \
 $(wildcard $(CONTROL_BASE)/devices/src/*.c) \
+$(wildcard $(CONTROL_BASE)/ui/src/*.c) \
 $(wildcard $(ROBOT_PROJECT)/src/*.c) \
 $(BOARD_BASE)/Drivers/CMSIS/DSP/Source/FastMathFunctions/arm_cos_f32.c \
 $(BOARD_BASE)/Drivers/CMSIS/DSP/Source/FastMathFunctions/arm_sin_f32.c \

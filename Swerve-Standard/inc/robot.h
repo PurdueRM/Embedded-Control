@@ -11,12 +11,19 @@ typedef enum Robot_State_e {
     ENABLED
 } Robot_State_e;
 
+typedef enum Locked_State_e {
+    LOCK_ANGLED,
+    LOCK_STRAIGHT,
+    LOCK_RANDOM
+} Locked_State_e;
+
 typedef struct {
     // chassis motion
     float x_speed;
     float y_speed;
     float omega;
     uint8_t IS_SPINTOP_ENABLED;
+    Locked_State_e locked_state;
 
     // power management
     uint16_t power_index;
@@ -73,6 +80,7 @@ typedef struct {
     // previous key states
     uint8_t prev_B;
     uint8_t prev_G;
+    uint8_t prev_R;
     uint8_t prev_V;
     uint8_t prev_Z;
     uint8_t prev_Shift;
@@ -87,6 +95,7 @@ typedef struct {
 
     uint8_t IS_SUPER_CAPACITOR_ENABLED;
     uint8_t UI_ENABLED;
+    uint8_t PREV_UI_ENABLED; // used to detect UI toggle
     uint8_t IS_SAFELY_STARTED;
 } Robot_State_t;
 
