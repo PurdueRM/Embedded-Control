@@ -233,7 +233,8 @@ void Lock_Chassis_To_Angle(float lock_angle, float offset_angle)
     static float last_snap_angle = 0.0f;
 
     // Get the angle difference and apply the offset
-    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + offset_angle;
+    // gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + offset_angle;
+    gimbal_angle_difference = 0 + offset_angle;
     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
 
     // 2. Check if angle difference exceeds hysteresis threshold

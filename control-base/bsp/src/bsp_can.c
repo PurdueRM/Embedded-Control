@@ -80,27 +80,6 @@ CAN_Instance_t *CAN_Device_Register(uint8_t _can_bus, uint16_t _tx_id, uint16_t 
     return can_instance;
 }
 
-void CAN_Service_Restart()
-{
-    HAL_CAN_Stop(&hcan1);
-    HAL_CAN_Stop(&hcan2);
-
-    HAL_CAN_DeInit(&hcan1);
-    HAL_CAN_DeInit(&hcan2);
-
-    HAL_CAN_Init(&hcan1);
-    HAL_CAN_Init(&hcan2);
-
-    HAL_CAN_Start(&hcan1);
-    HAL_CAN_Start(&hcan2);
-
-    /* Activate Interrupt */
-    HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
-    HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
-    HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO1_MSG_PENDING);
-    HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING);
-}
-
 /**
  * @brief  CAN Service Initialization
 */
