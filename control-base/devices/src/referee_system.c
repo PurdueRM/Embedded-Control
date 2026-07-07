@@ -237,6 +237,9 @@ void Referee_Get_Data(UART_Instance_t *uart_instance)
                 if (Verify_CRC16_Check_Sum(Referee_System.Buffer + n, REFEREE_ROBOT_RFID_LEN))
                 {
                     memcpy(&Referee_System.RFID, &Referee_System.Buffer[n + 7], sizeof(uint8_t[REFEREE_ROBOT_RFID_LEN-9]));
+                    Referee_System.RFID.base_buffer_zone = (Referee_System.RFID.State >> REFEREE_BASE_BUFFER_ZONE) & 0x01;
+                    Referee_System.RFID.resupply_zone = (Referee_System.RFID.State >> REFEREE_RESUPPLY_ZONE) & 0x01;
+                    Referee_System.RFID.center_zone = (Referee_System.RFID.State >> REFEREE_CENTER_ZONE) & 0x01;
                     n += REFEREE_ROBOT_RFID_LEN;
                 }
                 else
