@@ -10,7 +10,9 @@
 #include "imu_task.h"
 #include "jetson_orin.h"
 #include <math.h>
+#include "c_board_comm.h" 
 
+extern Board_Comm_Package_t g_board_comm_package; // 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 extern DJI_Motor_Handle_t *g_yaw; // for reading gimbal angle
@@ -123,8 +125,12 @@ void Chassis_Process_Target_Velocity()
 
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
         
-        if (is_hit_counter > 0) {
-            chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
+        if (is_hit_counter > 0 && g_board_comm_package.Vo > 13.5f) {
+            chassis_omega_new_target = 9.5 * PI; // 8 * PI rad/s
+        }
+        else if (is_hit_counter > 0)
+        {
+            chassis_omega_new_target = 4.5 * PI;
         }
         else {  //Decrease spintop rate if not hit for a while
             chassis_omega_new_target = 3.5 * PI; // 2 * PI rad/s
@@ -150,7 +156,7 @@ void Chassis_Process_Target_Velocity()
 void Chassis_Ctrl_Loop()
 {
     //TODO: change this, for odom only
-    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw);
+    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + PI/2;
     Chassis_Process_Target_Velocity();
     
     chassis_state.v_x = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
