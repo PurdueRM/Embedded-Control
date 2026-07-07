@@ -27,7 +27,6 @@ osThreadId daemon_task_handle;
 osThreadId c_board_comm_task_handle;
 osThreadId supercap_uart_task_handle;
 
-void Robot_Tasks_Robot_Command(void const *argument);
 void Robot_Tasks_Motor(void const *argument);
 void Robot_Tasks_IMU(void const *argument);
 void Robot_Tasks_UI(void const *argument);
@@ -67,14 +66,17 @@ void Robot_Tasks_Start()
     supercap_uart_task_handle = osThreadCreate(osThread(supercap_uart_task), NULL);
 }
 
-void Robot_Tasks_Robot_Command(void const *argument)
+void Robot_Tasks_Motor(void const *argument)
 {
     portTickType xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
     const TickType_t TimeIncrement = pdMS_TO_TICKS(2);
     while (1)
     {
+        // Run command loop and send in the same task tick
+        // so tx_buffer cannot be overwritten between prepare and send
         Robot_Command_Loop();
+        Motor_Task_Loop();
         vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
     }
 }
