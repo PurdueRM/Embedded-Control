@@ -15,7 +15,7 @@ extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 extern Referee_System_t Referee_System;
 extern DJI_Motor_Handle_t *g_yaw;
-extern DJI_Motor_Handle_t *g_yaw;
+// extern DJI_Motor_Handle_t *g_yaw;
 uint16_t delay_counter = 0;
 
 
@@ -89,7 +89,7 @@ void Chassis_Task_Init()
 
     swerve_module_config_t module_configs[NUMBER_OF_MODULES] = {
         {2, 1, 2050, MOTOR_REVERSAL_REVERSED, 1, 1, MOTOR_REVERSAL_NORMAL},
-        {2, 2, 1940, MOTOR_REVERSAL_REVERSED, 2, 2, MOTOR_REVERSAL_NORMAL},
+        {2, 2, 3991, MOTOR_REVERSAL_REVERSED, 2, 2, MOTOR_REVERSAL_NORMAL},
         {2, 3, 1430, MOTOR_REVERSAL_REVERSED, 2, 3, MOTOR_REVERSAL_REVERSED},
         {2, 4, 8150, MOTOR_REVERSAL_REVERSED, 2, 4, MOTOR_REVERSAL_REVERSED}};
 
@@ -134,28 +134,7 @@ void Chassis_Ctrl_Loop()
     if (delay_counter > 0) {
         delay_counter--;
     }
-    if ((Referee_System.Robot_State.Chassis_Power_Output == 0) || delay_counter > 0)
-    {
-        if (Referee_System.Robot_State.Chassis_Power_Output == 0)
-        {
-            float delay_time = 0.5f; //seconds
-            delay_counter = delay_time * 500;
-        }
-        // disable turning motor
-        for (int i = 0; i < NUMBER_OF_MODULES; i++)
-        {
-            g_chassis_state.omega = 0;
-            g_chassis_state.v_x = 0;
-            g_chassis_state.v_y = 0;
-            g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
-            DJI_Motor_Disable(g_drive_motors[i]);
-            DJI_Motor_Disable(g_azimuth_motors[i]);
-            PID_Reset(g_azimuth_motors[i]->angle_pid);
-            PID_Reset(g_azimuth_motors[i]->velocity_pid);
-            PID_Reset(g_drive_motors[i]->velocity_pid);
-        }
-        return;
-    }
+
     if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
         g_supercap_linear_boost_rate = g_supercap_linear_boost_rate * 0.95f + 3.0f * 0.05f;
         g_supercap_spintop_boost_rate = g_supercap_spintop_boost_rate * 0.95f + 3.0f * 0.05f;
@@ -169,25 +148,21 @@ void Chassis_Ctrl_Loop()
     for (int i = 0; i < NUMBER_OF_MODULES; i++) {
         measured_angles[i] = DJI_Motor_Get_Absolute_Angle(g_azimuth_motors[i]);
     }
-    g_chassis_state.v_x = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
-    g_chassis_state.v_y = g_robot_state.chassis.y_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
+    // g_chassis_state.v_x = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
+    // g_chassis_state.v_y = g_robot_state.chassis.y_speed * g_swerve_constants.max_speed * g_supercap_linear_boost_rate;
+    g_chassis_state.v_y = g_robot_state.chassis.x_speed * g_swerve_constants.max_speed; //Can't be bothered to figure out heading. Jank changes to make engineer move correctly
+    g_chassis_state.v_x = -g_robot_state.chassis.y_speed * g_swerve_constants.max_speed;
+    g_chassis_state.omega = -g_robot_state.chassis.omega;
+    
 
     // Handle locking logic
     // TODO add an adjustable offset with keyboard
-    float lock_increment = PI / 2;
-    if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
-
-        g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
-    } else if (g_robot_state.chassis.locked_state == LOCK_ANGLED) 
-    {
-        Lock_Chassis_To_Angle(lock_increment, PI / 4);
-    } else if (g_robot_state.chassis.locked_state == LOCK_STRAIGHT)
-    {
-        Lock_Chassis_To_Angle(lock_increment, 0);
-    } else if (g_robot_state.chassis.locked_state == LOCK_RANDOM)
-    {
-        g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, 0);
-    }
+    // float lock_increment = PI / 2;
+    // if (g_robot_state.chassis.IS_SPINTOP_ENABLED) {
+    //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, Rescale_Chassis_Velocity());
+    // } else {
+    //     g_chassis_state.omega = rate_limiter_iterate(&chassis_omega_limiter, 0);
+    // }
 
     // Calculate the kinematics of the chassis
     swerve_calculate_kinematics(&g_chassis_state, &g_swerve_constants);
@@ -199,18 +174,18 @@ void Chassis_Ctrl_Loop()
     // }
     
     // // rate limit the module speeds
-    // for (int i = 0; i < NUMBER_OF_MODULES; i++) {
-    //     g_chassis_state.states[i].speed = rate_limiter_iterate(&chassis_vel_limiters[i], g_chassis_state.states[i].speed);   
-    // }
+    for (int i = 0; i < NUMBER_OF_MODULES; i++) {
+        g_chassis_state.states[i].speed = rate_limiter_iterate(&chassis_vel_limiters[i], g_chassis_state.states[i].speed);   
+    }
 
     swerve_convert_to_rpm(&g_chassis_state, &g_swerve_constants);
 
-    for (int i = 0; i < NUMBER_OF_MODULES; i++) {
+    for (int i = 0; g_remote.controller.left_switch == 2 && i < NUMBER_OF_MODULES; i++) {
         DJI_Motor_Set_Angle(g_azimuth_motors[i], g_chassis_state.states[i].angle);
         DJI_Motor_Set_Velocity(g_drive_motors[i], g_chassis_state.states[i].speed);
     }
 
-    Update_Maxes();
+    // Update_Maxes();
 }
 
 /**
@@ -224,7 +199,42 @@ void Lock_Chassis_To_Angle(float lock_angle, float offset_angle)
     static float last_snap_angle = 0.0f;
 
     // Get the angle difference and apply the offset
-    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + offset_angle;
+    // gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + offset_angle;
+    gimbal_angle_difference = 0 + offset_angle;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+
+    // 2. Check if angle difference exceeds hysteresis threshold
+    float diff_from_last = (gimbal_angle_difference - last_snap_angle);
+    __MAP_ANGLE_TO_UNIT_CIRCLE(diff_from_last);
+    if (fabsf(diff_from_last) > (lock_angle / 2.0f) + HYSTERESIS_RAD) {
+        last_snap_angle = roundf(gimbal_angle_difference / lock_angle) * lock_angle;
+    }
+
+    float error_angle = gimbal_angle_difference - last_snap_angle ;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(error_angle);
+
+    // Apply low pass filter
+    prev_error = LPF_ALPHA * error_angle + (1.0 - LPF_ALPHA) * prev_error;
+    gimbal_angle_difference = prev_error;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+    
+    // Rotate chassis toward snapped corner
+    g_chassis_state.omega = PID(&angle_locking_pid, gimbal_angle_difference);
+}
+
+/**
+ * @brief Locks the chassis at lock_angle increments with a given offset
+ * @param lock_angle: The angle and it's increments which the robot will lock to
+ * @param offset: The chassis offset angle
+ */
+void Lock_Chassis_To_Angle(float lock_angle, float offset_angle)
+{
+    static float prev_error = 0.0f;
+    static float last_snap_angle = 0.0f;
+
+    // Get the angle difference and apply the offset
+    // gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + offset_angle;
+    gimbal_angle_difference = 0 + offset_angle;
     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
 
     // 2. Check if angle difference exceeds hysteresis threshold
@@ -302,7 +312,7 @@ void Update_Maxes()
  */
 float Rescale_Chassis_Velocity(void) {
     float translation_speed = sqrtf(powf(g_robot_state.chassis.x_speed, 2) + powf(g_robot_state.chassis.y_speed, 2));
-    float spin_coeff = chassis_rad * g_spintop_omega / (translation_speed * 2.0f + chassis_rad * g_spintop_omega);
+    float spin_coeff = chassis_rad * g_spintop_omega / (translation_speed * 25.0f + chassis_rad * g_spintop_omega);
     float target_omega = g_spintop_omega * spin_coeff * g_supercap_spintop_boost_rate;
     return target_omega;
 }
