@@ -4,7 +4,7 @@
 
 # ======== PROJECT CONFIGURATION ========
 # Robot project to build
-ROBOT_PROJECT ?= Swerve-Standard
+ROBOT_PROJECT ?= Hero
 TARGET = $(ROBOT_PROJECT)
 
 # Board configuration
