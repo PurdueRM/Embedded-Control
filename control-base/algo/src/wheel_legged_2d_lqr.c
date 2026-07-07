@@ -1,4 +1,4 @@
-#include "wheel_legged_2d_Lqr.h"
+#include "wheel_legged_2d_lqr.h"
 #include <stdint.h>
 #include "robot.h"
 #define LQR11 (-9.0381f)
