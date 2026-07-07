@@ -44,7 +44,8 @@ void Robot_Tasks_Start()
     osThreadDef(motor_task, Robot_Tasks_Motor, osPriorityAboveNormal, 0, 2048);
     motor_task_handle = osThreadCreate(osThread(motor_task), NULL);
 
-    // REMOVED: robot_command_task creation
+    osThreadDef(robot_command_task, Robot_Tasks_Robot_Command, osPriorityAboveNormal, 0, 256);
+    robot_command_task_handle = osThreadCreate(osThread(robot_command_task), NULL);
 
     osThreadDef(ui_task, Robot_Tasks_UI, osPriorityAboveNormal, 0, 256);
     ui_task_handle = osThreadCreate(osThread(ui_task), NULL);
@@ -62,6 +63,23 @@ void Robot_Tasks_Start()
     c_board_comm_task_handle = osThreadCreate(osThread(c_board_comm_task), NULL);
 }
 
+void Robot_Tasks_Robot_Command(void const *argument)
+{
+    portTickType xLastWakeTime;
+    xLastWakeTime = xTaskGetTickCount();
+    const TickType_t TimeIncrement = pdMS_TO_TICKS(2);
+    while (1)
+    {
+        Robot_Command_Loop();
+        vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
+    }
+}
+
+__weak void Robot_Tasks_IMU(void const *argument)
+{
+    IMU_Task(argument);
+}
+
 void Robot_Tasks_Motor(void const *argument)
 {
     portTickType xLastWakeTime;
@@ -70,15 +88,9 @@ void Robot_Tasks_Motor(void const *argument)
     Motor_Task_Init();
     while (1)
     {
-        Robot_Command_Loop();  // prepares tx_buffer for all motors
-        Motor_Task_Loop();     // immediately transmits before any preemption
+        Motor_Task_Loop();
         vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
     }
-}
-
-__weak void Robot_Tasks_IMU(void const *argument)
-{
-    IMU_Task(argument);
 }
 
 void Robot_Tasks_UI(void const *argument)

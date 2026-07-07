@@ -43,6 +43,11 @@
 #define HYSTERESIS_RAD (0 * (180 / PI))
 #define DEFAULT_CHASSIS_MODE (LOCK_RANDOM)
 
+// Swerve Gimbal-Chassis Lock Parameters
+#define LPF_ALPHA (0.05)
+#define HYSTERESIS_RAD (0 * (180 / PI))
+#define DEFAULT_CHASSIS_MODE (LOCK_RANDOM)
+
 // Function prototypes
 void Chassis_Task_Init(void);
 void Chassis_Ctrl_Loop(void);
