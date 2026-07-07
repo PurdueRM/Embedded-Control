@@ -210,6 +210,7 @@ DJI_Motor_Handle_t *DJI_Motor_Init(Motor_Config_t *config, DJI_Motor_Type_t type
     default:
         break;
     }
+    motor_handle->bypass_driver = config->bypass_driver;
     g_dji_motors[g_dji_motor_count++] = motor_handle;
     return motor_handle;
 }
@@ -361,6 +362,8 @@ void DJI_Motor_Current_Calc()
     for (int i = 0; i < g_dji_motor_count; i++)
     {
         DJI_Motor_Handle_t *motor = g_dji_motors[i];
+        if (motor->bypass_driver == 0)
+        {
         float angle_feedback = 0;
         float velocity_feedback = 0;
         // assign feedback depending on whether the motor uses an external sensor (like imu)
@@ -439,6 +442,10 @@ void DJI_Motor_Current_Calc()
             break;
         }
     }
+    else {
+        ;
+    }
+}
 }
 
 /**
