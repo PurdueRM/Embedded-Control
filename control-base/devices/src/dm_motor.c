@@ -106,7 +106,7 @@ void DM_Motor_Disable_Motor(DM_Motor_Handle_t *motor)
     {
     case DM_MOTOR_ZERO_CURRENT: 
     {
-        motor->send_pending_flag |= DM_MOTOR_SEND_PENDING;
+        motor->send_pending_flag |= DM_MOTOR_DISABLE_PENDING;
         break;
     }
     case DM_MOTOR_HARDWARE_DISABLE:
