@@ -1,6 +1,6 @@
 #include "motor_task.h"
 #include "dji_motor.h"
-// #include "dm_motor.h"
+#include "dm_motor.h"
 // #include "mf_motor.h"
 #include "supercap.h"
 #include "c_board_comm.h"

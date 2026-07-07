@@ -18,7 +18,7 @@
 extern void IMU_Task(void const *pvParameters);
 
 osThreadId imu_task_handle;
-osThreadId robot_command_task_handle;
+// REMOVED: robot_command_task_handle
 osThreadId motor_task_handle;
 osThreadId ui_task_handle;
 osThreadId debug_task_handle;
@@ -26,7 +26,7 @@ osThreadId jetson_orin_task_handle;
 osThreadId daemon_task_handle;
 osThreadId c_board_comm_task_handle;
 
-void Robot_Tasks_Robot_Command(void const *argument);
+// REMOVED: Robot_Tasks_Robot_Command forward declaration
 void Robot_Tasks_Motor(void const *argument);
 void Robot_Tasks_IMU(void const *argument);
 void Robot_Tasks_UI(void const *argument);
@@ -40,7 +40,8 @@ void Robot_Tasks_Start()
     osThreadDef(imu_task, Robot_Tasks_IMU, osPriorityAboveNormal, 0, 1024);
     imu_task_handle = osThreadCreate(osThread(imu_task), NULL);
 
-    osThreadDef(motor_task, Robot_Tasks_Motor, osPriorityAboveNormal, 0, 256);
+    // Stack increased to 512 since it now runs both command and motor loops
+    osThreadDef(motor_task, Robot_Tasks_Motor, osPriorityAboveNormal, 0, 2048);
     motor_task_handle = osThreadCreate(osThread(motor_task), NULL);
 
     osThreadDef(robot_command_task, Robot_Tasks_Robot_Command, osPriorityAboveNormal, 0, 256);
