@@ -42,11 +42,11 @@ void Robot_Tasks_Start()
     osThreadDef(imu_task, Robot_Tasks_IMU, osPriorityAboveNormal, 0, 1024);
     imu_task_handle = osThreadCreate(osThread(imu_task), NULL);
 
-    osThreadDef(motor_task, Robot_Tasks_Motor, osPriorityAboveNormal, 0, 256);
-    motor_task_handle = osThreadCreate(osThread(motor_task), NULL);
-
     osThreadDef(robot_command_task, Robot_Tasks_Robot_Command, osPriorityAboveNormal, 0, 256);
     robot_command_task_handle = osThreadCreate(osThread(robot_command_task), NULL);
+  
+    osThreadDef(motor_task, Robot_Tasks_Motor, osPriorityAboveNormal, 0, 512); // increase stack since now doing more work
+    motor_task_handle = osThreadCreate(osThread(motor_task), NULL);
 
     osThreadDef(ui_task, Robot_Tasks_UI, osPriorityAboveNormal, 0, 256);
     ui_task_handle = osThreadCreate(osThread(ui_task), NULL);
