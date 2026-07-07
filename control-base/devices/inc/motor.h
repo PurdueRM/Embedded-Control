@@ -27,7 +27,8 @@ typedef struct
     Motor_Reversal_t motor_reversal;
     uint8_t control_mode;
     uint8_t pos_feedback_absolute_angle; // 0 for no, 1 for yes
-
+    uint8_t bypass_driver; // 0 for no, 1 for yes, used for bypassing the driver and using the motor directly
+    
     // external sensor information like imu or external encoders
     uint8_t use_external_feedback;  // 0 for no, 1 for yes
     int8_t external_feedback_dir;  // 0 for no, 1 for yes
