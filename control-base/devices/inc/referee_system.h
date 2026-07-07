@@ -90,6 +90,10 @@
 #define       REFEREE_REMAINING_AMMO_LEN           15
 #define       REFEREE_ROBOT_RFID_LEN               13
 
+#define       REFEREE_BASE_BUFFER_ZONE            (0)
+#define		  REFEREE_RESUPPLY_ZONE				  (19)
+#define		  REFEREE_CENTER_ZONE				  (23)
+
 typedef struct
 {
 	uint8_t Game_Type; //1 for 7v7, 4 for 3v3, 5 for 1v1
@@ -248,6 +252,9 @@ typedef struct
 	struct __attribute__ ((__packed__))
 	{
 		uint32_t State;
+		uint8_t base_buffer_zone;
+		uint8_t resupply_zone;
+		uint8_t center_zone;
 	}RFID;
 	
 	uint8_t Info_Update_Frame;
