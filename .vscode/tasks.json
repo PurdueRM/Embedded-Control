@@ -118,6 +118,7 @@
             "description": "Select the robot project to build",
             "options": [
                 "Swerve-Standard",
+                "Standard",
                 "Sentry",
                 "Wheel-Legged-Chassis",
                 "Swerve-Standard-Slave",

@@ -75,7 +75,7 @@ void Handle_Starting_Up_State()
         Remote_Init(&huart3);  
     #else
         // Initialize the slave c board for the supercaps
-        Supercap_Init(&huart2);
+        Supercap_Init(&huart2); // could be wrong (either huart 1 or huart 2)
     #endif
     CAN_Service_Init();
     C_Board_Comm_Task_Init();
