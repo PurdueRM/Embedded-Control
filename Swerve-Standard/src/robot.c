@@ -15,10 +15,12 @@
 #include "c_board_comm.h"
 #include "FreeRTOS.h"
 #include "dm_motor.h"
+#include "custom_controller.h"
 
 Robot_State_t g_robot_state = {0};
 extern Remote_t g_remote;
 extern Supercap_t g_supercap;
+extern custom_controller_t g_custom_controller;
 
 // extern DJI_Motor_Handle_t *g_yaw;
 
@@ -124,6 +126,7 @@ void Handle_Disabled_State()
 
 void Process_Remote_Input()
 {
+    parse_controller_packet(Referee_Robot_State.Custom_Controller.data);
     // Process remote input
     g_robot_state.input.vy_keyboard = ((1.0f - KEYBOARD_RAMP_COEF) * g_robot_state.input.vy_keyboard + g_remote.keyboard.W * KEYBOARD_RAMP_COEF - g_remote.keyboard.S * KEYBOARD_RAMP_COEF);
     g_robot_state.input.vx_keyboard = ((1.0f - KEYBOARD_RAMP_COEF) * g_robot_state.input.vx_keyboard - g_remote.keyboard.A * KEYBOARD_RAMP_COEF + g_remote.keyboard.D * KEYBOARD_RAMP_COEF);
