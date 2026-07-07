@@ -8,8 +8,12 @@
 #include "jetson_orin.h"
 #include "dm_motor.h"
 
+#include "custom_controller.h"
+#include "arm_modeling.h"
+
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
+extern Arm_State_t g_arm_state;
 
 DM_Motor_Handle_t *g_wrist;
 DM_Motor_Handle_t *g_finger;
@@ -20,6 +24,8 @@ float elbow_target;
 float shoulder_target;
 float wrist_target;
 float finger_target;
+
+float q[4] = {1.0f, 0.0f, 0.0f, 0.0f}; // Global quaternion state
 
 void Gimbal_Task_Init()
 {
@@ -88,6 +94,8 @@ void Gimbal_Task_Init()
     DM_Motor_Enable_Motor(g_wrist);
     DM_Motor_Enable_Motor(g_finger);
     DM_Motor_Enable_Motor(g_knuckle);
+
+    init_arm_state(g_arm_state);
 }
 
 void Gimbal_Ctrl_Loop()
@@ -98,6 +106,8 @@ void Gimbal_Ctrl_Loop()
     // DM_Motor_Ctrl_MIT_PD(g_finger, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
     // DM_Motor_Ctrl_MIT_PD(g_knuckle, 0.0f, 0.0f, 0.0f, 5.0f, 0.5f);
 
+
+    g_custom_controller 
     if(g_remote.controller.left_switch == 3){   //Mid
         finger_target -= g_remote.controller.left_stick.y/660.0f * 0.001;
 
