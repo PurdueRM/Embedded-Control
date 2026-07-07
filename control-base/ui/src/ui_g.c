@@ -3,6 +3,8 @@
 // Static Edition
 //
 
+// Leo's version
+
 #include <string.h>
 
 #include "ui_interface.h"
@@ -50,8 +52,8 @@ void _ui_init_g_0_0() {
     ui_g_0_Aim->operate_type = 1;
     ui_g_0_Aim->layer = 0;
     ui_g_0_Aim->color = 2;
-    ui_g_0_Aim->start_x = 936;
-    ui_g_0_Aim->start_y = 492;
+    ui_g_0_Aim->start_x = 959;
+    ui_g_0_Aim->start_y = 472;
     ui_g_0_Aim->width = 5;
     ui_g_0_Aim->r = 15;
 

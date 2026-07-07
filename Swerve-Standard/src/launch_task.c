@@ -8,198 +8,147 @@
 #include "referee_system.h"
 #include "laser.h"
 #include <stdint.h>
+#include "jetson_orin.h"
+#include "bsp_pwm.h"
+
+extern TIM_HandleTypeDef htim1;   // change this if your PWM uses another timer
+
+PWM_Instance_t *servo_pwm;
+PWM_Instance_t *pump_pwm;
+PWM_Instance_t *valve_pwm;
+
+// TODO: Copied from Swerve-Standard
 
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 
 DJI_Motor_Handle_t *g_flywheel_left, *g_flywheel_right, *g_feed_motor;
+float servo_angle = 0;
 
 void Launch_Task_Init()
 {
-    // Init Launch Hardware
-    Motor_Config_t flywheel_left_config = {
-        .can_bus = 1,
-        .speed_controller_id = 4,
-        .offset = 0,
-        .control_mode = VELOCITY_CONTROL,
-        .motor_reversal = MOTOR_REVERSAL_NORMAL,
-        .velocity_pid =
-            {
-                .kp = 500.0f,
-                .output_limit = M3508_MAX_CURRENT_INT,
-            },
-    };
+    Servo_Init();
+    // Disable_Servo();
 
-    Motor_Config_t flywheel_right_config = {
-        .can_bus = 1,
-        .speed_controller_id = 5,
-        .offset = 0,
-        .control_mode = VELOCITY_CONTROL,
-        .motor_reversal = MOTOR_REVERSAL_REVERSED,
-        .velocity_pid =
-            {
-                .kp = 500.0f,
-                .output_limit = M3508_MAX_CURRENT_INT,
-            },
-    };
+    Valve_Init();
+    Pump_Init();
 
-    Motor_Config_t feed_speed_config = {
-        .can_bus = 1,
-        .speed_controller_id = 2,
-        .offset = 0,
-        .control_mode = VELOCITY_CONTROL | POSITION_CONTROL_TOTAL_ANGLE,
-        .motor_reversal = MOTOR_REVERSAL_NORMAL,
-        .velocity_pid =
-            {
-                .kp = 500.0f,
-                .kd = 200.0f,
-                .kf = 100.0f,
-                .output_limit = M2006_MAX_CURRENT_INT,
-            },
-        .angle_pid =
-            {
-                .kp = 500000.0f,
-                .kd = 15000000.0f,
-                .ki = 0.1f,
-                .output_limit = M2006_MAX_CURRENT_INT,
-                .integral_limit = 1000.0f,
-            }
-    };
-
-    g_flywheel_left = DJI_Motor_Init(&flywheel_left_config,M3508);
-    g_flywheel_right = DJI_Motor_Init(&flywheel_right_config,M3508);
-    g_feed_motor = DJI_Motor_Init(&feed_speed_config,M2006);
-
-    Laser_Init();
+    Valve_TurnOff();
+    Pump_TurnOff();
+    
+    servo_angle = 0;
 }
 
 void Launch_Ctrl_Loop()
 {
-    if (!g_robot_state.launch.IS_FIRING_ENABLED)
-    {
-        stopFlywheel();
-        Laser_Off();
-        g_robot_state.launch.IS_FLYWHEEL_ENABLED = 0;
-        return;
-    } else {
-        g_robot_state.launch.IS_FLYWHEEL_ENABLED = 1;
-        startFlywheel();
-        Laser_On();
-    }
+    //  static uint32_t last_time = 0;
+    // static uint8_t state = 0;
 
-    if (g_robot_state.launch.IS_BUSY) { // check if we are in middle of a fire mode
-        switch (g_robot_state.launch.busy_mode)
-        {
-        case REJIGGLE:
-            rejiggle();
-            break;
-        case SINGLE_FIRE:
-            handleSingleFire();
-            break;
-        case BURST_FIRE:
-            break;
-        case FULL_AUTO:
-            handleFullAuto();
-            break;
-        default:
-            break;
-        }
-    } else {
-        // Control loop for launch to see if new mode is set
-        switch (g_robot_state.launch.fire_mode)
-        {
-        case SINGLE_FIRE:
-            handleSingleFire();
-            break;
-        case BURST_FIRE:
-            // TODO: Complete 5 burst
-            break;
-        case FULL_AUTO:
-            handleFullAuto();
-            break;
-        default:
-            break;
+    // if (HAL_GetTick() - last_time < 1000)
+    //     return;
 
-        }
-    }
-}
+    // last_time = HAL_GetTick();
 
-void resetRelPos() {
-    g_robot_state.launch.shooter_state.accum_angle = 0;
-    g_robot_state.launch.shooter_state.prev_time = xTaskGetTickCount();
-}
+    // if (state == 0) {
+    //     Servo_SetAngle(0);
+    //     state = 1;
+    // } else if (state == 1) {
+    //     Servo_SetAngle(90);
+    //     state = 2;
+    // } else {
+    //     Servo_SetAngle(180);
+    //     state = 0;
+    // }
+    if(g_remote.controller.left_switch == 1){
+        Valve_TurnOff();
+        Pump_TurnOn();
 
-#define ticksToDegrees(ticks) ((ticks) * 360.0f / DJI_MAX_TICKS)
-#define ticksToRad(ticks) ((ticks) * 360.0f / DJI_MAX_TICKS)
-#define degreesToTicks(degrees) ((degrees) * DJI_MAX_TICKS / 360.0f)
-float g_curr_angle = 0;
-// TODO check if at ref
-void handleSingleFire() {
-    if (g_robot_state.launch.IS_BUSY) {
-        if (DJI_Motor_Is_At_Angle(g_feed_motor, FEED_TOLERANCE)) // if shots fired :O then rejiggle
-        {
-            g_robot_state.launch.IS_BUSY = 0;
-            g_robot_state.launch.busy_mode = IDLE;
-            rejiggle();
-        }
     }
     else {
-        g_robot_state.launch.IS_BUSY = 1;
-        g_robot_state.launch.busy_mode = SINGLE_FIRE;
-        // set a new position reference x degrees forward
-        resetRelPos();
-
-        DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
-        g_curr_angle = DJI_Motor_Get_Total_Angle(g_feed_motor); // rad
-        DJI_Motor_Set_Angle(g_feed_motor, g_curr_angle + SHOT_ANGLE_OFFSET_RAD);
-        // DJI_Motor_Set_Velocity(g_feed_motor, FEED_RATE);
+        Valve_TurnOn();
+        // Pump_TurnOff();
     }
+    // Servo_SetAngle(servo_angle);
+
+    // Disable_Servo();
 }
 
-void rejiggle() {
-    //set a position reference slightly back to prevent jams
-    float curr_angle_rad = DJI_Motor_Get_Total_Angle(g_feed_motor); // rad
 
-    if (g_robot_state.launch.IS_BUSY) { // if busy, means we already called so go back
-        if (DJI_Motor_Is_At_Angle(g_feed_motor, FEED_TOLERANCE))
-        {
-            g_robot_state.launch.busy_mode = IDLE;
-            g_robot_state.launch.IS_BUSY = 0;
-            DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
-            DJI_Motor_Set_Angle(g_feed_motor, curr_angle_rad + (SHOT_ANGLE_OFFSET_RAD / 2));
-        }
-    }
-    else {
-        g_robot_state.launch.busy_mode = REJIGGLE;
-        g_robot_state.launch.IS_BUSY = 1;
-        DJI_Motor_Set_Control_Mode(g_feed_motor, POSITION_CONTROL_TOTAL_ANGLE);
-        DJI_Motor_Set_Angle(g_feed_motor, curr_angle_rad - (SHOT_ANGLE_OFFSET_RAD / 2));
-    }
+void Servo_Init(void)
+{
+    PWM_Config_t servo_config = {
+        .htim = &htim1,
+        .channel = TIM_CHANNEL_1,   // change to your actual PWM channel
+        .period = 0.020f,           // 20 ms period = 50 Hz
+        .dutyratio = 0.075f,        // center position
+        .id = 0
+    };
+
+    servo_pwm = PWM_Register(&servo_config);
 }
 
-void handleFullAuto() {
-    if (g_robot_state.launch.IS_BUSY) {
-        if (g_robot_state.launch.fire_mode == NO_FIRE) {
-            DJI_Motor_Set_Control_Mode(g_feed_motor, VELOCITY_CONTROL);
-            DJI_Motor_Set_Velocity(g_feed_motor, 0);
-            g_robot_state.launch.IS_BUSY = 0;
-            g_robot_state.launch.busy_mode = IDLE;
-            rejiggle();
-        }
-    } else {
-        DJI_Motor_Set_Control_Mode(g_feed_motor, VELOCITY_CONTROL);
-        DJI_Motor_Set_Velocity(g_feed_motor, FEED_RATE);
-        g_robot_state.launch.IS_BUSY = 1;
-        g_robot_state.launch.busy_mode = FULL_AUTO;
-    }
+void Valve_Init(void) {
+    PWM_Config_t valve_config = {
+        .htim = &htim1,
+        .channel = TIM_CHANNEL_2,
+        .period = 0.020f, // 20 ms period
+        .dutyratio = 0.05f, // closed
+        .id = 1
+    };
+
+    valve_pwm = PWM_Register(&valve_config);
 }
 
-void startFlywheel() {
-    DJI_Motor_Set_Velocity(g_flywheel_left, -320);
-    DJI_Motor_Set_Velocity(g_flywheel_right, -320);
+void Pump_Init(void) {
+    PWM_Config_t pump_config = {
+        .htim = &htim1,
+        .channel = TIM_CHANNEL_3,
+        .period = 0.020f, // 20 ms period
+        .dutyratio = 0.05f, // off
+        .id = 2
+    };
+
+    pump_pwm = PWM_Register(&pump_config);
+
 }
 
-void stopFlywheel() {
-    DJI_Motor_Set_Velocity(g_flywheel_left, 0);
-    DJI_Motor_Set_Velocity(g_flywheel_right, 0);
+void Valve_TurnOn() {
+    float duty = 0.10f; // 2000 us pulse / 20000 us period = 0.10 (10%)
+    PWM_Set_Duty_Ratio(valve_pwm, duty);
+}
+
+void Valve_TurnOff() {
+    float duty = 0.05f; // 1000 us pulse / 20000 us period = 0.05 (5%)
+    PWM_Set_Duty_Ratio(valve_pwm, duty);
+}
+
+void Pump_TurnOn() {
+    // 2000 us pulse / 20000 us period = 0.10 (10%)
+    float duty = 0.10f; 
+    PWM_Set_Duty_Ratio(pump_pwm, duty);
+}
+
+void Pump_TurnOff() {
+    // 1000 us pulse / 20000 us period = 0.05 (5%)
+    float duty = 0.05f; 
+    PWM_Set_Duty_Ratio(pump_pwm, duty);
+}
+
+void Servo_SetAngle(float angle)
+{
+    if (angle < 0.0f)
+        angle = 0.0f;
+    if (angle > 80.0f)
+        angle = 80.0f;
+
+    // float pulse_ms = 1.0f + angle * (1.0f / 180.0f); // 1 ms for 0 degrees, 2 ms for 180 degrees
+     float pulse_ms = 0.5f + angle * (2.0f / 180.0f); // 0.5 ms for 0 degrees, 2.5 ms for 180 degrees
+
+    float duty = pulse_ms / 20.0f;
+
+    PWM_Set_Duty_Ratio(servo_pwm, duty);
+}
+
+void Disable_Servo(){
+    PWM_Set_Duty_Ratio(servo_pwm, 0);
 }

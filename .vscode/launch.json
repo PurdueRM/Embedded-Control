@@ -67,6 +67,7 @@
       "options": [
         "Swerve-Standard",
         "Swerve-Standard-Slave",
+        "Standard",
         "Sentry",
         "Wheel-Legged-Chassis"
       ]

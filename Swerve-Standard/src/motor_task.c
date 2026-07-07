@@ -1,6 +1,6 @@
 #include "motor_task.h"
 #include "dji_motor.h"
-// #include "dm_motor.h"
+#include "dm_motor.h"
 // #include "mf_motor.h"
 #include "supercap.h"
 #include "c_board_comm.h"
@@ -15,7 +15,8 @@ Daemon_Instance_t *g_motor_task_daemon_ptr = NULL;
 #define MOTOR_TIMEOUT_MS (100) // 1 second timeout for motor task
 
 void Motor_Task_Timeout_Callback(void) {
-    CAN_Service_Restart();
+    // CAN_Service_Restart();
+    // CAN_Service_Init();
 }
 
 void Motor_Task_Init() {
@@ -29,6 +30,7 @@ void Motor_Task_Loop() {
     Daemon_Reload(g_motor_task_daemon_ptr);
     #ifdef MASTER
         DJI_Motor_Send();
+        DM_Motor_Send();
     #else
         if (g_board_comm_sending_pending == 1)
         {

@@ -13,16 +13,19 @@
 #include "math.h"
 #include "rate_limiter.h"
 #include "c_board_comm.h"
+#include "FreeRTOS.h"
+#include "dm_motor.h"
 
 Robot_State_t g_robot_state = {0};
 extern Remote_t g_remote;
 extern Supercap_t g_supercap;
 
-extern DJI_Motor_Handle_t *g_yaw;
+// extern DJI_Motor_Handle_t *g_yaw;
 
 Input_State_t g_input_state = {0};
 
-#define KEYBOARD_RAMP_COEF (0.01f)
+#define KEYBOARD_RAMP_COEF (0.002f)
+volatile const uint8_t uxTopUsedPriority __attribute__((used)) = configMAX_PRIORITIES;
 
 /**
  * @brief This function initializes the robot.
@@ -70,7 +73,7 @@ void Handle_Starting_Up_State()
         Remote_Init(&huart3);  
     #else
         // Initialize the slave c board for the supercaps
-        Supercap_Init(&huart1);
+        Supercap_Init(&huart2); // could be wrong (either huart 1 or huart 2)
     #endif
     CAN_Service_Init();
     C_Board_Comm_Task_Init();
@@ -92,7 +95,7 @@ void Handle_Enabled_State()
     {
         // Process movement and components in enabled state
         Referee_Set_Robot_State();
-        // Process_Remote_Input();
+        Process_Remote_Input();
         Process_Chassis_Control();
         Process_Gimbal_Control();
         Process_Launch_Control();
@@ -131,9 +134,11 @@ void Process_Remote_Input()
 
 
     // Calculate Gimbal Oriented Control
-    float theta = DJI_Motor_Get_Absolute_Angle(g_yaw);
+    // float theta = DJI_Motor_Get_Absolute_Angle(g_yaw);
+    float theta = 0;    //Does this work?
     g_robot_state.chassis.x_speed = -g_robot_state.input.vy * sin(theta) + g_robot_state.input.vx * cos(theta);
     g_robot_state.chassis.y_speed = g_robot_state.input.vy * cos(theta) + g_robot_state.input.vx * sin(theta);
+    g_robot_state.chassis.omega = g_remote.controller.right_stick.x/660.0f;
 
     g_robot_state.gimbal.yaw_angle -= (g_remote.controller.right_stick.x / 50000.0f + g_remote.mouse.x / 10000.0f);    // controller and mouse
     g_robot_state.gimbal.pitch_angle -= (g_remote.controller.right_stick.y / 100000.0f - g_remote.mouse.y / 50000.0f);
@@ -142,7 +147,9 @@ void Process_Remote_Input()
     {
         g_robot_state.UI_ENABLED ^= 0x01; // Toggle UI
     }
-    if ((g_remote.keyboard.Shift) || (g_remote.controller.right_switch == UP)) // Hold ctrl to boost
+
+    // NOTE: Right mouse click is now mapped to supercapcitor
+    if ((g_remote.keyboard.Shift) || (g_remote.mouse.right) || (g_remote.controller.right_switch == UP)) // Hold shift to boost
     {
         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 1;
     } else {
@@ -150,11 +157,13 @@ void Process_Remote_Input()
         g_robot_state.IS_SUPER_CAPACITOR_ENABLED = 0;
     }
 
-    if (g_remote.mouse.right) { // Hold right mouse button to enable auto aim
-        g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
-    } else {
-        g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
-    }
+    // TODO/NOTE: Right mouse button is currently bound to supercapcitor
+    // if (g_remote.mouse.right) { // Hold right mouse button to enable auto aim
+    //     g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
+    // } else {
+    //     g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
+    // }
+
 
     if ((g_remote.mouse.left) || (g_remote.controller.wheel > 50.0f)) { // Hold left mouse to fire
         g_robot_state.launch.fire_mode = FULL_AUTO;
@@ -172,16 +181,19 @@ void Process_Remote_Input()
         g_robot_state.chassis.IS_SPINTOP_ENABLED ^= 0x01;
     }
 
-    if (g_remote.keyboard.R) {
-        g_robot_state.chassis.locked_state = LOCK_RANDOM;
-    }
-    if (g_remote.keyboard.E) {
-        g_robot_state.chassis.locked_state = LOCK_ANGLED;
-    }
-
-    if (g_remote.keyboard.Q) {
-        g_robot_state.chassis.locked_state = LOCK_STRAIGHT;
-    }
+    // Chassis-Gimbal Locking Mode
+    // if (g_remote.keyboard.R) {
+    //     g_robot_state.chassis.locked_state = LOCK_RANDOM;
+    // }
+    // if (g_remote.keyboard.E) {
+    //     g_robot_state.chassis.locked_state = LOCK_ANGLED;
+    // }
+    // if (g_remote.keyboard.Q) {
+    //     g_robot_state.chassis.locked_state = LOCK_STRAIGHT;
+    // }
+    
+    // ENSURE THAT CHASIS-GIMBAL LOCK IS TO RANDOM
+    g_robot_state.chassis.locked_state = LOCK_RANDOM;
 
     if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
         //g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
