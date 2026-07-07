@@ -14,7 +14,7 @@
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 extern Referee_System_t Referee_System;
-// extern DJI_Motor_Handle_t *g_yaw;
+extern DJI_Motor_Handle_t *g_yaw;
 // extern DJI_Motor_Handle_t *g_yaw;
 uint16_t delay_counter = 0;
 
@@ -201,6 +201,39 @@ void Lock_Chassis_To_Angle(float lock_angle, float offset_angle)
     // Get the angle difference and apply the offset
     // gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + offset_angle;
     gimbal_angle_difference = 0 + offset_angle;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+
+    // 2. Check if angle difference exceeds hysteresis threshold
+    float diff_from_last = (gimbal_angle_difference - last_snap_angle);
+    __MAP_ANGLE_TO_UNIT_CIRCLE(diff_from_last);
+    if (fabsf(diff_from_last) > (lock_angle / 2.0f) + HYSTERESIS_RAD) {
+        last_snap_angle = roundf(gimbal_angle_difference / lock_angle) * lock_angle;
+    }
+
+    float error_angle = gimbal_angle_difference - last_snap_angle ;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(error_angle);
+
+    // Apply low pass filter
+    prev_error = LPF_ALPHA * error_angle + (1.0 - LPF_ALPHA) * prev_error;
+    gimbal_angle_difference = prev_error;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+    
+    // Rotate chassis toward snapped corner
+    g_chassis_state.omega = PID(&angle_locking_pid, gimbal_angle_difference);
+}
+
+/**
+ * @brief Locks the chassis at lock_angle increments with a given offset
+ * @param lock_angle: The angle and it's increments which the robot will lock to
+ * @param offset: The chassis offset angle
+ */
+void Lock_Chassis_To_Angle(float lock_angle, float offset_angle)
+{
+    static float prev_error = 0.0f;
+    static float last_snap_angle = 0.0f;
+
+    // Get the angle difference and apply the offset
+    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + offset_angle;
     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
 
     // 2. Check if angle difference exceeds hysteresis threshold

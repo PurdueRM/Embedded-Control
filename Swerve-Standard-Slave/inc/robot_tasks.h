@@ -27,6 +27,7 @@ osThreadId daemon_task_handle;
 osThreadId c_board_comm_task_handle;
 osThreadId supercap_uart_task_handle;
 
+void Robot_Tasks_Robot_Command(void const *argument);
 void Robot_Tasks_Motor(void const *argument);
 void Robot_Tasks_IMU(void const *argument);
 void Robot_Tasks_UI(void const *argument);
@@ -41,9 +42,9 @@ void Robot_Tasks_Start()
     osThreadDef(imu_task, Robot_Tasks_IMU, osPriorityAboveNormal, 0, 1024);
     imu_task_handle = osThreadCreate(osThread(imu_task), NULL);
 
-    osThreadDef(motor_task, Robot_Tasks_Motor, osPriorityAboveNormal, 0, 256);
-    motor_task_handle = osThreadCreate(osThread(motor_task), NULL);
-
+    osThreadDef(robot_command_task, Robot_Tasks_Robot_Command, osPriorityAboveNormal, 0, 256);
+    robot_command_task_handle = osThreadCreate(osThread(robot_command_task), NULL);
+  
     osThreadDef(motor_task, Robot_Tasks_Motor, osPriorityAboveNormal, 0, 512); // increase stack since now doing more work
     motor_task_handle = osThreadCreate(osThread(motor_task), NULL);
 
@@ -66,17 +67,14 @@ void Robot_Tasks_Start()
     supercap_uart_task_handle = osThreadCreate(osThread(supercap_uart_task), NULL);
 }
 
-void Robot_Tasks_Motor(void const *argument)
+void Robot_Tasks_Robot_Command(void const *argument)
 {
     portTickType xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
     const TickType_t TimeIncrement = pdMS_TO_TICKS(2);
     while (1)
     {
-        // Run command loop and send in the same task tick
-        // so tx_buffer cannot be overwritten between prepare and send
         Robot_Command_Loop();
-        Motor_Task_Loop();
         vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
     }
 }
