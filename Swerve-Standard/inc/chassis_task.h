@@ -8,7 +8,7 @@
 #define TRACK_WIDTH 0.34f              // m, measured wheel to wheel (side to side)
 #define WHEEL_BASE 0.34f               // m, measured wheel to wheel (up and down)
 #define WHEEL_DIAMETER 0.12f           // m, measured wheel diameter
-#define SWERVE_MAX_WHEEL_ACCEL 0.8f    // m/s^2
+#define SWERVE_MAX_WHEEL_ACCEL 1.8f    // m/s^2
 #define SWERVE_QUICK_STOP_ACCEL 3.0f   // m/s^2
 
 // Max Speeds 
@@ -38,10 +38,17 @@
 #define SPINTOP_OMEGA_W90   9.4f
 #define SPINTOP_OMEGA_W100  9.9f
 
+// Swerve Gimbal-Chassis Lock Parameters
+#define LPF_ALPHA (0.05)
+#define HYSTERESIS_RAD (0 * (180 / PI))
+#define DEFAULT_CHASSIS_MODE (LOCK_RANDOM)
+
 // Function prototypes
 void Chassis_Task_Init(void);
 void Chassis_Ctrl_Loop(void);
 float Rescale_Chassis_Velocity(void);
 void Update_Maxes(void);
+void Lock_Chassis_To_Angle(float lock_angle, float offset_angle);
+float get_fastest_wheel_speed(void);
 
 #endif // CHASSIS_TASK_H
