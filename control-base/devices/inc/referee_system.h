@@ -71,6 +71,7 @@
 #define       REFEREE_SHOOTER_STATE                0x0207				//Real-time launching data, transmitted after a projectile is launched.
 #define       REFEREE_REMAINING_AMMO               0x0208				//Projectile allowance, transmitted at a fixed frequency of 10 Hz.
 #define       REFEREE_ROBOT_RFID                   0x0209				//Robot RFID module status, transmitted at a fixed frequency of 3 Hz.
+#define 	  REFEREE_CUSTOM_CONTROLLER			   0x0302				//Custom controller data
 
 /*Calculation: REFEREE_FRAME_HEADER_LEN(5-byte) + REFEREE_ID_LEN(2-byte) + DATA(n-byte) + REFEREE_FRAME_TAIL_LEN(2-byte,CRC16)*/
 #define       REFEREE_GAME_STATUS_LEN	           20
@@ -89,6 +90,7 @@
 #define       REFEREE_SHOOTER_STATE_LEN            16
 #define       REFEREE_REMAINING_AMMO_LEN           15
 #define       REFEREE_ROBOT_RFID_LEN               13
+#define 	  REFEREE_CUSTOM_CONTROLLER_LEN		   39
 
 #define       REFEREE_BASE_BUFFER_ZONE            (0)
 #define		  REFEREE_RESUPPLY_ZONE				  (19)
@@ -120,6 +122,11 @@ typedef struct
 	UART_HandleTypeDef *huart;
 	uint16_t DMA_Counter;
 	uint8_t Buffer[REFEREE_BUFFER_LEN];
+
+	struct __attribute__ ((__packed__))
+	{
+		uint8_t data[30];
+	} Custom_Controller;
 	
 	struct __attribute__ ((__packed__))
 	{

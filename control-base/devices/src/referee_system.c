@@ -98,6 +98,16 @@ void Referee_Get_Data(UART_Instance_t *uart_instance)
 
             switch (Referee_System.Buffer[n + 5] | Referee_System.Buffer[n + 6] << 8)
             {
+            case REFEREE_CUSTOM_CONTROLLER:
+                if (Verify_CRC16_Check_Sum(Referee_System.Buffer + n, REFEREE_CUSTOM_CONTROLLER_LEN))
+                {
+                    memcpy(&Referee_System.Custom_Controller, &Referee_System.Buffer[n + 7], sizeof(uint8_t[REFEREE_CUSTOM_CONTROLLER_LEN-9]));
+                    n += REFEREE_CUSTOM_CONTROLLER_LEN;
+                }
+                else {
+                    n++;
+                }
+                break;
             case REFEREE_GAME_STATUS:
                 if (Verify_CRC16_Check_Sum(Referee_System.Buffer + n, REFEREE_GAME_STATUS_LEN))
                 {
