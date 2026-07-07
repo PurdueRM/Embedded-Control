@@ -40,7 +40,7 @@ endif
 # else
 # 	MKDIR_CMD = mkdir -p "$(BUILD_DIR)"
 # endif
-MKDIR_CMD = mkdir -p "$(BUILD_DIR)"
+MKDIR_CMD = mkdir -p "$(BUILD_DIR)" #TEMP because windows sucks
 
 # ======== TOOLCHAIN SETUP ========
 # Compiler and tools
