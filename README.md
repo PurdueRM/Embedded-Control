@@ -5,111 +5,90 @@ This repository contains the shared control code between Purdue RoboMaster robot
 ## Repository Initialization Guide
 
 ```bash
-git clone [https://github.com/RoboMaster-Club/control-base.git](https://github.com/RoboMaster-Club/control-base.git)
+git clone https://github.com/RoboMaster-Club/control-base.git
 cd control-base
 git submodule update --init
+```
 
-Markdown
+## VSCode Makefile Environment Setup Guide
 
-# Purdue Robomasters Control Base
+### Install Tools
 
-This repository contains the shared control code between Purdue RoboMaster robots.
+**VSCode**: Download VSCode from [here](https://code.visualstudio.com/download).
 
-## Repository Initialization Guide
+**Package Manager**:
 
-```bash
-git clone [https://github.com/RoboMaster-Club/control-base.git](https://github.com/RoboMaster-Club/control-base.git)
-cd control-base
-git submodule update --init
+- **Windows**: Install [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) and the WSL extension in VSCode.
+- **MacOS**: Install [homebrew](https://docs.brew.sh/Installation).
+- **Linux**: Use the one that comes with your system (eg. `apt`).
 
-VSCode Makefile Environment Setup Guide
-Install Tools
+**Arm GNU Tools and OpenOCD**:
 
-VSCode: Download VSCode from here.
+- **Windows**: Open your WSL terminal (e.g., Ubuntu) and follow the Linux installation instructions below.
 
-Package Manager:
+> Refer to the [Common Issues](#common-issues) section for local pointer to OpenOCD and GNU toolchain.
 
-    Windows: Install WSL (Ubuntu recommended) and the WSL Extension in VSCode.
+- **MacOS**: Run these commands in your terminal.
 
-    MacOS: Install homebrew.
-
-    Linux: Use the one that comes with your system (e.g., apt).
-
-Arm GNU Tools and OpenOCD:
-
-    Windows: Open your WSL terminal (e.g., Ubuntu) and follow the Linux installation instructions below.
-
-    MacOS: Run these commands in your terminal:
-
-Bash
-
+```zsh
 brew install gcc-arm-embedded
 brew install openocd
+```
 
-    Linux / WSL: Run these commands in your Linux/WSL terminal:
+- **Linux/WSL**: Run these commands in your terminal.
 
-Bash
-
+```bash
 sudo apt update
 sudo apt upgrade
-sudo apt install openocd gcc-arm-none-eabi gdb-multiarch
+sudo apt install openocd
+sudo apt install gcc-arm-none-eabi gdb-arm-none-eabi
+```
 
-Check installation and environment variables:
+**Check installation and environment variables**:
 
-    Check tool path installations using which in your Linux/WSL or MacOS terminal (e.g., which openocd or which gdb-multiarch). Remember the path for the GDB binary, as this will be used to configure the debug extension.
+- Check tool path installation using `which` (eg. `which openocd`). Remember the path for `arm-non-eabi-gdb`, as this will be used to configure the debug extension.
 
-Set Up VSCode
+### Set Up VSCode
 
-Install VSCode extensions:
+**Install VSCode extensions**:
 
-    Install the VSCode extension Cortex-Debug to enable ARM microcontroller debugging.
+- Install the VSCode extension [Cortex-Debug](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug) to enable ARM microcontroller debugging.
+- Edit the extension setting .json file.
 
-    If using Windows, connect VSCode to your WSL instance by running code . inside your WSL terminal directory or clicking the Remote Window icon in the bottom-left corner of VSCode.
+**Modify Extension settings**: Add GDB path by opening your VSCode `settings.json` in VSCode and add the following to the end of the file. The default installation paths are shown, but you should use the path you found by using `which`.
 
-Modify Extension settings: Add the GDB path by opening your VSCode settings.json and adding the following entry. Use the path found using which gdb-multiarch (or which arm-none-eabi-gdb on MacOS).
+- **MacOS**: `"cortex-debug.gdbPath": "/opt/homebrew/bin/arm-none-eabi-gdb"`.
+- **Linux/WSL**: `"cortex-debug.gdbPath": "/usr/bin/gdb-multiarch"`.
 
-    Windows (WSL) / Linux: "cortex-debug.gdbPath": "/usr/bin/gdb-multiarch"
+**[Optional] VSCode IntelliSense Configuration**: Adding this to `c_cpp_properties.json` will link the standard library header files (eg. `stdint.h`, `stdlib.h`, `math.h`).
 
-    MacOS: "cortex-debug.gdbPath": "/opt/homebrew/bin/arm-none-eabi-gdb"
+```
+"C_Cpp.default.compilerPath": "/usr/bin/arm-none-eabi-gcc"
+"C_Cpp.default.compilerPath": "/opt/homebrew/bin/arm-none-eabi-gcc"
+```
 
-[Optional] VSCode IntelliSense Configuration: Adding this to c_cpp_properties.json will link the standard library header files (e.g., stdint.h, stdlib.h, math.h).
+## Usage
 
-    Windows (WSL) / Linux:
-    JSON
+### Tasks
 
-    "C_Cpp.default.compilerPath": "/usr/bin/arm-none-eabi-gcc"
+VSCode tasks are used to do things like build, clean, or flash the project. Task configurations are located in `tasks.json`
 
-    MacOS:
-    JSON
+- Open the Command Palette in VSCode using [Ctrl/Cmd+Shift+P].
+- Then, select **Tasks: Run Tasks** and pick the appropriate task.
 
-    "C_Cpp.default.compilerPath": "/opt/homebrew/bin/arm-none-eabi-gcc"
+> You can use the shortcut [Ctrl/Cmd+Shift+B] to run the default build task.
 
-Usage
-Tasks
+### Debugging
 
-VSCode tasks are used to do things like build, clean, or flash the project. Task configurations are located in tasks.json.
+A debug session can be used to test and diagnose issues. Debug configurations are located in `launch.json`
 
-    Open the Command Palette in VSCode using [Ctrl/Cmd+Shift+P].
+- Navigate to **Run and Debug** in VSCode or use [Ctrl/Cmd+Shift+D].
+- Select the appropriate launch configuration, depending on if you are using ST-LINK or CMSIS-DAP debugger.
+- Click on the green play button or press [F5] to start a debug session.
 
-    Select Tasks: Run Task and pick the appropriate task.
+### Motor Config Example
 
-    You can use the shortcut [Ctrl/Cmd+Shift+B] to run the default build task.
-
-Debugging
-
-A debug session can be used to test and diagnose issues. Debug configurations are located in launch.json.
-
-    Navigate to Run and Debug in VSCode or use [Ctrl/Cmd+Shift+D].
-
-    Select the appropriate launch configuration depending on whether you are using ST-LINK or CMSIS-DAP debugger.
-
-    Click on the green play button or press [F5] to start a debug session.
-
-    Note for Windows (WSL) users: USB debuggers attached to Windows must be passed through to WSL using usbipd-win.
-
-Motor Config Example
-Code snippet
-
+```C
 Motor_Config_t yaw_motor_config = {
         // Comm Config
         .can_bus = 1, // set can bus currently using
@@ -120,14 +99,14 @@ Motor_Config_t yaw_motor_config = {
         // opposite direction, change to MOTOR_REVERSAL_REVERSED)
         .motor_reversal = MOTOR_REVERSAL_NORMAL,
 
-        // External sensor config
+        //external sensor config
         .use_external_feedback = 1,
-        .external_feedback_dir = 1, // 1 if feedback matches task space direction, 0 otherwise
-        .external_angle_feedback_ptr = &g_imu.rad.yaw, // assign pointer to external angle feedback
-        .external_velocity_feedback_ptr = &(g_imu.bmi088_raw.gyro[2]), // assign pointer to external velocity feedback
+        .external_feedback_dir = 1, // 1 if the feedback matches with task space direction, 0 otherwise
+        .external_angle_feedback_ptr = &g_imu.rad.yaw, // assign the pointer to the external angle feedback
+        .external_velocity_feedback_ptr = &(g_imu.bmi088_raw.gyro[2]), // assign the poitner to the external velocity feedback
 
         // Controller Config
-        .control_mode = POSITION_CONTROL, // Control Mode, see control mode for details
+        .control_mode = POSITION_CONTROL, // Control Mode, see control mode for detail
         .angle_pid =
             {
                 .kp = 20000.0f,
@@ -140,12 +119,13 @@ Motor_Config_t yaw_motor_config = {
                 .output_limit = GM6020_MAX_CURRENT,
             },
     };
+```
 
-Development Conventions
+## Development Conventions
 
-Code Formatting:
-C
+**Code Formatting**:
 
+```c
 // All names must use snake_case.
 
 // Variable names are all lowercase.
@@ -157,14 +137,14 @@ float example_float = 1.5f;
 // Function names should capitalize the first letter of each word.
 float Example_Function() {}
 
-// typedef names should capitalize the first letter of each word and end in _t.
+// typedef names should capitalize the first letter of each word and end in \_t.
 typedef struct _Example_Struct_s Example_Typedef_t {}
 
-// Enum names should capitalize the first letter of each word and end in _e.
+// Enum names should capitalized the first letter of each word and end in \_e.
 enum Example_Enum_e {};
 
 /* In general, indent code blocks for functions and if statements as such,
-but for switches put cases in the same line. */
+but for switches put cases in the same line. 8*/
 void Example_Func()
 {
    if (some_condition)
@@ -186,55 +166,45 @@ void Example_Func()
         SECOND_LINE = 1,  \
         THIRD_LINE = 2,   \
    }
+```
 
-Common Issues
-1. Windows / WSL fails to initialize or see USB debuggers (CMSIS-DAP, ST-LINK).
+## Common Issues
 
-Solution:
+### 1. Windows fails to initializing CMSIS-DAP debugger.
 
-    Install usbipd-win on Windows (winget install --interactive --exact dorssel.usbipd-win).
+Solution: Go to device manager and uninstall the usb device (probably having some error message in the list). Unplug and plug in the debugger again.
 
-    Open PowerShell as Administrator on Windows and list connected devices:
-    PowerShell
+### 2. Tools (OpenOCD, make tools) not found
 
-    usbipd list
-
-    Bind and attach the debugger to WSL (replace <busid> with your device's ID):
-    PowerShell
-
-    usbipd bind --busid <busid>
-    usbipd attach --wsl --busid <busid>
-
-2. Tools (openocd, make, arm-none-eabi-gcc) not found
-
+```
 Failed to launch OpenOCD GDB Server:...
+```
 
 or
 
-make: command not found
+```
+mingw32-make: The term 'mingw32-make' is not recognized as a name of a cmdlet, function, script file, or executable program.
+Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+```
 
-Solution:
-Ensure all necessary packages are installed in your WSL/Linux environment:
-Bash
+**Solution 1:**
+Add openocd.exe to system environmental variable. If you followed the installation instruction in this README file, then OpenOCD should be install at default location `C:\msys64\mingw64\bin\openocd.exe`, for windows user. Add `C:\msys64\mingw64\bin` to system executable path.
 
-sudo apt update
-sudo apt install build-essential openocd gcc-arm-none-eabi gdb-multiarch
+**Solution 2:**
+If you don't want to mess with the system path, you could also add local openocd path in `.vscode/launch.json`. Add attribute `serverpath` by adding `"serverpath": "C:\\msys64\\mingw64\\bin\\openocd.exe"` in configuration.
 
-Verify tool locations using which openocd or which arm-none-eabi-gcc. If custom paths are needed, configure "serverpath" in .vscode/launch.json or update your PATH variable in ~/.bashrc.
-Standard Debug Procedure
+> restarting the terminal is likely needed for new environment variables to take effect.
+
+## Standard Debug Procedure
 
 These are common errors to check for:
 
-    Ensure the IMU is firmly attached.
+- Ensure the IMU is firmly attached.
+- Verify the remote functionality, especially the dial wheel.
+- Confirm the debugger is properly connected.
+- Check the connection of wired peripherals.
 
-    Verify remote functionality, especially the dial wheel.
+## Modifications
 
-    Confirm the debugger is properly connected and passed through to WSL.
-
-    Check the connection of wired peripherals.
-
-Modifications
-
-    Change sampleFreq in MahonyAHRS.c; this will affect the fusion result.
-
-    Initialize a task for IMU in the FreeRTOS environment.
+- Change `samepleFreq` in [MahonyAHRS.c](src/algo/src/MahonyAHRS.c#L23), this will affect the fusion result.
+- Initialize a task for imu in FreeRTOS environment.
