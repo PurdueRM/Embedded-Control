@@ -18,20 +18,13 @@ git submodule update --init
 
 **Package Manager**:
 
-- **Windows**: Install [MSYS2](https://www.msys2.org/).
+- **Windows**: Install [WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
 - **MacOS**: Install [homebrew](https://docs.brew.sh/Installation).
 - **Linux**: Use the one that comes with your system (eg. `apt`).
 
 **Arm GNU Tools and OpenOCD**:
 
-- **Windows**: OpenOCD, arm-none-eabi-gcc, and gdb-multiarch by running these commands in MSYS2 terminal. The default installation path is `C:\msys64`, run `C:\msys64\msys2.exe`.
-
-```powershell
-pacman -S mingw-w64-x86_64-make
-pacman -S mingw-w64-x86_64-openocd
-pacman -S mingw-w64-x86_64-arm-none-eabi-gcc
-pacman -S mingw-w64-x86_64-gdb-multiarch
-```
+- **Windows**: OpenOCD, arm-none-eabi-gcc, and gdb-multiarch. Since we're using wsl, refer to the linux section.
 
 > Refer to the [Common Issues](#common-issues) section for local pointer to OpenOCD and GNU toolchain.
 
@@ -53,7 +46,7 @@ sudo apt install gcc-arm-none-eabi gdb-arm-none-eabi
 
 **Check installation and environment variables**:
 
-- **Windows**: Add `C:\msys64\mingw64\bin` to `PATH`.
+- **Windows**:
 - **MacOS/Linux**: Check tool path installation using `which` (eg. `which openocd`). Remember the path for `arm-non-eabi-gdb`, as this will be used to configure the debug extension.
 
 ### Set Up VSCode
@@ -65,7 +58,7 @@ sudo apt install gcc-arm-none-eabi gdb-arm-none-eabi
 
 **Modify Extension settings**: Add GDB path by opening your VSCode `settings.json` in VSCode and add the following to the end of the file. The default installation paths are shown, but you should use the path you found by using `which`.
 
-- **Windows**: `"cortex-debug.gdbPath": "c:/msys64/mingw64/bin/gdb-multiarch.exe"`.
+- **Windows**: refer to linux
 - **MacOS**: `"cortex-debug.gdbPath": "/opt/homebrew/bin/arm-none-eabi-gdb"`.
 - **Linux**: `"cortex-debug.gdbPath": "/usr/bin/gdb-multiarch"`.
 
