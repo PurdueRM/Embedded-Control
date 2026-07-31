@@ -3,6 +3,12 @@
 
 #include "user_math.h"
 #include "arm_modeling.h"
+#include <stdlib.h>
+#include <math.h>
+#include <assert.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
 
 // [a, alpha, d, theta]

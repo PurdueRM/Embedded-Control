@@ -8,7 +8,7 @@ ROBOT_PROJECT ?= Hero
 TARGET = $(ROBOT_PROJECT)
 
 # Board configuration
-BOARD = typec
+BOARD = h7
 CONTROL_BASE = control-base
 BOARD_BASE = $(CONTROL_BASE)/${BOARD}-board-base
 
@@ -22,6 +22,12 @@ ifeq ($(BOARD), typec)
 	STARTUP_POSTFIX = stm32f407xx
 	LINK_SCRIPT_PREFIX = STM32F407IGHx
 	BOARD_C_DEF = STM32F407xx
+endif
+
+ifeq ($(BOARD), h7)
+	STARTUP_POSTFIX = stm32h723xx
+	LINK_SCRIPT_PREFIX = STM32H723VGTx
+	BOARD_C_DEF = STM32H723xx
 endif
 
 # Find available robot projects
@@ -73,14 +79,18 @@ ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -fdata-sections -ffunction-sec
 
 # C flags
 C_DEFS = -DUSE_HAL_DRIVER -D$(BOARD_C_DEF)
-C_INCLUDES = \
+C_INCLUDES =  \
 -I$(BOARD_BASE)/Core/Inc \
--I$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Inc \
--I$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy \
+-I$(BOARD_BASE)/USB_DEVICE/App \
+-I$(BOARD_BASE)/USB_DEVICE/Target \
+-I$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Inc \
+-I$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy \
 -I$(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/include \
--I$(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS \
+-I$(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
 -I$(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F \
--I$(BOARD_BASE)/Drivers/CMSIS/Device/ST/STM32F4xx/Include \
+-I$(BOARD_BASE)/Middlewares/ST/STM32_USB_Device_Library/Core/Inc \
+-I$(BOARD_BASE)/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
+-I$(BOARD_BASE)/Drivers/CMSIS/Device/ST/STM32H7xx/Include \
 -I$(BOARD_BASE)/Drivers/CMSIS/Include \
 -I$(BOARD_BASE)/Drivers/CMSIS/DSP/Include \
 -I$(CONTROL_BASE)/algo/inc \
@@ -113,40 +123,56 @@ COLOR_BOLD = \033[1m
 
 # ======== SOURCE FILES ========
 # C sources
-C_SOURCES = \
+C_SOURCES =  \
 $(BOARD_BASE)/Core/Src/main.c \
 $(BOARD_BASE)/Core/Src/gpio.c \
 $(BOARD_BASE)/Core/Src/freertos.c \
-$(BOARD_BASE)/Core/Src/can.c \
+$(BOARD_BASE)/Core/Src/adc.c \
 $(BOARD_BASE)/Core/Src/dma.c \
+$(BOARD_BASE)/Core/Src/fdcan.c \
 $(BOARD_BASE)/Core/Src/i2c.c \
+$(BOARD_BASE)/Core/Src/memorymap.c \
+$(BOARD_BASE)/Core/Src/octospi.c \
 $(BOARD_BASE)/Core/Src/spi.c \
 $(BOARD_BASE)/Core/Src/tim.c \
 $(BOARD_BASE)/Core/Src/usart.c \
-$(BOARD_BASE)/Core/Src/stm32f4xx_it.c \
-$(BOARD_BASE)/Core/Src/stm32f4xx_hal_msp.c \
-$(BOARD_BASE)/Core/Src/stm32f4xx_hal_timebase_tim.c \
-$(BOARD_BASE)/Core/Src/system_stm32f4xx.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_can.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
-$(BOARD_BASE)/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
+$(BOARD_BASE)/Core/Src/stm32h7xx_it.c \
+$(BOARD_BASE)/Core/Src/stm32h7xx_hal_msp.c \
+$(BOARD_BASE)/Core/Src/stm32h7xx_hal_timebase_tim.c \
+$(BOARD_BASE)/USB_DEVICE/App/usb_device.c \
+$(BOARD_BASE)/USB_DEVICE/App/usbd_desc.c \
+$(BOARD_BASE)/USB_DEVICE/App/usbd_cdc_if.c \
+$(BOARD_BASE)/USB_DEVICE/Target/usbd_conf.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pcd_ex.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_ll_usb.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_flash.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_flash_ex.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_gpio.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_hsem.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma_ex.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_mdma.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr_ex.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_i2c.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_i2c_ex.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_exti.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc_ex.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_fdcan.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_ospi.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi_ex.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim_ex.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart.c \
+$(BOARD_BASE)/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart_ex.c \
+$(BOARD_BASE)/Core/Src/system_stm32h7xx.c \
 $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/croutine.c \
 $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/event_groups.c \
 $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/list.c \
@@ -154,9 +180,15 @@ $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/queue.c \
 $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/stream_buffer.c \
 $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/tasks.c \
 $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/timers.c \
-$(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c \
+$(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c \
 $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
 $(BOARD_BASE)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
+$(BOARD_BASE)/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
+$(BOARD_BASE)/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
+$(BOARD_BASE)/Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
+$(BOARD_BASE)/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
+$(BOARD_BASE)/Core/Src/sysmem.c \
+$(BOARD_BASE)/Core/Src/syscalls.c \
 $(wildcard $(CONTROL_BASE)/algo/src/*.c) \
 $(wildcard $(CONTROL_BASE)/bsp/src/*.c) \
 $(wildcard $(CONTROL_BASE)/devices/src/*.c) \
@@ -168,7 +200,7 @@ $(BOARD_BASE)/Drivers/CMSIS/DSP/Source/FastMathFunctions/arm_atan2_f32.c \
 $(BOARD_BASE)/Drivers/CMSIS/DSP/Source/CommonTables/arm_common_tables.c
 
 # ASM sources
-ASM_SOURCES = $(BOARD_BASE)/startup_stm32f407xx.s
+ASM_SOURCES = $(BOARD_BASE)/startup_stm32h723xx.s
 
 # ======== BUILD RULES ========
 # List of object files

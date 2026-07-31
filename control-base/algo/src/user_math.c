@@ -1,4 +1,11 @@
 #include "user_math.h"
+#include <stdlib.h>
+#include <math.h>
+#include <assert.h>
+#include <float.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
 // #define assert(cond) if (!(cond)) { printf("Assertion failed: %s\n", #cond); exit(1); }
 
