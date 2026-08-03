@@ -3,14 +3,14 @@
 #include <stdlib.h>
 #include "memory.h"
 
-#define UART_INSTANCE_MAX 3
+#define UART_INSTANCE_MAX 4
 UART_Instance_t *g_uart_insatnces[UART_INSTANCE_MAX];
 uint8_t g_uart_instance_count = 0;
 
 /**
  * @brief Initialize UART service
  * 
- * @param uart_insatce yes this is a typo, should be uart_instance
+ * @param uart_instance
  * 
  * @note enable uart receive calling HAL_UARTEx_ReceiveToIdle_DMA. This
  * function will enable uart receive with DMA. There are three interrupts
@@ -20,17 +20,31 @@ uint8_t g_uart_instance_count = 0;
  * DMA_IT_TC is triggered when the DMA transfer is complete.
  * DMA_IT_HT is triggered when half of the buffer is filled.
  * UART_IDLE is triggered when the UART is idle for a period of time, typically
- * 1 byte time.
+ * 1 byte time. 
  * 
- * Here we only care about the UART_IDLE interrupt, and DMA_IT_TC interrupt.
- * Therefore we disable the DMA_IT_HT interrupt by calling __HAL_DMA_DISABLE_IT. 
+ * We use a circular DMA buffer, switching between the first half and second
+ * half of the buffer. Thus, the buffer is twice the length of the message
+ * being sent.
 */
-void UART_Service_Init(UART_Instance_t *uart_insatce)
-{
-    // enable uart receive
-    HAL_UARTEx_ReceiveToIdle_DMA(uart_insatce->uart_handle, uart_insatce->rx_buffer, uart_insatce->rx_buffer_size);
-    // disable half transfer interrupt
-    __HAL_DMA_DISABLE_IT(uart_insatce->uart_handle->hdmarx, DMA_IT_HT); // disable half transfer interrupt
+// void UART_Service_Init(UART_Instance_t *uart_instance)
+// {
+//     // enable uart receive
+//     HAL_UARTEx_ReceiveToIdle_DMA(uart_instance->uart_handle, uart_instance->rx_buffer, uart_instance->rx_buffer_size);
+    
+// }
+
+/** 
+ * @brief Find registered UART instance
+ * 
+ * @param huart UART handle
+*/
+static UART_Instance_t* get_uart_instance(UART_HandleTypeDef *huart) {
+    for (int i = 0; i < g_uart_instance_count; i++) {
+        if (g_uart_instances[i]->uart_handle == huart) {
+            return g_uart_instances[i];
+        }
+    }
+    return NULL;
 }
 
 /**
@@ -41,50 +55,28 @@ void UART_Service_Init(UART_Instance_t *uart_insatce)
  * @param rx_buffer_size size of the buffer
  * @param callback callback function when UART receive is complete
 */
-UART_Instance_t *UART_Register(UART_HandleTypeDef *huart, uint8_t *rx_buffer, uint16_t rx_buffer_size, void (*callback)(UART_Instance_t *uart_instance))
-{
-    UART_Instance_t *uart_instance = (UART_Instance_t *)malloc(sizeof(UART_Instance_t));
+UART_Instance_t *UART_Register(UART_HandleTypedef *huart, uint8_t *rx_buffer, uint16_T rx_buffer_size, void (*callback)(UART_Instance_t *uart_instance)) {
+    if (g_uart_instance_count >= UART_INSTANCE_MAX) { // overflow
+        return NULL; 
+    }
+    UART_Instance_t *uart_instance = (UART_Instance_t *) malloc(sizeof(UART_Instance_t));
+    if (uart_instance == NULL) { // failed malloc
+        return NULL; 
+    }
+    
     uart_instance->uart_handle = huart;
     uart_instance->rx_buffer = rx_buffer;
     uart_instance->rx_buffer_size = rx_buffer_size;
+    uart_instance->read_ptr = 0;
     uart_instance->callback = callback;
 
-    // initialize UART service
-    UART_Service_Init(uart_instance);
-    
     // store the instance, to iterate through all instances when iterrupt is triggered
-    g_uart_insatnces[g_uart_instance_count++] = uart_instance;
-    return uart_instance;
-}
+    g_uart_instances[g_uart_instance_count++] = uart_instance;
 
-/**
- * @brief Transmit based on send type
- * 
- * @param uart_instance
- * @param tx_buffer
- * @param tx_buffer_size
- * @param send_type
- *        - UART_BLOCKING: halt CPU until transmission is complete
- *        - UART_IT: use interrupt to transmit data
- *        - UART_DMA: use DMA to transmit data
-*/
-HAL_StatusTypeDef UART_Transmit(UART_Instance_t *uart_instance, uint8_t *tx_buffer, uint16_t tx_buffer_size, uint8_t send_type)
-{
-    switch (send_type)
-    {
-    case UART_BLOCKING:
-        return HAL_UART_Transmit(uart_instance->uart_handle, tx_buffer, tx_buffer_size, HAL_MAX_DELAY);
-        break;
-    case UART_IT:
-        return HAL_UART_Transmit_IT(uart_instance->uart_handle, tx_buffer, tx_buffer_size);
-        break;
-    case UART_DMA:
-        return HAL_UART_Transmit_DMA(uart_instance->uart_handle, tx_buffer, tx_buffer_size);
-        break;
-    default:
-        return HAL_ERROR;
-        break;
-    }
+    // starts DMA
+    HAL_UARTEx_ReceiveToIdle_DMA(huart, rx_buffer, rx_buffer_size);
+
+    return uart_instance;
 }
 
 /**
@@ -94,29 +86,43 @@ HAL_StatusTypeDef UART_Transmit(UART_Instance_t *uart_instance, uint8_t *tx_buff
  * @param Size size of the received data
  * 
  * @note This function is called when the UART receive is complete. It will
- * iterate through all registered UART instances, and call the callback function
- * if the UART handle matches.
+ * call the callback function if the UART handle has a match. Safely handles HT, 
+ * TC, and IDLE interrupts and implements a circular buffer.
 */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-    // iterate through all registered UART instances
-    for (int i = 0; i < g_uart_instance_count; i++)
-    {
-        // if the UART handle matches
-        if (g_uart_insatnces[i]->uart_handle == huart)
-        {
-            // if the callback function is not NULL
-            if (g_uart_insatnces[i]->callback != NULL)
-            {
-                // call the callback function
-                g_uart_insatnces[i]->callback(g_uart_insatnces[i]);
+    // Find UART instance
+    UART_Instance_t *instance = get_uart_instance(huart);
+    if (instance == NULL || instance->callback == NULL) {
+        return;
+    }
 
-                // enable uart receive for next data frame
-                HAL_UARTEx_ReceiveToIdle_DMA(huart, g_uart_insatnces[i]->rx_buffer, g_uart_insatnces[i]->rx_buffer_size);
-                // still disable half transfer interrupt (@ref void UART_Service_Init(void))
-                __HAL_DMA_DISABLE_IT(huart3.hdmarx, DMA_IT_HT);
-            }
+    uint16_t write_ptr = Size;
+    uint16_t len = 0;
+
+    // Calculate how much new data since the last read
+    if (write_ptr >= instance->read_ptr) { // write pointer ahead of read pointer
+        len = write_ptr - instance->read_ptr;
+        if (len > 0) { 
+            instance->callback(&instance->rx_buffer[instance->read_ptr], len);
         }
     }
-    
+    else { // wrapped around
+        len = instance->rx_buffer_size - instance->read_ptr;
+
+        // read the end of the buffer
+        instance->callback(&instance->rx_buffer[instance->read_ptr], len);
+
+        // read from beginning of buffer to write ptr
+        if (write_ptr > 0) {
+            instance->callback(&instance->rx_buffer[0], write_ptr);
+        }
+    }
+
+    instance->read_ptr = write_ptr;
+
+    // wrap around
+    if (instance->read_ptr == instance->rx_buffer_size) {
+        instance->read_ptr = 0;
+    }
 }

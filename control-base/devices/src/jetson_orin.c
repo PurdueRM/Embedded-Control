@@ -69,7 +69,7 @@ void Jetson_Orin_Rx_Callback(UART_Instance_t *uart_instance)
  * 			continuous reinitialization at high frequency.
  * @param void
  */
-void Jetson_Orin_Timeout_Callback()
+void Jetson_Orin_Timeout_Callback() // this is dangerous w/ circular DMA (must change)
 {
 	// Attemp to reinitialize UART service
 	UART_Service_Init(g_orin_uart_instance_ptr);

@@ -12,10 +12,13 @@ typedef struct _UART_Instance
     UART_HandleTypeDef *uart_handle;
     uint8_t *rx_buffer;
     uint16_t rx_buffer_size;
+    uint16_t read_ptr;
     void (*callback)(struct _UART_Instance *uart_instance);
 } UART_Instance_t;
 
-void UART_Service_Init(UART_Instance_t *uart_insatce);
+// void UART_Service_Init(UART_Instance_t *uart_insatce); -- was used for restarting UART, not needed anymore
+
 UART_Instance_t *UART_Register(UART_HandleTypeDef *huart, uint8_t *rx_buffer, uint16_t rx_buffer_size, void (*callback)(UART_Instance_t *uart_instance)); 
+
 HAL_StatusTypeDef UART_Transmit(UART_Instance_t *uart_instance, uint8_t *tx_buffer, uint16_t tx_buffer_size, uint8_t send_type);
 #endif // BSP_UART_H
