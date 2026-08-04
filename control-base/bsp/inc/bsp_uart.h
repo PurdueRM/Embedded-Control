@@ -7,6 +7,16 @@
 #define UART_IT (0b00000001)
 #define UART_DMA (0b00000010)
 
+typedef struct {
+    volatile uint32_t last_error_code;   // Stores the raw HAL error bitmask
+    volatile uint32_t total_errors;      // Total number of times the callback fired
+    volatile uint32_t err_parity;        // PE: Hardware parity mismatch
+    volatile uint32_t err_overrun;       // ORE: CPU/DMA was too slow, bytes were dropped
+    volatile uint32_t err_framing;       // FE: Noise or baud rate mismatch broke the stop bit
+    volatile uint32_t err_noise;         // NE: Hardware detected noise on the RX line
+    volatile uint32_t err_dma;           // DMA-specific transfer errors
+} UART_Error_t
+
 typedef struct _UART_Instance
 {
     UART_HandleTypeDef *uart_handle;
@@ -20,7 +30,8 @@ typedef struct _UART_Instance
     volatile uint16_t read_ptr;
 
     // Error handling
-    volatile uint32_t error_count;
+    UART_Error_t errors;
+    
     uint8_t is_initialized;
 } UART_Instance_t;
 

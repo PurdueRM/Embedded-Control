@@ -10,31 +10,6 @@
 UART_Instance_t *g_uart_insatnces[UART_INSTANCE_MAX];
 uint8_t g_uart_instance_count = 0;
 
-/**
- * @brief Initialize UART service
- * 
- * @param uart_instance
- * 
- * @note enable uart receive calling HAL_UARTEx_ReceiveToIdle_DMA. This
- * function will enable uart receive with DMA. There are three interrupts
- * that can be enabled: DMA_IT_TC (DMA transfer complete), DMA_IT_HT (DMA
- * Half Complete), UART_IDLE (UART Idle).
- * 
- * DMA_IT_TC is triggered when the DMA transfer is complete.
- * DMA_IT_HT is triggered when half of the buffer is filled.
- * UART_IDLE is triggered when the UART is idle for a period of time, typically
- * 1 byte time. 
- * 
- * We use a circular DMA buffer, switching between the first half and second
- * half of the buffer. Thus, the buffer is twice the length of the message
- * being sent.
-*/
-// void UART_Service_Init(UART_Instance_t *uart_instance)
-// {
-//     // enable uart receive
-//     HAL_UARTEx_ReceiveToIdle_DMA(uart_instance->uart_handle, uart_instance->rx_buffer, uart_instance->rx_buffer_size);
-    
-// }
 
 /** 
  * @brief Find registered UART instance
@@ -99,15 +74,18 @@ UART_Instance_t *UART_Register(UART_HandleTypedef *huart, uint8_t *rx_buffer, ui
  * @param huart UART handle
  * @param Size size of the received data
  * 
- * @note This function is called when the UART receive is complete. It will
- * call the callback function if the UART handle has a match. Safely handles HT, 
- * TC, and IDLE interrupts and implements a circular buffer.
+ * @note This function is called after three different  interrupts:
+ * - DMA_IT_HT (Half Transfer Interrupt) --> DMA fills buffer to 50%
+ * - DMA_IT_TC (Transfer Complete Interrupt) --> DMA fully fills buffer
+ * - DMA_IT_IDLE (Idle Interrupt) --> Line is idle (high) for one frame (size of DMA buffer)
+ * We enable HT so if we have a continuous stream of bytes (IDLE is never called)
+ * then we have time to send data to the stream before it is overwritten by the cyclical DMA.
 */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
     // Find UART instance
     UART_Instance_t *instance = get_uart_instance(huart);
-    if (instance == NULL || instance->is_initialized == 0) {
+    if (instance == NULL || !instance->is_initialized) {
         return;
     }
 
@@ -156,4 +134,43 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
     // Force a context switch if a higher priority task was unblocked
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+    // Find instance 
+    UART_Instance_t *instance = get_uart_instance(huart);
+    if (instance == NULL || !instance->is_initialized) {
+        return;
+    }
+    
+    // Error code handling
+    uint32_t err_mask = huart->ErrorCode;
+    instance->errors->last_error_code = err_mask;    
+    instance->errors->total_errors++;
+
+    if (err_mask & HAL_UART_ERROR_PE) {
+        instance->err_parity++;
+    }
+    if (err_mask & HAL_UART_ERROR_ORE) {
+        instance->err_overrun++;
+    }
+    if (err_mask & HAL_UART_ERROR_FE) {
+        instance->err_framing++;
+    }
+    if (err_mask & HAL_UART_ERROR_NE) {
+        instance->err_noise++;
+    }
+    if (err_mask & HAL_UART_ERROR_DMA) {
+        instance->err_dma++;
+    }
+
+    // Aborts current reception + clears hardware error flags and resets UART and DMA
+    HAL_UART_AbortReceive(huart);
+
+    // Resets tracking pointer to beginning to not read garbage info
+    instance->read_ptr = 0;
+
+    // Restart DMA
+    HAL_UARTEx_ReceiveToIdle_DMA(huart, instance->rx_buffer, instance->rx_buffer_size);
+
 }
