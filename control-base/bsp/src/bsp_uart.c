@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include "memory.h"
 
+#include "FreeRTOS.h"
+#include "stream_buffer.h"
+
 #define UART_INSTANCE_MAX 4
 UART_Instance_t *g_uart_insatnces[UART_INSTANCE_MAX];
 uint8_t g_uart_instance_count = 0;
@@ -55,12 +58,13 @@ static UART_Instance_t* get_uart_instance(UART_HandleTypeDef *huart) {
  * @param rx_buffer_size size of the buffer
  * @param callback callback function when UART receive is complete
 */
-UART_Instance_t *UART_Register(UART_HandleTypedef *huart, uint8_t *rx_buffer, uint16_T rx_buffer_size, void (*callback)(UART_Instance_t *uart_instance)) {
-    if (g_uart_instance_count >= UART_INSTANCE_MAX) { // overflow
+UART_Instance_t *UART_Register(UART_HandleTypedef *huart, uint8_t *rx_buffer, uint16_T rx_buffer_size, size_t trigger_level) {
+    if (g_uart_instance_count >= UART_INSTANCE_MAX) { // Overflow protection
         return NULL; 
     }
-    UART_Instance_t *uart_instance = (UART_Instance_t *) malloc(sizeof(UART_Instance_t));
-    if (uart_instance == NULL) { // failed malloc
+    // Uses thread safe FreeRTOS malloc
+    UART_Instance_t *uart_instance = (UART_Instance_t *) pvPortMalloc(sizeof(UART_Instance_t));
+    if (uart_instance == NULL) { 
         return NULL; 
     }
     
@@ -68,9 +72,19 @@ UART_Instance_t *UART_Register(UART_HandleTypedef *huart, uint8_t *rx_buffer, ui
     uart_instance->rx_buffer = rx_buffer;
     uart_instance->rx_buffer_size = rx_buffer_size;
     uart_instance->read_ptr = 0;
-    uart_instance->callback = callback;
+    uart_instance->error_count = 0;
 
-    // store the instance, to iterate through all instances when iterrupt is triggered
+    // Create stream buffer 2x the size of rx buffer for safety margin (can handle two full messages)
+    uart_instance->stream_buffer = xStreamBufferCreate(rx_buffer_size * 2, trigger_level);
+
+    if (uart_instance->stream_buffer == NULL) {
+        vPortFree(uart_instance); // Clean up if RTOS heap is full
+        return NULL;
+    }
+
+    uart_instance->is_initialized = 1;
+
+    // Store the instance, to iterate through all instances when iterrupt is triggered
     g_uart_instances[g_uart_instance_count++] = uart_instance;
 
     // starts DMA
@@ -93,36 +107,53 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
     // Find UART instance
     UART_Instance_t *instance = get_uart_instance(huart);
-    if (instance == NULL || instance->callback == NULL) {
+    if (instance == NULL || instance->is_initialized == 0) {
         return;
     }
 
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     uint16_t write_ptr = Size;
     uint16_t len = 0;
 
-    // Calculate how much new data since the last read
-    if (write_ptr >= instance->read_ptr) { // write pointer ahead of read pointer
-        len = write_ptr - instance->read_ptr;
-        if (len > 0) { 
-            instance->callback(&instance->rx_buffer[instance->read_ptr], len);
-        }
+    // No new data
+    if (write_ptr == instance->read_ptr) {
+        return;
     }
-    else { // wrapped around
+
+    // Calculate how much new data since the last read
+    if (write_ptr > instance->read_ptr) { // Write pointer ahead of read pointer
+        len = write_ptr - instance->read_ptr;
+
+        // Send data to FreeRTOS stream buffer
+        xStreamBufferSendFromISR(instance->stream_buffer, 
+                                 &instance->rx_buffer[instance->read_ptr], 
+                                 len, 
+                                 &xHigherPriorityTaskWoken);
+    }
+    else { // Wrapped around case (transfer complete interrupt)
         len = instance->rx_buffer_size - instance->read_ptr;
 
-        // read the end of the buffer
-        instance->callback(&instance->rx_buffer[instance->read_ptr], len);
+        // Read from the end of rx buffer to stream buffer
+        xStreamBufferSendFromISR(instance->stream_buffer, 
+                                 &instance->rx_buffer[instance->read_ptr], 
+                                 len, 
+                                 &xHigherPriorityTaskWoken);
 
-        // read from beginning of buffer to write ptr
+        // Read from the beginning of rx buffer to write ptr
         if (write_ptr > 0) {
-            instance->callback(&instance->rx_buffer[0], write_ptr);
+            xStreamBufferSendFromISR(instance->stream_buffer, 
+                                     &instance->rx_buffer[0], 
+                                     write_ptr, 
+                                     &xHigherPriorityTaskWoken);
         }
     }
 
+    // Update pointer
     instance->read_ptr = write_ptr;
-
-    // wrap around
     if (instance->read_ptr == instance->rx_buffer_size) {
         instance->read_ptr = 0;
     }
+
+    // Force a context switch if a higher priority task was unblocked
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }

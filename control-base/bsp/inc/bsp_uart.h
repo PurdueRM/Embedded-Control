@@ -10,10 +10,18 @@
 typedef struct _UART_Instance
 {
     UART_HandleTypeDef *uart_handle;
+
+    // FreeRTOS
+    StreamBufferHandle_t stream_buffer;
+
+    // DMA buffer tracking
     uint8_t *rx_buffer;
     uint16_t rx_buffer_size;
-    uint16_t read_ptr;
-    void (*callback)(struct _UART_Instance *uart_instance);
+    volatile uint16_t read_ptr;
+
+    // Error handling
+    volatile uint32_t error_count;
+    uint8_t is_initialized;
 } UART_Instance_t;
 
 // void UART_Service_Init(UART_Instance_t *uart_insatce); -- was used for restarting UART, not needed anymore
