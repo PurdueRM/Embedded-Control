@@ -28,6 +28,7 @@
 // Function prototypes
 void Chassis_Task_Init(void);
 void Chassis_Ctrl_Loop(void);
+void Chassis_Process_Target_Velocity(void);
 void Update_Omega();
 float Rescale_Omega();
 

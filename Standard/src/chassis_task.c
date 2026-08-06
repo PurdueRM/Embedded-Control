@@ -16,7 +16,6 @@
 extern Robot_State_t g_robot_state;
 extern Remote_t g_remote;
 float gimbal_angle_difference;
-pose_2d_t sentry_pose;
 DJI_Motor_Handle_t *motors[4];
 uint8_t drive_esc_id_array[4] = {1, 2, 3, 4};
 Motor_Reversal_t drive_motor_reversal_array[4] = {
@@ -34,7 +33,7 @@ omni_chassis_state_t chassis_state;
 extern Board_Comm_Package_t g_board_comm_package;
 
 rate_limiter_t wheel_rate_limiters[4];
-PID_t g_follow_gimbal_angle_pid;                      // chassis following gimbal
+PID_t g_follow_gimbal_angle_pid;    // PID for chassis following `gimbal (rules required)
 
 pose_2d_t sentry_pose;
 motor_data_t motor_data_odom;
@@ -67,6 +66,10 @@ void Chassis_Task_Init(){
         DJI_Motor_Set_Control_Mode(motors[i], VELOCITY_CONTROL);
     }
 
+    g_robot_state.chassis.x_speed = 0.0f;
+    g_robot_state.chassis.y_speed = 0.0f;
+    g_robot_state.chassis.omega = 0.0f;
+
     sentry_pose.x = 0;
     sentry_pose.y = 0;
 
@@ -84,91 +87,25 @@ void Chassis_Task_Init(){
         &init_pose
     );
 
-    chassis_state.v_x = 0.0f;
-    chassis_state.v_y = 0.0f;
-    chassis_state.omega = 0.0f;
-
+    // configure rate limiters
     for (int i = 0; i < 4; i++) {
-        // configure rate limiters
         rate_limiter_init(&wheel_rate_limiters[i], MAX_ABC);
     }
 
     // Init PID
     PID_Init(&g_follow_gimbal_angle_pid, 30, 0, 10000, 2*PI*30, 0, 0);
-    sentry_pose.x = 0;
-    sentry_pose.y = 0;
 
+    // Keep track of hp for spintop logic
     last_hp = Referee_System.Robot_State.Remaining_HP;
-}
-
-void Chassis_Process_Target_Velocity()
-{    
-    // chassis_state.v_x_in_gimbal = g_remote.controller.left_stick.x / 660.0f * 4.0f;
-    // chassis_state.v_y_in_gimbal = g_remote.controller.left_stick.y / 660.0f * 4.0f;
-    chassis_state.v_x_in_gimbal = g_robot_state.input.vx;
-    chassis_state.v_y_in_gimbal = g_robot_state.input.vy;
-
-    gimbal_angle_difference =  g_yaw->stats->pos;
-    __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-
-    chassis_omega_new_target = 0;
-    const float hit_timeout = 5; // seconds
-
-    // If the robot is hit, increase spintop rate
-    if(Referee_System.Robot_State.Remaining_HP < last_hp) {
-        is_hit_counter = 500 * hit_timeout;
-    }
-
-    //TODO：Adjust the data type to reflect the actual value.
-    last_hp = Referee_System.Robot_State.Remaining_HP;
-    
-    // Counter for hit timeout
-    if (is_hit_counter > 0) {
-        is_hit_counter--;
-    }
-
-    if (g_robot_state.chassis.IS_SPINTOP_ENABLED /*|| g_remote.controller.left_switch == UP*/ ) {
-        
-        if (is_hit_counter > 0) {
-            chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
-        }
-        else {  //Decrease spintop rate if not hit for a while
-            chassis_omega_new_target = omega; // 2 * PI rad/s
-        }
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
-
-        // float frenquncy = 0.1f;
-        // speed_up_spintop_rate = 8 * PI * sin(2*PI*frenquncy*time_for_omega);
-        // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
-       
-    } else {
-        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-        chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
-        __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
-        chassis_state.omega = 0;
-    }
-    Update_Omega();
 }
 
 void Chassis_Ctrl_Loop()
 {
-    //TODO: change this, for odom only
+    // Logic for setting the target velocities
     Chassis_Process_Target_Velocity();
-    // gimbal_angle_difference = -gimbal_angle_difference;
 
-    if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
-        physical_constants.max_speed = 5.0f;
-        __FIRST_ORDER_FILTER(chassis_state.v_x, 2 * (chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference)), 0.005f);
-        __FIRST_ORDER_FILTER(chassis_state.v_y, 2 * (chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference)), 0.005f);
-    } else {
-        physical_constants.max_speed = 2.0f;
-        chassis_state.v_x = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
-        chassis_state.v_y = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
-    }
-
-    // Control loop for the chassis
-    omni_calculate_kinematics(&chassis_state, &physical_constants);
+    // Calculate target velocity of each omni wheel to achieve desired motion
+    omni_calculate_kinematics(&g_robot_state.chassis, &chassis_state, &physical_constants);
     omni_convert_to_rpm(&chassis_state);
 
     // use rate limiter to limit acceleration of the wheels
@@ -182,13 +119,70 @@ void Chassis_Ctrl_Loop()
     DJI_Motor_Set_Velocity(motors[1], chassis_state.phi_dot_2);
     DJI_Motor_Set_Velocity(motors[2], chassis_state.phi_dot_3);
     DJI_Motor_Set_Velocity(motors[3], chassis_state.phi_dot_4);
-
-    motor_data_odom.front_left = DJI_Motor_Get_Total_Angle(motors[0]) * physical_constants.R;
-    motor_data_odom.back_left = DJI_Motor_Get_Total_Angle(motors[1]) * physical_constants.R;
-    motor_data_odom.back_right = DJI_Motor_Get_Total_Angle(motors[2]) * physical_constants.R;
-    motor_data_odom.front_right = DJI_Motor_Get_Total_Angle(motors[3]) * physical_constants.R;
 }
 
+void Chassis_Process_Target_Velocity()
+{
+    // Process input from remote
+    chassis_state.v_x_in_gimbal = g_robot_state.input.vx;
+    chassis_state.v_y_in_gimbal = g_robot_state.input.vy;
+
+    // Calculate angle of gimbal between -pi/2 to pi/2
+    gimbal_angle_difference =  2*PI - g_yaw->stats->pos;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+
+    // If the robot is hit, increase spintop rate
+    const float hit_timeout = 5; // seconds
+    if(Referee_System.Robot_State.Remaining_HP < last_hp) {
+        is_hit_counter = 500 * hit_timeout; //Conversion to seconds
+    }
+
+    //TODO：Adjust the data type to reflect the actual value.
+    last_hp = Referee_System.Robot_State.Remaining_HP;
+    
+    // Counter for hit timeout
+    if (is_hit_counter > 0) {
+        is_hit_counter--;
+    }
+
+    // Spintop logic
+    chassis_omega_new_target = 0;
+    if (g_robot_state.chassis.IS_SPINTOP_ENABLED /*|| g_remote.controller.left_switch == UP*/ ) {
+        
+        if (is_hit_counter > 0) {
+            chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
+        }
+        else {  //Decrease spintop rate if not hit for a while
+            chassis_omega_new_target = omega; // 2 * PI rad/s
+        }
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
+    
+    } else {
+        // Chassis follow gimbal code
+        __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
+        chassis_omega_new_target = -1 * PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
+        // __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
+        __MAX_LIMIT(chassis_omega_new_target, -2*PI, 2*PI);
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
+    }
+
+    // Calculate speed of robot relative to chassis
+    if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
+        physical_constants.max_speed = 5.0f;
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.x_speed, 2 * (chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference)), 0.005f);
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.y_speed, 2 * (chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference)), 0.005f);
+    } else {
+        physical_constants.max_speed = 2.0f;
+        // g_robot_state.chassis.x_speed = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
+        // g_robot_state.chassis.y_speed = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
+        g_robot_state.chassis.y_speed = chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference);
+        g_robot_state.chassis.x_speed = chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference);
+    }
+
+    Update_Omega();
+}
+
+// I think this is deprecated because there's no leveling anymore
 void Update_Omega() 
 {
     switch ((int) g_board_comm_package.Ps) {
