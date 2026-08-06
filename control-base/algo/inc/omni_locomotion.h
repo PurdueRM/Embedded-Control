@@ -1,11 +1,10 @@
 #ifndef OMNI_LOCOMOTION_h
 #define OMNI_LOCOMOTION_h
 
+#include "robot.h"
+
 typedef struct
 {
-    float v_x;   // x velocity
-    float v_y;   // y velocity
-    float omega; // angular velocity
     float v_x_in_gimbal; // x velocity in gimbal frame
     float v_y_in_gimbal; // y velocity in gimbal frame
     float omega_in_gimbal; // angular velocity in gimbal frame
@@ -53,7 +52,7 @@ typedef struct
 
 // TODO. Change formatting to match official. Capitialize function words
 omni_physical_constants_t omni_init(float R, float d, float theta, float max_speed, pose_2d_t* init_pose);
-void omni_calculate_kinematics(omni_chassis_state_t *input, omni_physical_constants_t *omni_physical_constants);
+void omni_calculate_kinematics(Chassis_State_t *chassis_state, omni_chassis_state_t *input, omni_physical_constants_t *omni_physical_constants);
 void omni_desaturate_wheel_speeds(omni_chassis_state_t *input, omni_physical_constants_t *omni_physical_constants);
 void omni_convert_to_rpm(omni_chassis_state_t *chassis_state);
 

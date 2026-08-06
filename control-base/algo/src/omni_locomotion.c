@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include "user_math.h"
+#include "robot.h"
 #ifndef COS45
 #define COS45 (0.70710678118f) // cos(PI/4)
 #endif
@@ -43,11 +44,11 @@ omni_physical_constants_t omni_init(float R, float d, float theta, float max_spe
  * @param input - the input state of the omni chassis
  * @param omni_physical_constants - the physical constants of the omni drive
  */
-void omni_calculate_kinematics(omni_chassis_state_t *input, omni_physical_constants_t *omni_physical_constants)
+void omni_calculate_kinematics(Chassis_State_t *chassis_state, omni_chassis_state_t *input, omni_physical_constants_t *omni_physical_constants)
 {
-    float v_x = input->v_x;
-    float v_y = input->v_y;
-    float omega = input->omega;
+    float v_x = chassis_state->x_speed;
+    float v_y = chassis_state->y_speed;
+    float omega = chassis_state->omega;
     float(*k_mat)[3] = omni_physical_constants->kinematics_matrix;
     // Calculate the wheel velocities by multiplying the IK matrix by the chassis velocities
     input->phi_dot_1 = k_mat[0][0] * v_x + k_mat[0][1] * v_y + k_mat[0][2] * omega;

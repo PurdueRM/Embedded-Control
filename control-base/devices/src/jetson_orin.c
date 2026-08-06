@@ -118,6 +118,7 @@ void Jetson_Orin_Send_Data(void)
 	g_orin_data.sending.orientation = g_imu.rad.yaw;
 	g_orin_data.sending.velocity_x = sentry_pose.vy;
 	g_orin_data.sending.velocity_y = -sentry_pose.vx;
+	
 	g_orin_data.sending.HP = Referee_System.Robot_State.Remaining_HP;
 	g_orin_data.sending.reserved = 7529; // reserved for future use
 
