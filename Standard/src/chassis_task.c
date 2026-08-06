@@ -33,8 +33,9 @@ omni_chassis_state_t chassis_state;
 extern Board_Comm_Package_t g_board_comm_package;
 
 rate_limiter_t wheel_rate_limiters[4];
-PID_t g_follow_gimbal_angle_pid;    // PID for chassis following gimbal (rules required)
+PID_t g_follow_gimbal_angle_pid;    // PID for chassis following `gimbal (rules required)
 
+pose_2d_t sentry_pose;
 motor_data_t motor_data_odom;
 
 uint16_t last_hp;
@@ -68,6 +69,23 @@ void Chassis_Task_Init(){
     g_robot_state.chassis.x_speed = 0.0f;
     g_robot_state.chassis.y_speed = 0.0f;
     g_robot_state.chassis.omega = 0.0f;
+
+    sentry_pose.x = 0;
+    sentry_pose.y = 0;
+
+    pose_2d_t init_pose = {
+        .x = INIT_X_POS,
+        .y = INIT_Y_POS,
+        .theta = INIT_THETA
+    };
+
+    physical_constants = omni_init( //TODO: Set the actual constants for standard
+        CHASSIS_WHEEL_DIAMETER,
+        CHASSIS_RADIUS,
+        CHASSIS_MOUNTING_ANGLE,
+        CHASSIS_MAX_SPEED,
+        &init_pose
+    );
 
     // configure rate limiters
     for (int i = 0; i < 4; i++) {
@@ -110,7 +128,7 @@ void Chassis_Process_Target_Velocity()
     chassis_state.v_y_in_gimbal = g_robot_state.input.vy;
 
     // Calculate angle of gimbal between -pi/2 to pi/2
-    gimbal_angle_difference =  g_yaw->stats->pos;
+    gimbal_angle_difference =  2*PI - g_yaw->stats->pos;
     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
 
     // If the robot is hit, increase spintop rate
@@ -140,11 +158,12 @@ void Chassis_Process_Target_Velocity()
         __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     
     } else {
+        // Chassis follow gimbal code
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
-        chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
-        __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
+        chassis_omega_new_target = -1 * PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
+        // __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
+        __MAX_LIMIT(chassis_omega_new_target, -2*PI, 2*PI);
         __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
-        g_robot_state.chassis.omega = 0;
     }
 
     // Calculate speed of robot relative to chassis
@@ -154,8 +173,10 @@ void Chassis_Process_Target_Velocity()
         __FIRST_ORDER_FILTER(g_robot_state.chassis.y_speed, 2 * (chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference)), 0.005f);
     } else {
         physical_constants.max_speed = 2.0f;
-        g_robot_state.chassis.x_speed = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
-        g_robot_state.chassis.y_speed = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
+        // g_robot_state.chassis.x_speed = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
+        // g_robot_state.chassis.y_speed = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
+        g_robot_state.chassis.y_speed = chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference);
+        g_robot_state.chassis.x_speed = chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference);
     }
 
     Update_Omega();
