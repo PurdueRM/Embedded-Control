@@ -5,6 +5,7 @@
 #include "stm32h7xx_hal_usart.h"
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "semphr.h"
 
 #define UART_BLOCKING (0b00000000)
 #define UART_IT (0b00000001)
@@ -40,7 +41,10 @@ typedef struct _UART_Instance
     QueueHandle_t msg_queue;
     StaticQueue_t queue_cb; // Holds queue state
 
-    // DMA buffer tracking
+    // TX synchronization
+    SemaphoreHandle_t tx_complete_sem;
+
+    // RX buffer tracking
     uint8_t *rx_buffers[UART_MSG_QUEUE_SIZE];
     uint16_t rx_buffer_size;
     uint8_t active_buffer_index;
@@ -54,5 +58,6 @@ typedef struct _UART_Instance
 
 uint8_t *UART_Register(UART_Instance_t *uart_instance, UART_HandleTypedef *huart, uint8_t *rx_buffer_block, uint16_t rx_buffer_size);
 
-HAL_StatusTypeDef UART_Transmit(UART_Instance_t *uart_instance, uint8_t *tx_buffer, uint16_t tx_buffer_size, uint8_t send_type);
+uint8_t UART_Transmit(UART_Instance_t *instance, uint8_t *tx_buffer, uint16_t tx_buffer_len, TickType_t timeout);
+
 #endif // BSP_UART_H

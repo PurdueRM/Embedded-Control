@@ -58,11 +58,15 @@ uint8_t *UART_Register(UART_Instance_t *uart_instance, UART_HandleTypedef *huart
         uart_instance->rx_buffers[i] = rx_buffer_block + (i * rx_buffer_size);
     }
 
-    // Create FreeRTOS message queue
-    uart_instance->msg_queue = xQueueCreate(UART_MSG_QUEUE_SIZE, sizeof(UART_Message_t));
+    // Create FreeRTOS rx message queue
+    uart_instance->rx_msg_queue = xQueueCreate(UART_MSG_QUEUE_SIZE, sizeof(UART_Message_t));
+
+    // Create FreeRTOS tx semaphore
+    uart_instance->tx_complete_sem = xSemaphoreCreateBinary();
+
     uart_instance->is_initialized = 1;
 
-    if (uart_instance->msg_queue == NULL) {
+    if (uart_instance->msg_queue == NULL || uart_instance->tx_complete_sem == NULL) {
         return false;
     }
 
@@ -127,6 +131,65 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
     // Force a context switch if a higher priority task was unblocked
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+/**
+ * @brief UART transmit callback
+ *
+ * @param huart UART handle
+ *
+ * @note This callback is called when a transmit finished,
+ * then unblocks the task which called UART_Send.
+*/
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+    // Find UART instance
+    UART_Instance_t *instance = get_uart_instance(huart);
+    if (instance == NULL || !instance->is_initialized) {
+        return;
+    }
+
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    
+    // Wake up the sending task
+    xSemaphoreGiveFromISR(instance->tx_complete_sem, &xHigherPriorityTaskWoken);
+    
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+/**
+ * @brief Enables sending over UART
+ *
+ * @param instance UART instance
+ * @param tx_buffer Pointer to array of data to send
+ * @param tx_buffer_len Length of tx buffer
+ * @param timeout Longest time allowed for task to be blocked. Make sure it is longer than transmit time.
+ *
+ * @note The timeout parameter is there so if the transmit fails, the
+ * sending task is not blocked forever. The formula for how long the timeout
+ * should be is (Number of Bytes * 10 * 1000) / Baud Rate + a safety margin of ~5 ms
+ * to account for context switching and any minor jitter.
+*/
+uint8_t UART_Transmit(UART_Instance_t *instance, uint8_t *tx_buffer, uint16_t tx_buffer_len, TickType_t timeout) {
+    if (instance == NULL || !instance->is_initialized || tx_buffer == NULL || tx_buffer_len <= 0) {
+        return false;
+    }
+
+    // Clear any old semaphore state just in case
+    xSemaphoreTake(instance->tx_complete_sem, 0);
+
+    // Tell HAL to start the DMA
+    if (HAL_UART_Transmit_DMA(instance->uart_handle, tx_buffer, tx_buffer_len) != HAL_OK) {
+        return false;
+    }
+
+    // Put calling task to sleep until tx callback wakes it up or timeout is reached
+    if (xSemaphoreTake(instance->tx_complete_sem, timeout) != pdTRUE) {
+        // Condition only true if hardware timed out or froze
+        HAL_UART_AbortTransmit(instance->uart_handle); 
+        return false; 
+    }
+
+    return true;
 }
 
 /**
