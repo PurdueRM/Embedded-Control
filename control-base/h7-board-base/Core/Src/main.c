@@ -55,6 +55,8 @@
 
 /* USER CODE BEGIN PV */
 
+/* Statically allocated buffers */
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
