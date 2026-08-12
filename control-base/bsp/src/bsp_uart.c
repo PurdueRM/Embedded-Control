@@ -1,6 +1,5 @@
 #include "bsp_uart.h"
 
-#include <cstdint>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -41,7 +40,7 @@ static UART_Instance_t* get_uart_instance(UART_HandleTypeDef *huart) {
  * @retval true on successful register, false on fail
  * @note This UART implementation only handles fixed-length packets 
 */
-uint8_t *UART_Register(UART_Instance_t *uart_instance, UART_HandleTypedef *huart, uint8_t *rx_buffer_block, uint16_t rx_buffer_size) {
+uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart, uint8_t *rx_buffer_block, uint16_t rx_buffer_size) {
     if (g_uart_instance_count >= UART_INSTANCE_MAX || uart_instance == NULL || rx_buffer_block == NULL) { // Overflow protection
         return false; 
     }
@@ -59,7 +58,7 @@ uint8_t *UART_Register(UART_Instance_t *uart_instance, UART_HandleTypedef *huart
     }
 
     // Create FreeRTOS rx message queue
-    uart_instance->rx_msg_queue = xQueueCreate(UART_MSG_QUEUE_SIZE, sizeof(UART_Message_t));
+    uart_instance->msg_queue = xQueueCreate(UART_MSG_QUEUE_SIZE, sizeof(UART_Message_t));
 
     // Create FreeRTOS tx semaphore
     uart_instance->tx_complete_sem = xSemaphoreCreateBinary();

@@ -57,6 +57,9 @@
 
 /* Statically allocated buffers */
 
+// static UART_Instance_t uart1_context;
+// static uint8_t uart1_rx_pool[PACKET_SIZE * UART_MSG_QUEUE_SIZE]; (maybe add config file for peripherals)
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/

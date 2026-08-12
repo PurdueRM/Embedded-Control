@@ -2,6 +2,8 @@
 #define MF_MOTOR_H
 
 #include "bsp_can.h"
+#include <string.h>
+#include <stdint.h>
 
 #define SINGLE_MOTOR_CTRL_STD 0x140
 

@@ -2,7 +2,7 @@
 #define BSP_UART_H
 
 #include "usart.h"
-#include "stm32h7xx_hal_usart.h"
+// #include "stm32h7xx_hal_usart.h"
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "semphr.h"
@@ -56,7 +56,7 @@ typedef struct _UART_Instance
 
 // void UART_Service_Init(UART_Instance_t *uart_insatce); -- was used for restarting UART, not needed anymore
 
-uint8_t *UART_Register(UART_Instance_t *uart_instance, UART_HandleTypedef *huart, uint8_t *rx_buffer_block, uint16_t rx_buffer_size);
+uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart, uint8_t *rx_buffer_block, uint16_t rx_buffer_size);
 
 uint8_t UART_Transmit(UART_Instance_t *instance, uint8_t *tx_buffer, uint16_t tx_buffer_len, TickType_t timeout);
 

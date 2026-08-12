@@ -2,6 +2,8 @@
 #include "bsp_can.h"
 #include "user_math.h"
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 
 #pragma message "Check Max Device Number"
 #define MF_MAX_DEVICE (2)
