@@ -33,6 +33,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "robot.h"
 
 /* USER CODE END Includes */
 
@@ -136,6 +137,7 @@ int main(void)
   MX_TIM12_Init();
   /* USER CODE BEGIN 2 */
 
+  Robot_Init();
   /* USER CODE END 2 */
 
   /* Init scheduler */

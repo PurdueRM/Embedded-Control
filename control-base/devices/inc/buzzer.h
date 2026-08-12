@@ -2,6 +2,8 @@
 #define BUZZER_H
 
 #include "bsp_pwm.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #define Note_C3  (131)  // 130.81 Hz
 #define Note_D3  (147)  // 146.83 Hz
@@ -129,6 +131,7 @@
 #define SMALL_SPACER (50)
 #define SIXTEENTH_NOTE_DURATION (62)
 #define EIGHTH_NOTE_DURATION (125)
+#define DOT_EIGHTH_NOTE_DURATION (188)
 #define FOURTH_NOTE_DURATION (500)
 #define DOT_FOURTH_NOTE_DURATION (750)
 #define HALF_NOTE_DURATION (1000)
@@ -142,16 +145,6 @@
                              {Note_E5, EIGHTH_NOTE_DURATION }, \
                              {Note_G5, EIGHTH_NOTE_DURATION }, \
                              {Note_C6, FOURTH_NOTE_DURATION }}
-
-#define SYSTEM_INITIALIZING_REVERSE {\
-    {Note_C6, FOURTH_NOTE_DURATION},\
-    {Note_G5, EIGHTH_NOTE_DURATION }, \
-    {Note_E5, EIGHTH_NOTE_DURATION }, \
-    {Note_C5, EIGHTH_NOTE_DURATION }, \
-    {Note_G4, EIGHTH_NOTE_DURATION }, \
-    {Note_E4, EIGHTH_NOTE_DURATION }, \
-    {Note_C4, EIGHTH_NOTE_DURATION },\
-}
 
 #define SYSTEM_READY {{Note_G4, EIGHTH_NOTE_DURATION }, \
                       {Note_E5, EIGHTH_NOTE_DURATION }, \
@@ -579,8 +572,93 @@
     {Note_G4, EIGHTH_NOTE_DURATION},\
 }
 
+// 青春之火（火力少年王主题曲） https://www.tan8.com/yuepu-76733.html
+#define FIRE_OF_YOUTH {\
+    {Note_FSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_F5, EIGHTH_NOTE_DURATION},\
+    {Note_CSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_FSharp5, SIXTEENTH_NOTE_DURATION},\
+    {Note_F5, EIGHTH_NOTE_DURATION},\
+    {Note_CSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_FSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_F5, SIXTEENTH_NOTE_DURATION},\
+    {Note_CSharp5, EIGHTH_NOTE_DURATION},\
+    \
+    {Note_FSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_F5, EIGHTH_NOTE_DURATION},\
+    {Note_CSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_FSharp5, SIXTEENTH_NOTE_DURATION},\
+    {Note_F5, EIGHTH_NOTE_DURATION},\
+    {Note_CSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_FSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_F5, SIXTEENTH_NOTE_DURATION},\
+    {Note_CSharp5, EIGHTH_NOTE_DURATION},\
+    \
+    {Note_DSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_CSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_ASharp4, EIGHTH_NOTE_DURATION},\
+    {Note_DSharp5, SIXTEENTH_NOTE_DURATION},\
+    {Note_CSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_ASharp4, DOT_EIGHTH_NOTE_DURATION},\
+    {Note_DSharp5, SIXTEENTH_NOTE_DURATION},\
+    {Note_CSharp5, DOT_EIGHTH_NOTE_DURATION},\
+    \
+    {Note_ASharp4, EIGHTH_NOTE_DURATION},\
+    {Note_ASharp4, EIGHTH_NOTE_DURATION},\
+    {Note_ASharp4, SIXTEENTH_NOTE_DURATION},\
+    {Note_GSharp4, EIGHTH_NOTE_DURATION},\
+    {Note_ASharp4, SIXTEENTH_NOTE_DURATION + HALF_NOTE_DURATION},\
+    \
+    {Note_GSharp4, EIGHTH_NOTE_DURATION},\
+    {Note_FSharp4, EIGHTH_NOTE_DURATION},\
+    {Note_FSharp4, SIXTEENTH_NOTE_DURATION},\
+    {Note_F4, EIGHTH_NOTE_DURATION},\
+    {Note_DSharp4, HALF_NOTE_DURATION},\
+    {Note_DSharp4, SIXTEENTH_NOTE_DURATION},\
+    \
+    {Note_F4, SIXTEENTH_NOTE_DURATION},\
+    {Note_F4, SIXTEENTH_NOTE_DURATION},\
+    {Note_F4, SIXTEENTH_NOTE_DURATION},\
+    {Note_F4, SIXTEENTH_NOTE_DURATION},\
+    {Note_F4, SIXTEENTH_NOTE_DURATION},\
+    {Note_GSharp4, EIGHTH_NOTE_DURATION},\
+    {Note_GSharp4, EIGHTH_NOTE_DURATION},\
+    {Note_GSharp4, SIXTEENTH_NOTE_DURATION},\
+    {Note_GSharp4, SIXTEENTH_NOTE_DURATION},\
+    {Note_GSharp4, SIXTEENTH_NOTE_DURATION},\
+    {Note_GSharp4, SIXTEENTH_NOTE_DURATION},\
+    {Note_B4, DOT_EIGHTH_NOTE_DURATION},\
+    \
+    {Note_B4, EIGHTH_NOTE_DURATION},\
+    {Note_ASharp4, EIGHTH_NOTE_DURATION},\
+    {Note_ASharp4, SIXTEENTH_NOTE_DURATION},\
+    {Note_GSharp4, EIGHTH_NOTE_DURATION},\
+    {Note_ASharp4, SIXTEENTH_NOTE_DURATION + HALF_NOTE_DURATION},\
+}
+
+// 开心往前飞 (Happy Heroes Theme) https://www.tan8.com/yuepu-76071.html
+#define HAPPY_HEROES_THEME {\
+    {Note_D5, EIGHTH_NOTE_DURATION},\
+    {Note_D5, EIGHTH_NOTE_DURATION},\
+    {Note_EFlat5, EIGHTH_NOTE_DURATION},\
+    {Note_B4, EIGHTH_NOTE_DURATION},\
+    \
+    {Note_E5, SIXTEENTH_NOTE_DURATION},\
+    {Note_FSharp5, EIGHTH_NOTE_DURATION},\
+    {Note_G5, EIGHTH_NOTE_DURATION},\
+    {Note_D5, SIXTEENTH_NOTE_DURATION},\
+    {Note_E5, SIXTEENTH_NOTE_DURATION},\
+    {Note_G5, SIXTEENTH_NOTE_DURATION + EIGHTH_NOTE_DURATION},\
+    \
+    {Note_G5, EIGHTH_NOTE_DURATION},\
+    {Note_A5, SIXTEENTH_NOTE_DURATION},\
+    {Note_A5, SIXTEENTH_NOTE_DURATION},\
+    {Note_E5, SIXTEENTH_NOTE_DURATION},\
+    \
+    {Note_G5, SIXTEENTH_NOTE_DURATION + DOT_HALF_NOTE_DURATION},\
+}
+
 #define SYSTEM_INITIALIZING_NOTE_NUM (7)
-#define SYSTEM_INITIALIZING_REVERSE_NOTE_NUM (7)
 #define SYSTEM_READY_NOTE_NUM (6)
 #define SYSTEM_ERROR_NOTE_NUM (7)
 #define MARIO_NOTE_NUM (44)
@@ -592,11 +670,13 @@
 #define RM_MAIN_THEME_FAST_NOTE_NUM (48)
 #define RM_MAIN_THEME_SHORT_NOTE_NUM (24)
 #define RM_MAIN_THEME_SHORT_UP_OCTAVE_NOTE_NUM (24)
-#define MEGALOVVANIA_MOTIF_NOTE_NUM (11)
+#define MEGALOVANIA_MOTIF_NOTE_NUM (11)
+#define FIRE_OF_YOUTH_NOTE_NUM (54)
+#define HAPPY_HEROES_THEME_NOTE_NUM (16)
 
 typedef struct _Melody_t
 {
-    float notes[60][2];
+    float notes[70][2];
     float loudness;
     uint16_t note_num;
 } Melody_t;
@@ -618,5 +698,5 @@ void Buzzer_Init(void);
 void Buzzer_Set_State(Buzzzer_Instance_t *buzzer, Buzzer_State_t state);
 void Buzzer_Set_Loudness(Buzzzer_Instance_t *buzzer, float loudness);
 void Buzzer_Set_Note(Buzzzer_Instance_t *buzzer);
-void Buzzer_Play_Melody(Melody_t melody);
+void Buzzer_Play_Melody(Melody_t *melody);
 #endif // BUZZER_H

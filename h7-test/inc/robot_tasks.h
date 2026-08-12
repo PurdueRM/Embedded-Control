@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FreeRTOS.h"
+#include "cmsis_os2.h"
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -12,6 +13,7 @@
 #include "jetson_orin.h"
 #include "bsp_serial.h"
 #include "bsp_daemon.h"
+#include "buzzer.h"
 
 extern void IMU_Task(void const *pvParameters);
 
@@ -22,6 +24,7 @@ osThreadId ui_task_handle;
 osThreadId debug_task_handle;
 osThreadId jetson_orin_task_handle;
 osThreadId daemon_task_handle;
+osThreadId_t buzzer_task_handle;
 
 void Robot_Tasks_Robot_Command(void const *argument);
 void Robot_Tasks_Motor(void const *argument);
@@ -30,6 +33,7 @@ void Robot_Tasks_UI(void const *argument);
 void Robot_Tasks_Debug(void const *argument);
 void Robot_Tasks_Jetson_Orin(void const *argument);
 void Robot_Tasks_Daemon(void const *argument);
+void Robot_Tasks_Buzzer(void *argument);
 
 void Robot_Tasks_Start()
 {
@@ -53,6 +57,46 @@ void Robot_Tasks_Start()
 
     // osThreadDef(daemon_task, Robot_Tasks_Daemon, osPriorityAboveNormal, 0, 256);
     // daemon_task_handle = osThreadCreate(osThread(daemon_task), NULL);
+
+    const osThreadAttr_t buzzer_task_attr = {
+        .name = "buzzer_task",
+        .priority = osPriorityIdle,
+        .stack_size = 2048
+    };
+    buzzer_task_handle = osThreadNew(Robot_Tasks_Buzzer, NULL, &buzzer_task_attr);
+}
+
+void Robot_Tasks_Buzzer(void *argument)
+{
+    Melody_t system_init_melody = {
+        .notes = SYSTEM_INITIALIZING,
+        .loudness = 0.01f,
+        .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
+    };
+    Buzzer_Play_Melody(&system_init_melody);
+    vTaskDelay(pdMS_TO_TICKS(1));
+    // vTaskDelete(NULL);
+
+    Melody_t goat_theme_melody = {
+        .notes = RM_MAIN_THEME_SHORT,
+        .loudness = 0.1f,
+        .note_num = RM_MAIN_THEME_SHORT_NOTE_NUM,
+    };
+    Buzzer_Play_Melody(&goat_theme_melody);
+    vTaskDelay(pdMS_TO_TICKS(1));
+
+    // TODO utilize buzzer to indicate system status rather than just init
+    // while (1) {
+    //     // Buzzer_Play_Melody(&goat_theme_melody);
+    //     if (g_remote.controller.right_switch == MID) {
+    //         // Play melody when switched to position 1
+    //         Buzzer_Play_Melody(&goat_theme_melody);
+    //         vTaskDelay(pdMS_TO_TICKS(1));
+    //     }
+    //     // Buzzer_Play_Melody(&goat_theme_melody);
+        
+    // } // INF loop so that no weird returns happen
+    vTaskSuspend(NULL);
 }
 
 void Robot_Tasks_Robot_Command(void const *argument)
