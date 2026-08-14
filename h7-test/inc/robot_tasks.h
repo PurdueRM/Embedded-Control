@@ -14,6 +14,7 @@
 #include "bsp_serial.h"
 #include "bsp_daemon.h"
 #include "buzzer.h"
+#include "led.h"
 
 extern void IMU_Task(void const *pvParameters);
 
@@ -25,6 +26,7 @@ osThreadId debug_task_handle;
 osThreadId jetson_orin_task_handle;
 osThreadId daemon_task_handle;
 osThreadId_t buzzer_task_handle;
+osThreadId_t heartbeat_led_task_handle;
 
 void Robot_Tasks_Robot_Command(void const *argument);
 void Robot_Tasks_Motor(void const *argument);
@@ -34,6 +36,7 @@ void Robot_Tasks_Debug(void const *argument);
 void Robot_Tasks_Jetson_Orin(void const *argument);
 void Robot_Tasks_Daemon(void const *argument);
 void Robot_Tasks_Buzzer(void *argument);
+void Robot_Tasks_LED(void *argument);
 
 void Robot_Tasks_Start()
 {
@@ -64,6 +67,13 @@ void Robot_Tasks_Start()
         .stack_size = 2048
     };
     buzzer_task_handle = osThreadNew(Robot_Tasks_Buzzer, NULL, &buzzer_task_attr);
+
+    const osThreadAttr_t heartbeat_task_attr = {
+        .name = "heartbeat_task",
+        .priority = osPriorityIdle,
+        .stack_size = 512
+    };
+    heartbeat_led_task_handle = osThreadNew(Robot_Tasks_LED, NULL, &heartbeat_task_attr);
 }
 
 void Robot_Tasks_Buzzer(void *argument)
@@ -77,12 +87,12 @@ void Robot_Tasks_Buzzer(void *argument)
     vTaskDelay(pdMS_TO_TICKS(1));
     // vTaskDelete(NULL);
 
-    Melody_t goat_theme_melody = {
-        .notes = RM_MAIN_THEME_SHORT,
-        .loudness = 0.1f,
-        .note_num = RM_MAIN_THEME_SHORT_NOTE_NUM,
+    Melody_t megalovania_melody = {
+        .notes = MEGALOVANIA_MOTIF,
+        .loudness = 0.01f,
+        .note_num = MEGALOVANIA_MOTIF_NOTE_NUM,
     };
-    Buzzer_Play_Melody(&goat_theme_melody);
+    Buzzer_Play_Melody(&megalovania_melody);
     vTaskDelay(pdMS_TO_TICKS(1));
 
     // TODO utilize buzzer to indicate system status rather than just init
@@ -97,6 +107,10 @@ void Robot_Tasks_Buzzer(void *argument)
         
     // } // INF loop so that no weird returns happen
     vTaskSuspend(NULL);
+}
+
+void Robot_Tasks_LED(void *argument) {
+    LED_Start(); // TODO: Move RTOS stuff to here
 }
 
 void Robot_Tasks_Robot_Command(void const *argument)

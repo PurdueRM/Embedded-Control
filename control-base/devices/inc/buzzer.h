@@ -1,7 +1,6 @@
 #ifndef BUZZER_H
 #define BUZZER_H
 
-#include "bsp_pwm.h"
 #include "FreeRTOS.h"
 #include "task.h"
 

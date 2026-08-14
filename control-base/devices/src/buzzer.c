@@ -1,11 +1,10 @@
 #include "buzzer.h"
-
+#include "bsp_pwm.h"
 
 #define MAX_BUZZER_NUM (1)
 Buzzzer_Instance_t g_buzzer;
 PWM_Instance_t *g_buzzer_pwm_ptr;
 uint8_t g_buzzer_count = 0;
-
 
 #define BUZZER_TIMER_NUM (htim12)
 #define BUZZER_TIMER_CHANNEL (TIM_CHANNEL_2)
