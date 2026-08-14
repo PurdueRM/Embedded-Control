@@ -6,7 +6,7 @@
 #include "spi.h"
 
 void LED_Start() {
-    float brightPercent = 0.05f; // Percent from 1.0 to 0.0
+    float brightPercent = .05f; // Percent from 1.0 to 0.0
     uint8_t maxColorValue = 255.0f; // Max RGB color value
     uint8_t scaledColorValue = (float)maxColorValue * brightPercent;
 

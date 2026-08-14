@@ -188,6 +188,17 @@ SECTIONS
   }
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
-}
+
+  /* DMA non-cacheable buffer section */
+
+  . = ALIGN(4); // makes sure section is aligned to 4 bytes
+  .non_cacheable (NOLOAD): // NOLOAD means this section will not be cached
+  {
+    . = ALIGN(4); // makes sure variables are 4 byte aligned to start
+    *(.non_cacheable) // looks through all compiled code (*) and finds any variables tagged with non_cacheable
+    *(.non_cacheable*) // like above, but allows .non_cacheable* to help with organization
+    . = ALIGN($); // align again
+  }
+} >RAM_D2 // placed in d2 ram
 
 

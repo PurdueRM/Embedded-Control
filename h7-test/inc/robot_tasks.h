@@ -87,13 +87,13 @@ void Robot_Tasks_Buzzer(void *argument)
     vTaskDelay(pdMS_TO_TICKS(1));
     // vTaskDelete(NULL);
 
-    Melody_t megalovania_melody = {
-        .notes = MEGALOVANIA_MOTIF,
-        .loudness = 0.01f,
-        .note_num = MEGALOVANIA_MOTIF_NOTE_NUM,
-    };
-    Buzzer_Play_Melody(&megalovania_melody);
-    vTaskDelay(pdMS_TO_TICKS(1));
+    // Melody_t megalovania_melody = {
+    //     .notes = MEGALOVANIA_MOTIF,
+    //     .loudness = 0.01f,
+    //     .note_num = MEGALOVANIA_MOTIF_NOTE_NUM,
+    // };
+    // Buzzer_Play_Melody(&megalovania_melody);
+    // vTaskDelay(pdMS_TO_TICKS(1));
 
     // TODO utilize buzzer to indicate system status rather than just init
     // while (1) {
