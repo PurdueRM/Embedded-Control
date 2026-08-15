@@ -30,6 +30,10 @@ typedef struct {
     uint16_t length;
 } UART_Message_t;
 
+typedef struct {
+    uint8_t data[18];
+} __attribute__((aligned(32))) UART_Packet_t;
+
 typedef struct _UART_Instance
 {
     UART_HandleTypeDef *uart_handle;
@@ -59,5 +63,10 @@ typedef struct _UART_Instance
 uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart, uint8_t *rx_buffer_block, uint16_t rx_buffer_size);
 
 uint8_t UART_Transmit(UART_Instance_t *instance, uint8_t *tx_buffer, uint16_t tx_buffer_len, TickType_t timeout);
+
+/* Statically Allocated UART buffers */
+
+extern UART_Instance_t uart5_instance;
+extern UART_Packet_t uart5_rx_buffers[UART_MSG_QUEUE_SIZE]; // add config file for peripherals
 
 #endif // BSP_UART_H

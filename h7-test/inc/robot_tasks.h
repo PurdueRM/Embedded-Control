@@ -15,6 +15,7 @@
 #include "bsp_daemon.h"
 #include "buzzer.h"
 #include "led.h"
+#include "remote.h"
 
 extern void IMU_Task(void const *pvParameters);
 
@@ -25,8 +26,10 @@ osThreadId ui_task_handle;
 osThreadId debug_task_handle;
 osThreadId jetson_orin_task_handle;
 osThreadId daemon_task_handle;
+
 osThreadId_t buzzer_task_handle;
 osThreadId_t heartbeat_led_task_handle;
+osThreadId_t remote_task_handle;
 
 void Robot_Tasks_Robot_Command(void const *argument);
 void Robot_Tasks_Motor(void const *argument);
@@ -35,8 +38,10 @@ void Robot_Tasks_UI(void const *argument);
 void Robot_Tasks_Debug(void const *argument);
 void Robot_Tasks_Jetson_Orin(void const *argument);
 void Robot_Tasks_Daemon(void const *argument);
+
 void Robot_Tasks_Buzzer(void *argument);
 void Robot_Tasks_LED(void *argument);
+void Robot_Tasks_Remote(void *argument);
 
 void Robot_Tasks_Start()
 {
@@ -74,16 +79,23 @@ void Robot_Tasks_Start()
         .stack_size = 512
     };
     heartbeat_led_task_handle = osThreadNew(Robot_Tasks_LED, NULL, &heartbeat_task_attr);
+
+    const osThreadAttr_t remote_task_attr = {
+        .name = "remote_task",
+        .priority = osPriorityHigh,
+        .stack_size = 1024
+    };
+    remote_task_handle = osThreadNew(Robot_Tasks_Remote, NULL, &remote_task_attr);
 }
 
 void Robot_Tasks_Buzzer(void *argument)
 {
-    Melody_t system_init_melody = {
-        .notes = SYSTEM_INITIALIZING,
-        .loudness = 0.01f,
-        .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
-    };
-    Buzzer_Play_Melody(&system_init_melody);
+    // Melody_t system_init_melody = {
+    //     .notes = SYSTEM_INITIALIZING,
+    //     .loudness = 0.01f,
+    //     .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
+    // };
+    // Buzzer_Play_Melody(&system_init_melody);
     vTaskDelay(pdMS_TO_TICKS(1));
     // vTaskDelete(NULL);
 
@@ -111,6 +123,19 @@ void Robot_Tasks_Buzzer(void *argument)
 
 void Robot_Tasks_LED(void *argument) {
     LED_Start(); // TODO: Move RTOS stuff to here
+}
+
+void Robot_Tasks_Remote(void *argument) {
+    portTickType xLastWakeTime;
+    xLastWakeTime = xTaskGetTickCount();
+    const TickType_t TimeIncrement = pdMS_TO_TICKS(1);
+    UART_Register(&uart5_instance, &huart5, (uint8_t*) uart5_rx_buffers, 18);
+    while (1)
+    {
+        Remote_Buffer_Process();
+        vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
+
+    }
 }
 
 void Robot_Tasks_Robot_Command(void const *argument)

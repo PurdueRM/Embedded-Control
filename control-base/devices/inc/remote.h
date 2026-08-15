@@ -84,10 +84,21 @@ typedef struct
     struct Mouse mouse;
 
     uint8_t online_flag;
+    uint8_t online_cnt;
 } Remote_t;
 
+/**
+ * @brief Length of SBUS received data
+ */
+#define SBUS_RX_BUF_NUM		18u
+
+/**
+ * @brief offset of remote control channel data
+ */
+#define RC_CH_VALUE_OFFSET		1024U
 
 extern Remote_t g_remote;
+void Remote_Buffer_Process();
 Remote_t* Remote_Init(UART_HandleTypeDef *huart);
 
 #endif /* __REMOTE_H */

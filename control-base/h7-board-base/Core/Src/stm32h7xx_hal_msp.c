@@ -73,6 +73,7 @@ void HAL_MspInit(void)
   /* System interrupt init*/
   /* PendSV_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
 
   /* USER CODE BEGIN MspInit 1 */
 

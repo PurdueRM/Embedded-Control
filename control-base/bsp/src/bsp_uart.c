@@ -15,6 +15,9 @@ UART_Instance_t *g_uart_instances[UART_INSTANCE_MAX];
 uint8_t g_uart_instance_count = 0;
 
 // Statically allocated buffers
+__attribute__((section(".non_cacheable"))) UART_Instance_t uart5_instance;
+__attribute__((section(".non_cacheable"))) UART_Packet_t uart5_rx_buffers[UART_MSG_QUEUE_SIZE]; // add config file for peripherals
+
 
 /** 
  * @brief Find registered UART instance
@@ -54,7 +57,7 @@ uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart,
 
     // Split up buffer block into pointer array
     for (int i = 0; i < UART_MSG_QUEUE_SIZE; i++) {
-        uart_instance->rx_buffers[i] = rx_buffer_block + (i * rx_buffer_size);
+        uart_instance->rx_buffers[i] = rx_buffer_block + (i * sizeof(UART_Packet_t));
     }
 
     // Create FreeRTOS rx message queue
@@ -73,7 +76,7 @@ uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart,
     g_uart_instances[g_uart_instance_count++] = uart_instance;
 
     // starts DMA on buffer 0
-    HAL_UARTEx_ReceiveToIdle_DMA(
+    HAL_UART_Receive_DMA(
         uart_instance->uart_handle, 
         uart_instance->rx_buffers[uart_instance->active_buffer_index], 
         uart_instance->rx_buffer_size
@@ -97,7 +100,7 @@ uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart,
  * It creates a message from the rx buffer that was just filled, then sends it
  * into the FreeRTOS queue associated with the uart instance.
 */
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     // Find UART instance
     UART_Instance_t *instance = get_uart_instance(huart);
@@ -112,7 +115,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     instance->active_buffer_index = (instance->active_buffer_index + 1) % UART_MSG_QUEUE_SIZE;
 
     // Restart DMA into new buffer, keeps reading data while ISR is running
-    HAL_UARTEx_ReceiveToIdle_DMA(
+    HAL_UART_Receive_DMA(
         huart, 
         instance->rx_buffers[instance->active_buffer_index], 
         instance->rx_buffer_size
@@ -122,14 +125,19 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     // Create message
     UART_Message_t msg;
     msg.payload = instance->rx_buffers[finished_buffer_index];
-    msg.length = Size;
-    
+    msg.length = instance->rx_buffer_size;
+
+    if (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
+        return; 
+    }
     // Send message
+
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     xQueueSendFromISR(instance->msg_queue, &msg, &xHigherPriorityTaskWoken);
 
     // Force a context switch if a higher priority task was unblocked
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
 }
 
 /**
@@ -233,7 +241,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     instance->read_ptr = 0;
 
     // Restart DMA
-    HAL_UARTEx_ReceiveToIdle_DMA(
+    HAL_UART_Receive_DMA(
         huart, 
         instance->rx_buffers[instance->active_buffer_index], 
         instance->rx_buffer_size
