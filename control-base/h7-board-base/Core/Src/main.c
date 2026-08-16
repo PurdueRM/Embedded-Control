@@ -34,6 +34,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "bsp_uart.h"
+#include "bsp_can.h"
 #include "robot.h"
 
 /* USER CODE END Includes */
@@ -58,6 +59,10 @@
 /* USER CODE BEGIN PV */
 
 /* Statically allocated buffers */
+
+CAN_Bus_t can_bus_1;
+CAN_Bus_t can_bus_2;
+CAN_Bus_t can_bus_3;
 
 /* USER CODE END PV */
 
@@ -116,9 +121,9 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_ADC1_Init();
-  MX_FDCAN1_Init();
-  MX_FDCAN2_Init();
-  MX_FDCAN3_Init();
+  // MX_FDCAN1_Init();
+  // MX_FDCAN2_Init();
+  // MX_FDCAN3_Init();
   MX_I2C2_Init();
   MX_SPI1_Init();
   MX_SPI2_Init();
@@ -135,6 +140,10 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM12_Init();
   /* USER CODE BEGIN 2 */
+
+  CAN_Bus_Init(&can_bus_1, &hfdcan1);
+  CAN_Bus_Init(&can_bus_2, &hfdcan2);
+  CAN_Bus_Init(&can_bus_3, &hfdcan3);
 
   Robot_Init();
   /* USER CODE END 2 */
