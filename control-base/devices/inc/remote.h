@@ -84,7 +84,6 @@ typedef struct
     struct Mouse mouse;
 
     uint8_t online_flag;
-    uint8_t online_cnt;
 } Remote_t;
 
 /**
@@ -98,6 +97,8 @@ typedef struct
 #define RC_CH_VALUE_OFFSET		1024U
 
 extern Remote_t g_remote;
+
+void SBUS_TO_RC(volatile const uint8_t *sbus_buf, Remote_t *remote_ctrl);
 void Remote_Buffer_Process();
 Remote_t* Remote_Init(UART_HandleTypeDef *huart);
 

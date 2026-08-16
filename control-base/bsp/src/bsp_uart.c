@@ -76,7 +76,7 @@ uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart,
     g_uart_instances[g_uart_instance_count++] = uart_instance;
 
     // starts DMA on buffer 0
-    HAL_UART_Receive_DMA(
+    HAL_UARTEx_ReceiveToIdle_DMA(
         uart_instance->uart_handle, 
         uart_instance->rx_buffers[uart_instance->active_buffer_index], 
         uart_instance->rx_buffer_size
@@ -100,8 +100,8 @@ uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart,
  * It creates a message from the rx buffer that was just filled, then sends it
  * into the FreeRTOS queue associated with the uart instance.
 */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
+
     // Find UART instance
     UART_Instance_t *instance = get_uart_instance(huart);
     if (instance == NULL || !instance->is_initialized) {
@@ -115,23 +115,23 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     instance->active_buffer_index = (instance->active_buffer_index + 1) % UART_MSG_QUEUE_SIZE;
 
     // Restart DMA into new buffer, keeps reading data while ISR is running
-    HAL_UART_Receive_DMA(
+    HAL_UARTEx_ReceiveToIdle_DMA(
         huart, 
         instance->rx_buffers[instance->active_buffer_index], 
         instance->rx_buffer_size
     );
     __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
 
+    if (Size != instance->rx_buffer_size || xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
+        return;
+    }
+
     // Create message
     UART_Message_t msg;
     msg.payload = instance->rx_buffers[finished_buffer_index];
     msg.length = instance->rx_buffer_size;
 
-    if (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
-        return; 
-    }
     // Send message
-
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     xQueueSendFromISR(instance->msg_queue, &msg, &xHigherPriorityTaskWoken);
 
@@ -241,7 +241,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     instance->read_ptr = 0;
 
     // Restart DMA
-    HAL_UART_Receive_DMA(
+    HAL_UARTEx_ReceiveToIdle_DMA(
         huart, 
         instance->rx_buffers[instance->active_buffer_index], 
         instance->rx_buffer_size
