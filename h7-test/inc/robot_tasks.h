@@ -16,6 +16,7 @@
 #include "buzzer.h"
 #include "led.h"
 #include "remote.h"
+#include "bsp_can.h"
 
 extern void IMU_Task(void const *pvParameters);
 
@@ -42,6 +43,7 @@ void Robot_Tasks_Daemon(void const *argument);
 void Robot_Tasks_Buzzer(void *argument);
 void Robot_Tasks_LED(void *argument);
 void Robot_Tasks_Remote(void *argument);
+void Robot_Tasks_CAN_Rx(void *argument);
 
 void Robot_Tasks_Start()
 {
@@ -83,9 +85,17 @@ void Robot_Tasks_Start()
     const osThreadAttr_t remote_task_attr = {
         .name = "remote_task",
         .priority = osPriorityHigh,
-        .stack_size = 1024
+        .stack_size = 512
     };
     remote_task_handle = osThreadNew(Robot_Tasks_Remote, NULL, &remote_task_attr);
+
+     const osThreadAttr_t can_rx_task_attr = {
+        .name = "can_rx_task",
+        .priority = osPriorityHigh,
+        .stack_size = 1024
+    };
+    remote_task_handle = osThreadNew(Robot_Tasks_CAN_Rx, NULL, &can_rx_task_attr);
+
 }
 
 void Robot_Tasks_Buzzer(void *argument)
@@ -135,6 +145,34 @@ void Robot_Tasks_Remote(void *argument) {
         Remote_Buffer_Process();
         vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
 
+    }
+}
+
+void Robot_Tasks_CAN_Rx(void *argument) {
+    CAN_RxMessage_t incomingMsg;
+    extern QueueHandle_t CAN_Shared_RxQueue;
+
+    while (true) {
+        // Sleep until any of the three FDCANs receives a message
+        if (xQueueReceive(CAN_Shared_RxQueue, &incomingMsg, portMAX_DELAY) == pdPASS) {
+            
+            // Extract the bus pointer that the ISR tagged the message with
+            CAN_Instance_t *bus = incomingMsg.bus;
+            
+            // Iterate only through the devices registered to that specific bus
+            for (uint8_t i = 0; i < bus->device_count; i++) {
+                if (bus->registered_devices[i]->rx_id == incomingMsg.header.Identifier) {
+                    
+                    // Copy data and execute callback
+                    memcpy(bus->registered_devices[i]->rx_buffer, incomingMsg.data, 8);
+                    
+                    if (bus->registered_devices[i]->callback != NULL) {
+                        bus->registered_devices[i]->callback(bus->registered_devices[i]);
+                    }
+                    break; // Found the motor, stop searching
+                }
+            }
+        }
     }
 }
 

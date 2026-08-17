@@ -60,10 +60,6 @@
 
 /* Statically allocated buffers */
 
-CAN_Bus_t can_bus_1;
-CAN_Bus_t can_bus_2;
-CAN_Bus_t can_bus_3;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -140,10 +136,6 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM12_Init();
   /* USER CODE BEGIN 2 */
-
-  CAN_Bus_Init(&can_bus_1, &hfdcan1);
-  CAN_Bus_Init(&can_bus_2, &hfdcan2);
-  CAN_Bus_Init(&can_bus_3, &hfdcan3);
 
   Robot_Init();
   /* USER CODE END 2 */

@@ -7,7 +7,7 @@
 
 #define CAN_MAX_DEVICES_PER_BUS 32 // Arbitrarilly set
 
-struct CAN_Bus_t;
+struct CAN_Instance_t;
 struct CAN_Device_t;
 
 // Error Struct
@@ -30,7 +30,7 @@ typedef struct CAN_Error_Stats_t {
 
 // Struct for each Motor/Device that goes on a can bus
 typedef struct CAN_Device_t {
-    struct CAN_Bus_t *parent_bus;           // reference to the bus it lives on
+    struct CAN_Instance_t *parent_bus;           // reference to the bus it lives on
     uint16_t rx_id;                         // Hardware filter ID
     FDCAN_TxHeaderTypeDef tx_header;
     uint8_t tx_buffer[8];
@@ -39,25 +39,33 @@ typedef struct CAN_Device_t {
 } CAN_Device_t;
 
 // Struct for each can peripheral
-typedef struct CAN_Bus_t {
+typedef struct CAN_Instance_t {
     FDCAN_HandleTypeDef *hfdcan;            // FDCAN1, FDCAN2, or FDCAN3
-    QueueHandle_t rx_queue;                 // FreeRTOS queue for this bus
     
     CAN_Device_t *registered_devices[CAN_MAX_DEVICES_PER_BUS]; 
     uint8_t device_count;
     uint8_t filter_index;
 
     CAN_Error_Stats_t errors;
-} CAN_Bus_t;
+} CAN_Instance_t;
 
 // Message to be sent through queue
 typedef struct {
+    struct CAN_Instance_t *bus;
     FDCAN_RxHeaderTypeDef header;
     uint8_t data[8];
 } CAN_RxMessage_t;
 
-void CAN_Bus_Init(CAN_Bus_t *bus, FDCAN_HandleTypeDef *hfdcan);
-CAN_Device_t *CAN_Device_Register(CAN_Bus_t *bus, uint16_t tx_id, uint16_t rx_id, void (*callback)(CAN_Device_t *));
+
+void CAN_Service_Init();
+void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan);
+CAN_Device_t *CAN_Device_Register(CAN_Instance_t *bus, uint16_t tx_id, uint16_t rx_id, void (*callback)(CAN_Device_t *));
 HAL_StatusTypeDef CAN_Transmit(CAN_Device_t *device);
+
+extern CAN_Instance_t g_can1;
+extern CAN_Instance_t g_can2;
+extern CAN_Instance_t g_can3;
+
+extern QueueHandle_t CAN_RxQueue;
 
 #endif /* CAN_H */

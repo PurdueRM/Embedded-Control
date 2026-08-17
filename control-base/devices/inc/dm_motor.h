@@ -77,7 +77,7 @@ typedef struct _DM_Motor {
     uint16_t tx_id;
     uint16_t rx_id;
     uint8_t disable_behavior;
-    CAN_Instance_t *can_instance;
+    CAN_Device_t *can_device_instance;
     
     /* Motor Target */
     float target_pos;

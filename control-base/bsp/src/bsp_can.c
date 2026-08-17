@@ -1,16 +1,36 @@
 #include "bsp_can.h"
+#include "stm32h7xx_hal_fdcan.h"
 #include <string.h>
 
 #define TOTAL_MAX_DEVICES (CAN_MAX_DEVICES_PER_BUS * 3)
+#define CAN_RX_QUEUE_SIZE 128
 
 static CAN_Device_t g_device_pool[TOTAL_MAX_DEVICES]; // Statically allocated CAN device pool
 static uint16_t g_device_allocated_count = 0;
-static CAN_Bus_t *g_buses[3] = {NULL, NULL, NULL};
+static CAN_Instance_t *g_buses[3] = {NULL, NULL, NULL};
+
+extern FDCAN_HandleTypeDef hfdcan1;
+extern FDCAN_HandleTypeDef hfdcan2;
+extern FDCAN_HandleTypeDef hfdcan3;
+
+CAN_Instance_t g_can1;
+CAN_Instance_t g_can2;
+CAN_Instance_t g_can3;
+QueueHandle_t CAN_RxQueue = NULL;
+
+
+void CAN_Service_Init() {
+    CAN_RxQueue = xQueueCreate(CAN_RX_QUEUE_SIZE, sizeof(CAN_RxMessage_t));
+
+    CAN_Instance_Init(&g_can1, &hfdcan1);
+    CAN_Instance_Init(&g_can2, &hfdcan2);
+    CAN_Instance_Init(&g_can3, &hfdcan3);
+}
 
 /**
  * @brief Initialize the Bus Object, Queue, and Hardware
  */
-void CAN_Bus_Init(CAN_Bus_t *bus, FDCAN_HandleTypeDef *hfdcan) {
+void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan) {
     bus->hfdcan = hfdcan;
     bus->device_count = 0;
     bus->filter_index = 0;
@@ -27,9 +47,6 @@ void CAN_Bus_Init(CAN_Bus_t *bus, FDCAN_HandleTypeDef *hfdcan) {
     else {
         return;
     }
-
-    // Create FreeRTOS queue
-    bus->rx_queue = xQueueCreate(32, sizeof(CAN_RxMessage_t));
 
     // Set error struct to 0
     memset(&bus->errors, 0, sizeof(CAN_Error_Stats_t));
@@ -86,7 +103,7 @@ void CAN_Bus_Init(CAN_Bus_t *bus, FDCAN_HandleTypeDef *hfdcan) {
     HAL_FDCAN_Start(hfdcan);
 }
 
-CAN_Device_t *CAN_Device_Register(CAN_Bus_t *bus, uint16_t tx_id, uint16_t rx_id, void (*callback)(CAN_Device_t *)) {
+CAN_Device_t *CAN_Device_Register(CAN_Instance_t *bus, uint16_t tx_id, uint16_t rx_id, void (*callback)(CAN_Device_t *)) {
 
     // Overflow protection
     if (bus->device_count >= CAN_MAX_DEVICES_PER_BUS || g_device_allocated_count >= TOTAL_MAX_DEVICES) {
@@ -128,11 +145,17 @@ CAN_Device_t *CAN_Device_Register(CAN_Bus_t *bus, uint16_t tx_id, uint16_t rx_id
 
 HAL_StatusTypeDef CAN_Transmit(CAN_Device_t *device)
 {
+    // Freeze RTOS scheduler
+    taskENTER_CRITICAL();
+
     if (HAL_FDCAN_GetTxFifoFreeLevel(device->parent_bus->hfdcan) == 0) {
         return HAL_BUSY;
     }
     
     return HAL_FDCAN_AddMessageToTxFifoQ(device->parent_bus->hfdcan, &device->tx_header, device->tx_buffer);
+
+    // Unfreeze RTOS scheduler
+    taskEXIT_CRITICAL();
 }
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
@@ -144,7 +167,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
         if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxMsg.header, rxMsg.data) == HAL_OK) {
             
             // Look up the correct bus
-            CAN_Bus_t *target_bus = NULL;
+            CAN_Instance_t *target_bus = NULL;
             if (hfdcan->Instance == FDCAN1) {
                 target_bus = g_buses[0];
             }
@@ -159,8 +182,9 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             }
 
             // Push to that bus's queue
-            if (target_bus != NULL && target_bus->rx_queue != NULL) {
-                xQueueSendFromISR(target_bus->rx_queue, &rxMsg, &xHigherPriorityTaskWoken);
+            if (target_bus != NULL && CAN_RxQueue != NULL) {
+                rxMsg.bus = target_bus;
+                xQueueSendFromISR(CAN_RxQueue, &rxMsg, &xHigherPriorityTaskWoken);
             }
         }
 
@@ -172,8 +196,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef *hfdcan)
 {
     // Look up which bus threw the error
-    CAN_Bus_t *target_bus = NULL;
-    extern CAN_Bus_t *g_buses[3];
+    CAN_Instance_t *target_bus = NULL;
+    extern CAN_Instance_t *g_buses[3];
 
     if (hfdcan->Instance == FDCAN1) {
         target_bus = g_buses[0];
