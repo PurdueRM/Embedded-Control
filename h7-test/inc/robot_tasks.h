@@ -150,11 +150,11 @@ void Robot_Tasks_Remote(void *argument) {
 
 void Robot_Tasks_CAN_Rx(void *argument) {
     CAN_RxMessage_t incomingMsg;
-    extern QueueHandle_t CAN_Shared_RxQueue;
+    extern QueueHandle_t CAN_RxQueue;
 
     while (true) {
         // Sleep until any of the three FDCANs receives a message
-        if (xQueueReceive(CAN_Shared_RxQueue, &incomingMsg, portMAX_DELAY) == pdPASS) {
+        if (xQueueReceive(CAN_RxQueue, &incomingMsg, portMAX_DELAY) == pdPASS) {
             
             // Extract the bus pointer that the ISR tagged the message with
             CAN_Instance_t *bus = incomingMsg.bus;

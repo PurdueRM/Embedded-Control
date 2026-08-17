@@ -10,7 +10,7 @@
 MF_Motor_Handle_t *g_mf_motors[MF_MAX_DEVICE] = {NULL};
 uint8_t g_mf_motor_num = 0;
 
-void MF_Motor_Decode(CAN_Instance_t *can_instance);
+void MF_Motor_Decode(CAN_Device_t *can_instance);
 
 MF_Motor_Handle_t *MF_Motor_Init(MF_Motor_Config_t config)
 {
@@ -20,7 +20,7 @@ MF_Motor_Handle_t *MF_Motor_Init(MF_Motor_Config_t config)
     motor->tx_id = config.tx_id;
     motor->rx_id = config.rx_id;
     motor->stats = malloc(sizeof(MF_Motor_Stats_t));
-    motor->can_instance = CAN_Device_Register(config.can_bus, config.tx_id, config.rx_id, MF_Motor_Decode);
+    motor->can_instance = CAN_Device_Register(CAN_Get_Bus_Instance(config.can_bus), config.tx_id, config.rx_id, MF_Motor_Decode);
     motor->can_instance->binding_motor_stats = (void *)motor->stats;
     motor->target_pos = 0;
     motor->target_vel = 0;
@@ -41,7 +41,7 @@ MF_Motor_Handle_t *MF_Motor_Init(MF_Motor_Config_t config)
     return motor;
 }
 
-void MF_Motor_Decode(CAN_Instance_t *can_instance)
+void MF_Motor_Decode(CAN_Device_t *can_instance)
 {
     uint8_t *data = can_instance->rx_buffer;
     MF_Motor_Stats_t *motor_info = (MF_Motor_Stats_t *)can_instance->binding_motor_stats;

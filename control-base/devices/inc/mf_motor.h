@@ -47,7 +47,7 @@ typedef struct _MF_Motor
     uint8_t send_pending_flag;
     uint16_t tx_id;
     uint16_t rx_id;
-    CAN_Instance_t *can_instance;
+    CAN_Device_t *can_instance;
 
     /* Motor Target */
     float target_pos;
@@ -59,7 +59,7 @@ typedef struct _MF_Motor
 } MF_Motor_Handle_t;
 
 // TODO: document functions
-void MF_Motor_Decode(CAN_Instance_t *can_instance);
+void MF_Motor_Decode(CAN_Device_t *can_instance);
 
 // TODO: document functions
 MF_Motor_Handle_t *MF_Motor_Init(MF_Motor_Config_t config);
