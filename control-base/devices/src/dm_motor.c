@@ -1,4 +1,5 @@
 #include "dm_motor.h"
+#include "bsp_can.h"
 #include <stdlib.h>
 
 #define DM_MAX_DEVICE (10)
@@ -35,7 +36,7 @@ float uint_to_float(int x_int, float x_min, float x_max, int bits)
     return ((float)x_int) * span / ((float)((1 << bits) - 1)) + offset;
 }
 
-void DM_Motor_Decode(CAN_Instance_t *motor_can_instance)
+void DM_Motor_Decode(CAN_Device_t *motor_can_instance)
 {
     uint8_t *data = motor_can_instance->rx_buffer;
     DM_Motor_Stats_t *data_frame = (DM_Motor_Stats_t *)motor_can_instance->binding_motor_stats;
@@ -87,7 +88,7 @@ void DM_Motor_Enable_Motor(DM_Motor_Handle_t *motor)
  */
 void DM_Motor_Frame_Enable_Protocol(DM_Motor_Handle_t *motor)
 {
-    CAN_Instance_t *motor_can_instance = motor->can_instance;
+    CAN_Device_t *motor_can_instance = motor->can_device_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
     data[0] = 0xFF;
     data[1] = 0xFF;
@@ -120,7 +121,7 @@ void DM_Motor_Disable_Motor(DM_Motor_Handle_t *motor)
 
 void DM_Motor_Frame_Disable_Protocol(DM_Motor_Handle_t *motor)
 {
-    uint8_t *data = motor->can_instance->tx_buffer;
+    uint8_t *data = motor->can_device_instance->tx_buffer;
 
     data[0] = 0xFF;
     data[1] = 0xFF;
@@ -134,7 +135,7 @@ void DM_Motor_Frame_Disable_Protocol(DM_Motor_Handle_t *motor)
 
 void DM_Motor_Frame_Zero_Current_Protocol(DM_Motor_Handle_t *motor)
 {
-    uint8_t *data = motor->can_instance->tx_buffer;
+    uint8_t *data = motor->can_device_instance->tx_buffer;
 
     uint16_t pos_temp, vel_temp, kp_temp, kd_temp, torq_temp;
 
@@ -169,7 +170,7 @@ void DM_Motor_Disable_All()
 void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq)
 {
     uint16_t pos_temp, vel_temp, kp_temp, kd_temp, torq_temp;
-    CAN_Instance_t *motor_can_instance = motor->can_instance;
+    CAN_Device_t *motor_can_instance = motor->can_device_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
     motor->target_pos = target_pos + motor->stats->pos_offset;
     motor->target_vel = target_vel;
@@ -200,7 +201,7 @@ void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_
 void DM_Motor_Ctrl_MIT_PD(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq, float kp, float kd)
 {
     uint16_t pos_temp, vel_temp, kp_temp, kd_temp, torq_temp;
-    CAN_Instance_t *motor_can_instance = motor->can_instance;
+    CAN_Device_t *motor_can_instance = motor->can_device_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
     motor->target_pos = target_pos + motor->stats->pos_offset;
     motor->target_vel = target_vel;
@@ -249,8 +250,8 @@ DM_Motor_Handle_t *DM_Motor_Init(DM_Motor_Config_t *config)
     motor->stats = calloc(sizeof(DM_Motor_Stats_t), 1);
     motor->stats->pos_offset = config->pos_offset;
 
-    motor->can_instance = CAN_Device_Register(motor->can_bus, motor->tx_id, motor->rx_id, DM_Motor_Decode);
-    motor->can_instance->binding_motor_stats = (void *)motor->stats;
+    motor->can_device_instance = CAN_Device_Register(CAN_Get_Bus_Instance(motor->can_bus), motor->tx_id, motor->rx_id, DM_Motor_Decode);
+    motor->can_device_instance = CAN_Device_Register(CAN_Get_Bus_Instance(motor->can_bus), motor->tx_id, motor->rx_id, DM_Motor_Decode);
 
     g_dm_motors[g_dm_motor_num++] = motor;
     return motor;
@@ -272,22 +273,22 @@ void DM_Motor_Send()
     {
         if (g_dm_motors[i]->send_pending_flag & DM_MOTOR_SEND_PENDING)
         {                                               // check if the flag is set
-            CAN_Transmit(g_dm_motors[i]->can_instance); // send the data
+            CAN_Transmit(g_dm_motors[i]->can_device_instance); // send the data
             g_dm_motors[i]->send_pending_flag &= ~DM_MOTOR_SEND_PENDING;      // clear the flag
         }
         if (g_dm_motors[i]->send_pending_flag & DM_MOTOR_ENABLE_PENDING) 
         // Check if enable pending, this flag is set when the motor is enabled by user but motor feedback shows otherwise
         {
             DM_Motor_Frame_Enable_Protocol(g_dm_motors[i]);      // Form the enable data with DaMiao Motor Protocol
-            CAN_Transmit(g_dm_motors[i]->can_instance); // send the data
+            CAN_Transmit(g_dm_motors[i]->can_device_instance); // send the data
             g_dm_motors[i]->send_pending_flag &= ~DM_MOTOR_ENABLE_PENDING;      // clear the flag
         }
         if (g_dm_motors[i]->send_pending_flag & DM_MOTOR_DISABLE_PENDING)
         {
             DM_Motor_Frame_Disable_Protocol(g_dm_motors[i]);
-            CAN_Transmit(g_dm_motors[i]->can_instance);
+            CAN_Transmit(g_dm_motors[i]->can_device_instance);
             DM_Motor_Frame_Zero_Current_Protocol(g_dm_motors[i]); // Form the zero current data with DaMiao Motor Protocol
-            CAN_Transmit(g_dm_motors[i]->can_instance);
+            CAN_Transmit(g_dm_motors[i]->can_device_instance);
             // does not clear the flag, this is to ensure to keep sending so the motor is disabled
         }
     }

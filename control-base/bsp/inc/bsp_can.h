@@ -36,6 +36,10 @@ typedef struct CAN_Device_t {
     uint8_t tx_buffer[8];
     uint8_t rx_buffer[8];
     void (*callback)(struct CAN_Device_t *device);
+    void *binding_motor_stats;      /* void pointer to the motor stats
+                                    * this is used to bind the motor stats to the can instance
+                                    * so that the callback function can decode the can message
+                                    */
 } CAN_Device_t;
 
 // Struct for each can peripheral
@@ -61,6 +65,7 @@ void CAN_Service_Init();
 void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan);
 CAN_Device_t *CAN_Device_Register(CAN_Instance_t *bus, uint16_t tx_id, uint16_t rx_id, void (*callback)(CAN_Device_t *));
 HAL_StatusTypeDef CAN_Transmit(CAN_Device_t *device);
+CAN_Instance_t* CAN_Get_Bus_Instance(uint8_t bus_number);
 
 extern CAN_Instance_t g_can1;
 extern CAN_Instance_t g_can2;

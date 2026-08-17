@@ -250,3 +250,17 @@ void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef *hfdcan)
         __HAL_FDCAN_CLEAR_FLAG(hfdcan, FDCAN_FLAG_RAM_ACCESS_FAILURE);
     }
 }
+
+CAN_Instance_t* CAN_Get_Bus_Instance(uint8_t bus_number)
+{
+    switch (bus_number) {
+        case 1:
+            return &g_can1;
+        case 2:
+            return &g_can2;
+        case 3:
+            return &g_can3;
+        default:
+            return NULL; // Invalid bus number
+    }
+}
