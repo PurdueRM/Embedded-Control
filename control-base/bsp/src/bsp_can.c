@@ -143,6 +143,36 @@ CAN_Device_t *CAN_Device_Register(CAN_Instance_t *bus, uint16_t tx_id, uint16_t 
     return device;
 }
 
+// Used to register devices which only use tx (like dji motor send groups)
+CAN_Device_t *CAN_Tx_Device_Register(CAN_Instance_t *bus, uint16_t tx_id) {
+    // Overflow protection
+    if (bus->device_count >= CAN_MAX_DEVICES_PER_BUS || g_device_allocated_count >= TOTAL_MAX_DEVICES) {
+        return NULL;
+    }
+
+    CAN_Device_t *device = &g_device_pool[g_device_allocated_count++];
+
+    device->parent_bus = bus;
+    device->rx_id = 0;       // Unused for tx-only
+    device->callback = NULL; // Unused for tx-only
+
+    // Init device tx header
+    device->tx_header.Identifier = tx_id;
+    device->tx_header.IdType = FDCAN_STANDARD_ID;
+    device->tx_header.TxFrameType = FDCAN_DATA_FRAME;
+    device->tx_header.DataLength = FDCAN_DLC_BYTES_8;
+    device->tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+    device->tx_header.BitRateSwitch = FDCAN_BRS_OFF;
+    device->tx_header.FDFormat = FDCAN_CLASSIC_CAN;
+    device->tx_header.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
+    device->tx_header.MessageMarker = 0;
+
+    // Attach device to bus
+    bus->registered_devices[bus->device_count++] = device;
+
+    return device;
+}
+
 HAL_StatusTypeDef CAN_Transmit(CAN_Device_t *device)
 {
     // Freeze RTOS scheduler
@@ -251,8 +281,7 @@ void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef *hfdcan)
     }
 }
 
-CAN_Instance_t* CAN_Get_Bus_Instance(uint8_t bus_number)
-{
+CAN_Instance_t* CAN_Get_Bus_Instance(uint8_t bus_number) {
     switch (bus_number) {
         case 1:
             return &g_can1;
@@ -263,4 +292,19 @@ CAN_Instance_t* CAN_Get_Bus_Instance(uint8_t bus_number)
         default:
             return NULL; // Invalid bus number
     }
+}
+
+uint8_t BSP_CAN_Get_Bus_Number(CAN_Instance_t *bus_instance) {
+    // We compare the memory addresses of the pointers
+    if (bus_instance == &g_can1) {
+        return 1;
+    } 
+    else if (bus_instance == &g_can2) {
+        return 2;
+    } 
+    else if (bus_instance == &g_can3) {
+        return 3;
+    } 
+    
+    return 0; // Invalid pointer
 }

@@ -1,6 +1,7 @@
 #include "dji_motor.h"
 
 #include <stdint.h>
+#include <string.h>
 #include <stdlib.h>
 #include "bsp_can.h"
 #include "user_math.h"
@@ -13,7 +14,7 @@ float test_tmd;
 DJI_Send_Group_t *g_dji_send_group[MAX_DJI_MOTOR_GROUPS] = {NULL};
 uint8_t g_dji_motor_group_count = 0;
 
-void DJI_Motor_Decode(CAN_Instance_t *can_instance);
+void DJI_Motor_Decode(CAN_Device_t *can_instance);
 void DJI_Set_Position(DJI_Motor_Handle_t *motor_handle, float pos);
 void DJI_Set_Speed(DJI_Motor_Handle_t *motor_handle, float speed);
 void DJI_Set_Torque(DJI_Motor_Handle_t *motor_handle, float torque);
@@ -37,7 +38,8 @@ uint8_t DJI_Motor_Assign_To_Group(DJI_Motor_Handle_t *motor_handle, uint16_t tx_
     for (int i = 0; i < g_dji_motor_group_count; i++)
     {
         // if the group is already created, add the motor to the group
-        if ((g_dji_send_group[i]->can_instance->can_bus == can_bus) && (g_dji_send_group[i]->can_instance->tx_header->StdId == tx_id))
+        if ((BSP_CAN_Get_Bus_Number(g_dji_send_group[i]->can_device->parent_bus) == can_bus) && 
+            (g_dji_send_group[i]->can_device->tx_header.Identifier == tx_id))
         {
             // change register indicator to include the new motor. This will be used in @ref DJI_Motor_Send()
             g_dji_send_group[i]->register_device_indicator |= (1 << real_id);
@@ -49,15 +51,14 @@ uint8_t DJI_Motor_Assign_To_Group(DJI_Motor_Handle_t *motor_handle, uint16_t tx_
     }
     // if reach here, create a new group
     DJI_Send_Group_t *new_group = (DJI_Send_Group_t *)malloc(sizeof(DJI_Send_Group_t));
-    new_group->can_instance = calloc(sizeof(CAN_Instance_t), 1);
-    new_group->can_instance->can_bus = can_bus;
-    // allocate memory for tx_header
-    new_group->can_instance->tx_header = malloc(sizeof(CAN_TxHeaderTypeDef));
-    new_group->can_instance->tx_header->StdId = tx_id;      // set id (the actual id that will be send)
-    new_group->can_instance->tx_header->IDE = CAN_ID_STD;   // standard id (check CAN documentation for more information)
-    new_group->can_instance->tx_header->RTR = CAN_RTR_DATA; // data frame (check CAN documentation for more information)
-    new_group->can_instance->tx_header->DLC = 8;            // 8 bytes of data (check CAN documentation for more information)
-    // change register indicator to include the new motor. This will be used in @ref DJI_Motor_Send()
+    new_group->can_device = CAN_Tx_Device_Register(CAN_Get_Bus_Instance(can_bus), tx_id);
+
+    if (new_group->can_device == NULL) {
+        // TODO: Log Error (Device pool full)
+        free(new_group);
+        return 0;
+    }    
+    
     new_group->register_device_indicator = (1 << real_id);
     // output current pointer of the motor
     // send group will check the value pointed by the pointer and send it at a predefined frequency
@@ -111,12 +112,13 @@ DJI_Motor_Handle_t *DJI_Motor_Init(Motor_Config_t *config, DJI_Motor_Type_t type
         memcpy(motor_handle->torque_pid, &config->torque_pid, sizeof(PID_t));
     }
 
-    CAN_Instance_t *receiver_can_instance = NULL;
+    CAN_Device_t *receiver_can_instance = NULL;
+    CAN_Instance_t *bus_instance = CAN_Get_Bus_Instance(config->can_bus);
     // initialize receive instance and send Group assignment based on motor type (Check DJI motor for more information)
     switch (motor_handle->motor_type)
     {
     case GM6020:
-        receiver_can_instance = CAN_Device_Register(config->can_bus, config->tx_id,
+        receiver_can_instance = CAN_Device_Register(bus_instance, config->tx_id,
                                                     0x204 + config->speed_controller_id, DJI_Motor_Decode);
         receiver_can_instance->binding_motor_stats = motor_stats;
         motor_stats->reduction_ratio = GM6020_REDUCTION_RATIO;
@@ -139,7 +141,7 @@ DJI_Motor_Handle_t *DJI_Motor_Init(Motor_Config_t *config, DJI_Motor_Type_t type
         }
         break;
     case M3508:
-        receiver_can_instance = CAN_Device_Register(config->can_bus, config->tx_id,
+        receiver_can_instance = CAN_Device_Register(bus_instance, config->tx_id,
                                                     0x200 + config->speed_controller_id, DJI_Motor_Decode);
         receiver_can_instance->binding_motor_stats = motor_stats;
         motor_stats->reduction_ratio = M3508_REDUCTION_RATIO;
@@ -162,7 +164,7 @@ DJI_Motor_Handle_t *DJI_Motor_Init(Motor_Config_t *config, DJI_Motor_Type_t type
         }
         break;
     case M3508_PLANETARY:
-        receiver_can_instance = CAN_Device_Register(config->can_bus, config->tx_id,
+        receiver_can_instance = CAN_Device_Register(bus_instance, config->tx_id,
                                                     0x200 + config->speed_controller_id, DJI_Motor_Decode);
         receiver_can_instance->binding_motor_stats = motor_stats;
         motor_stats->reduction_ratio = M3508_PLANETARY_REDUCTION_RATIO;
@@ -185,7 +187,7 @@ DJI_Motor_Handle_t *DJI_Motor_Init(Motor_Config_t *config, DJI_Motor_Type_t type
         }
         break;
     case M2006:
-        receiver_can_instance = CAN_Device_Register(config->can_bus, config->tx_id,
+        receiver_can_instance = CAN_Device_Register(bus_instance, config->tx_id,
                                                     0x200 + config->speed_controller_id, DJI_Motor_Decode);
         receiver_can_instance->binding_motor_stats = motor_stats;
         motor_stats->reduction_ratio = M2006_REDUCTION_RATIO;
@@ -462,7 +464,7 @@ void DJI_Motor_Send()
     {
         DJI_Send_Group_t *group = g_dji_send_group[i];
         uint8_t register_indicator = group->register_device_indicator;
-        uint8_t *data = group->can_instance->tx_buffer;
+        uint8_t *data = group->can_device->tx_buffer;
         // register_indicator is a 4-bit number, each bit represents a motor
         // e.g. 0b1011 means motor 1, 2, 4 are registered, and motor 3 is not
         // & is bitwise AND, if the bit is 1, the corresponding motor torque is sent
@@ -494,9 +496,9 @@ void DJI_Motor_Send()
             data[6] = motor4 >> 8;
             data[7] = motor4;
         }
-        if (CAN_Transmit(group->can_instance) != HAL_OK)
+        if (CAN_Transmit(group->can_device) != HAL_OK)
         {
-            // Log Error (Transmission is not successful)
+            // TODO: Log Error (Transmission is not successful)
         }
     }
 }
@@ -509,7 +511,7 @@ void DJI_Motor_Send()
  * speed unit rmpm
  * temp unit degree celcius
  */
-void DJI_Motor_Decode(CAN_Instance_t *can_instance)
+void DJI_Motor_Decode(CAN_Device_t *can_instance)
 {
     DJI_Motor_Stats_t *motor = (DJI_Motor_Stats_t *)can_instance->binding_motor_stats; // binding in @ref DJI_Motor_Init
     uint8_t *data = can_instance->rx_buffer;

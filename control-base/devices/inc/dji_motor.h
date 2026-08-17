@@ -106,7 +106,7 @@ typedef enum
 typedef struct _DJI_Send_Group_s
 {
     uint8_t register_device_indicator;
-    CAN_Instance_t *can_instance;
+    CAN_Device_t *can_device;
     int16_t *motor_torq[4];
 } DJI_Send_Group_t;
 

@@ -64,8 +64,11 @@ typedef struct {
 void CAN_Service_Init();
 void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan);
 CAN_Device_t *CAN_Device_Register(CAN_Instance_t *bus, uint16_t tx_id, uint16_t rx_id, void (*callback)(CAN_Device_t *));
+CAN_Device_t *CAN_Tx_Device_Register(CAN_Instance_t *bus, uint16_t tx_id);
 HAL_StatusTypeDef CAN_Transmit(CAN_Device_t *device);
 CAN_Instance_t* CAN_Get_Bus_Instance(uint8_t bus_number);
+uint8_t BSP_CAN_Get_Bus_Number(CAN_Instance_t *bus_instance);
+
 
 extern CAN_Instance_t g_can1;
 extern CAN_Instance_t g_can2;
