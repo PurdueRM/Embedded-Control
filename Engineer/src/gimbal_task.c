@@ -1,0 +1,152 @@
+#include "gimbal_task.h"
+
+#include "robot.h"
+#include "remote.h"
+#include "user_math.h"
+#include "dji_motor.h"
+#include "imu_task.h"
+#include "jetson_orin.h"
+#include "dm_motor.h"
+
+extern Robot_State_t g_robot_state;
+extern Remote_t g_remote;
+
+DM_Motor_Handle_t *g_wrist;
+DM_Motor_Handle_t *g_finger;
+DM_Motor_Handle_t *g_knuckle;
+DM_Motor_Handle_t *g_shoulder;
+DM_Motor_Handle_t *g_elbow;
+float elbow_target;
+float shoulder_target;
+float wrist_target;
+float finger_target;
+float knuckle_target;
+
+void Gimbal_Task_Init()
+{
+    DM_Motor_Config_t shoulder_motor_config = {
+        .can_bus = 1,
+        .control_mode = DM_MOTOR_MIT,
+        .rx_id = 0x31,  //Master ID
+        .tx_id = 0x30,  //CAN ID 
+        .pos_offset = -2.50,
+        .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .kp = 10.0f,
+        .kd = 1.0f,
+    };
+    DM_Motor_Config_t elbow_motor_config = {
+        .can_bus = 1,
+        .control_mode = DM_MOTOR_MIT,
+        .rx_id = 0x21,  //Master ID
+        .tx_id = 0x20,  //CAN ID 
+        .pos_offset = -2.30,
+        .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .kp = 10.0f,
+        .kd = 1.0f,
+    };
+    DM_Motor_Config_t wrist_motor_config = {
+        .can_bus = 1,
+        .control_mode = DM_MOTOR_MIT,
+        .rx_id = 0x23,  //Master ID
+        .tx_id = 0x22,  //CAN ID 
+        .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .pos_offset = 1.392f,
+        .kp = 10.0f,
+        .kd = 1.0f,
+    };
+    DM_Motor_Config_t finger_motor_config = {
+        .can_bus = 1,
+        .control_mode = DM_MOTOR_MIT,
+        .rx_id = 0x25,  //Master ID
+        .tx_id = 0x24,  //CAN ID 
+        .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .pos_offset = 2.724f,
+        .kp = 10.0f,
+        .kd = 1.0f,
+    };
+    DM_Motor_Config_t knuckle_motor_config = {
+        .can_bus = 1,
+        .control_mode = DM_MOTOR_MIT,
+        .rx_id = 0x27,  //Master ID
+        .tx_id = 0x26,  //CAN ID 
+        .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .pos_offset = 1.18f,
+        .kp = 10.0f,
+        .kd = 1.0f,
+    };
+
+    g_elbow = DM_Motor_Init(&elbow_motor_config);
+    g_shoulder = DM_Motor_Init(&shoulder_motor_config);
+    g_wrist = DM_Motor_Init(&wrist_motor_config);
+    g_finger = DM_Motor_Init(&finger_motor_config);
+    g_knuckle = DM_Motor_Init(&knuckle_motor_config);
+    
+    shoulder_target = 0.60f;
+    // elbow_target = 2.25f;
+    elbow_target = 0.0f;
+    wrist_target = 0.0f;
+    finger_target = 0.0f;
+    knuckle_target = 0.0f;
+
+
+    DM_Motor_Enable_Motor(g_shoulder);
+    DM_Motor_Enable_Motor(g_elbow);
+    DM_Motor_Enable_Motor(g_wrist);
+    DM_Motor_Enable_Motor(g_finger);
+    DM_Motor_Enable_Motor(g_knuckle);
+}
+
+void Gimbal_Ctrl_Loop()
+{
+    //TOOD: Limit speed of joint velocities
+    float shoulder_pos = g_shoulder->stats->pos;
+    float temp_shoulder_target = shoulder_target;
+    if(__ABS(shoulder_target - shoulder_pos) > 0.05){
+        if(shoulder_target > shoulder_pos)
+            temp_shoulder_target = shoulder_pos + 0.05;
+        else
+            temp_shoulder_target = shoulder_pos - 0.05;
+    }
+
+    float elbow_pos = g_elbow->stats->pos;
+    float temp_elbow_target = elbow_target;
+    if(__ABS(elbow_target - elbow_pos) > 0.05){
+        if(elbow_target > elbow_pos)
+            temp_elbow_target = elbow_target + 0.05;
+        else
+            temp_elbow_target = elbow_target - 0.05;
+    }
+
+    if(g_remote.controller.left_switch == MID){   //Mid
+        wrist_target -= g_remote.controller.left_stick.y/660.0f * 0.001;
+
+        finger_target -= g_remote.controller.right_stick.y/660.0f * 0.001;
+        knuckle_target += g_remote.controller.right_stick.y/660.0f * 0.002;
+    }
+    else if(g_remote.controller.left_switch == UP){
+        shoulder_target -= g_remote.controller.left_stick.y/660.0f * 0.001;
+        elbow_target += g_remote.controller.right_stick.y/660.0f * 0.001;
+    }
+
+    DM_Motor_Ctrl_MIT_PD(g_shoulder, temp_shoulder_target, 0.1f, 0.0f, 50.0f, 1.0f);
+
+    DM_Motor_Ctrl_MIT_PD(g_elbow, temp_elbow_target, 0.1f, 0.0f, 100.0f, 1.0f);
+
+    DM_Motor_Ctrl_MIT_PD(g_wrist, wrist_target, 0.1f, 0.0f, 5.0f, 0.7f);
+
+    DM_Motor_Ctrl_MIT_PD(g_finger, finger_target, 0.1f, 0.0f, 15.0f, 0.8f);
+
+    DM_Motor_Ctrl_MIT_PD(g_knuckle, knuckle_target, 0.1f, 0.0f, 15.0f, 0.8f);
+
+    
+}
+
+void _Gimbal_Target_Reset()
+{
+    // If you are not using yaw/IMU, this can be empty for now
+}
+
+void Gimbal_Task_Disable()
+{
+    _Gimbal_Target_Reset();
+}

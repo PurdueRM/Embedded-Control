@@ -6,7 +6,11 @@
 #include "bsp_daemon.h"
 #include  "omni_locomotion.h"
 
-extern pose_2d_t sentry_pose;
+// Omni-chassis projects provide a strong definition that is updated by their
+// odometry loop. Other projects (for example Engineer) still use the Jetson
+// transport, so give them a zero-initialized fallback instead of requiring a
+// robot-specific odometry symbol.
+__weak pose_2d_t sentry_pose;
 Jetson_Orin_Data_t g_orin_data;
 
 UART_Instance_t *g_orin_uart_instance_ptr;
