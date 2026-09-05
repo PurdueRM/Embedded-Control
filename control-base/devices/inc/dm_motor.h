@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "bsp_can.h"
+#include "motor.h"
 
 #define P_MIN -12.5f
 #define P_MAX 12.5f
@@ -48,6 +49,7 @@ typedef struct
     float pos_offset;
     float vel;
     float torq;
+    float gear_ratio;
     uint16_t t_mos;
     uint16_t t_rotor;
 
@@ -63,7 +65,10 @@ typedef struct _DM_Motor_Config {
     DM_MOTOR_HARDWARE_DISABLE: disable the motor by sending disable signal to motor driver
     
     */
+
+    Motor_Reversal_t motor_reversal;
     float pos_offset;
+    float gear_ratio;
     float kp;
     float kd;
 } DM_Motor_Config_t;

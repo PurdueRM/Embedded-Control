@@ -163,7 +163,7 @@ void Chassis_Process_Target_Velocity()
         chassis_omega_new_target = -1 * PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
         // __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
         __MAX_LIMIT(chassis_omega_new_target, -2*PI, 2*PI);
-        __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
+        // __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     }
 
     // Calculate speed of robot relative to chassis

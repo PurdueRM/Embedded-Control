@@ -174,7 +174,7 @@ void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_
     motor->target_pos = target_pos + motor->stats->pos_offset;
     motor->target_vel = target_vel;
     motor->torq = torq;
-    pos_temp = float_to_uint(motor->target_pos, P_MIN, P_MAX, 16);
+    pos_temp = float_to_uint(motor->target_pos, -3.14, 3.14, 16);
     vel_temp = float_to_uint(motor->target_vel, V_MIN, V_MAX, 12);
     kp_temp = float_to_uint(motor->kp, KP_MIN, KP_MAX, 12);
     kd_temp = float_to_uint(motor->kd, KD_MIN, KD_MAX, 12);
