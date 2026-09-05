@@ -72,10 +72,10 @@ void Chassis_Task_Init()
     } swerve_module_config_t;
 
     swerve_module_config_t module_configs[NUMBER_OF_MODULES] = {
-        {2, 1, 2050, MOTOR_REVERSAL_REVERSED, 1, 1, MOTOR_REVERSAL_NORMAL},
-        {2, 2, 1940, MOTOR_REVERSAL_REVERSED, 2, 2, MOTOR_REVERSAL_NORMAL},
-        {2, 3, 1430, MOTOR_REVERSAL_REVERSED, 2, 3, MOTOR_REVERSAL_REVERSED},
-        {2, 4, 8150, MOTOR_REVERSAL_REVERSED, 2, 4, MOTOR_REVERSAL_REVERSED}};
+        {2, 1, 2050, CCW_POS, 1, 1, CW_POS},
+        {2, 2, 1940, CCW_POS, 2, 2, CW_POS},
+        {2, 3, 1430, CCW_POS, 2, 3, CCW_POS},
+        {2, 4, 8150, CCW_POS, 2, 4, CCW_POS}};
 
     // Initialize the swerve modules
     for (int i = 0; i < NUMBER_OF_MODULES; i++)

@@ -24,7 +24,7 @@ void Launch_Task_Init()
         .speed_controller_id = 3,
         .offset = 0,
         .control_mode = VELOCITY_CONTROL,
-        .motor_reversal = MOTOR_REVERSAL_NORMAL,
+        .motor_reversal = CW_POS,
         .velocity_pid =
             {
                 .kp = 500.0f,
@@ -37,7 +37,7 @@ void Launch_Task_Init()
         .speed_controller_id = 2,
         .offset = 0,
         .control_mode = VELOCITY_CONTROL,
-        .motor_reversal = MOTOR_REVERSAL_REVERSED,
+        .motor_reversal = CCW_POS,
         .velocity_pid =
             {
                 .kp = 500.0f,
@@ -50,7 +50,7 @@ void Launch_Task_Init()
         .speed_controller_id = 6,
         .offset = 0,
         .control_mode = VELOCITY_CONTROL,// | POSITION_CONTROL_TOTAL_ANGLE,
-        .motor_reversal = MOTOR_REVERSAL_NORMAL,
+        .motor_reversal = CW_POS,
         .velocity_pid =
             {
                 .kp = 500.0f,

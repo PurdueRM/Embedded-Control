@@ -19,10 +19,10 @@ float gimbal_angle_difference;
 DJI_Motor_Handle_t *motors[4];
 uint8_t drive_esc_id_array[4] = {1, 2, 3, 4};
 Motor_Reversal_t drive_motor_reversal_array[4] = {
-    MOTOR_REVERSAL_NORMAL,
-    MOTOR_REVERSAL_NORMAL,
-    MOTOR_REVERSAL_NORMAL,
-    MOTOR_REVERSAL_NORMAL
+    CW_POS,
+    CW_POS,
+    CW_POS,
+    CW_POS
 };
 
 extern DM_Motor_Handle_t *g_yaw; // for reading gimbal angle
@@ -93,7 +93,7 @@ void Chassis_Task_Init(){
     }
 
     // Init PID
-    PID_Init(&g_follow_gimbal_angle_pid, 30, 0, 10000, 2*PI*30, 0, 0);
+    PID_Init(&g_follow_gimbal_angle_pid, 100, 0, 10000, 2*PI*30, 0, 0);
 
     // Keep track of hp for spintop logic
     last_hp = Referee_System.Robot_State.Remaining_HP;
@@ -127,7 +127,7 @@ void Chassis_Process_Target_Velocity()
     chassis_state.v_x_in_gimbal = g_robot_state.input.vx;
     chassis_state.v_y_in_gimbal = g_robot_state.input.vy;
 
-    // Calculate angle of gimbal between -pi/2 to pi/2
+    // Calculate angle of gimbal between -pi to pi
     gimbal_angle_difference =  2*PI - g_yaw->stats->pos;
     __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
 
@@ -149,21 +149,22 @@ void Chassis_Process_Target_Velocity()
     chassis_omega_new_target = 0;
     if (g_robot_state.chassis.IS_SPINTOP_ENABLED /*|| g_remote.controller.left_switch == UP*/ ) {
         
-        if (is_hit_counter > 0) {
-            chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
-        }
-        else {  //Decrease spintop rate if not hit for a while
-            chassis_omega_new_target = omega; // 2 * PI rad/s
-        }
+        // if (is_hit_counter > 0) {
+        //     chassis_omega_new_target = 6 * PI; // 8 * PI rad/s
+        // }
+        // else {  //Decrease spintop rate if not hit for a while
+        //     chassis_omega_new_target = omega; // 2 * PI rad/s
+        // }
+        chassis_omega_new_target = 1 * PI;
         __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     
     } else {
         // Chassis follow gimbal code
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
         chassis_omega_new_target = -1 * PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
-        // __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
-        __MAX_LIMIT(chassis_omega_new_target, -2*PI, 2*PI);
-        // __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
+        // __MAX_LIMIT(chassis_omega_new_target, -6*PI, 6*PI);
+        __MAX_LIMIT(chassis_omega_new_target, 0, 0);
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     }
 
     // Calculate speed of robot relative to chassis

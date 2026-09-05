@@ -220,10 +220,10 @@ float DJI_Motor_Get_Absolute_Angle(DJI_Motor_Handle_t *motor_handle)
 {
     switch (motor_handle->motor_reversal)
     {
-    case MOTOR_REVERSAL_NORMAL:
+    case CW_POS:
         return motor_handle->stats->absolute_angle_rad;
         break;
-    case MOTOR_REVERSAL_REVERSED:
+    case CCW_POS:
         return -motor_handle->stats->absolute_angle_rad + 2 * PI;
         break;
     }
@@ -235,10 +235,10 @@ float DJI_Motor_Get_Total_Angle(DJI_Motor_Handle_t *motor_handle)
 {
     switch (motor_handle->motor_reversal)
     {
-    case MOTOR_REVERSAL_NORMAL:
+    case CW_POS:
         return motor_handle->stats->total_angle_rad;
         break;
-    case MOTOR_REVERSAL_REVERSED:
+    case CCW_POS:
         return -motor_handle->stats->total_angle_rad;
         break;
     }
@@ -249,10 +249,10 @@ float DJI_Motor_Get_Velocity(DJI_Motor_Handle_t *motor_handle)
 {
     switch (motor_handle->motor_reversal)
     {
-    case MOTOR_REVERSAL_NORMAL:
+    case CW_POS:
         return motor_handle->stats->current_vel_rpm;
         break;
-    case MOTOR_REVERSAL_REVERSED:
+    case CCW_POS:
         return -motor_handle->stats->current_vel_rpm;
         break;
     }
@@ -264,10 +264,10 @@ void DJI_Motor_Set_Angle(DJI_Motor_Handle_t *motor_handle, float angle)
     motor_handle->disabled = 0;
     switch (motor_handle->motor_reversal)
     {
-    case MOTOR_REVERSAL_NORMAL:
+    case CW_POS:
         motor_handle->angle_pid->ref = angle;
         break;
-    case MOTOR_REVERSAL_REVERSED:
+    case CCW_POS:
         motor_handle->angle_pid->ref = -angle + 2 * PI;
         break;
     default:
@@ -280,10 +280,10 @@ void DJI_Motor_Set_Velocity(DJI_Motor_Handle_t *motor_handle, float velocity)
     motor_handle->disabled = 0;
     switch (motor_handle->motor_reversal)
     {
-    case MOTOR_REVERSAL_NORMAL:
+    case CW_POS:
         motor_handle->velocity_pid->ref = velocity;
         break;
-    case MOTOR_REVERSAL_REVERSED:
+    case CCW_POS:
         motor_handle->velocity_pid->ref = -velocity;
         break;
     default:
@@ -336,11 +336,11 @@ void DJI_Motor_Set_Torque(DJI_Motor_Handle_t *motor_handle, float torque)
     }
     switch (motor_handle->motor_reversal)
     {
-    case MOTOR_REVERSAL_NORMAL:
+    case CW_POS:
         // normal motor, set output current as is
         motor_handle->output_current = (int16_t)current_amps;
         break;
-    case MOTOR_REVERSAL_REVERSED:
+    case CCW_POS:
         // reversed motor, set output current to negative value
         motor_handle->output_current = (int16_t)(-current_amps);
         break;

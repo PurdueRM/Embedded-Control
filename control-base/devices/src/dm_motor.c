@@ -1,4 +1,5 @@
 #include "dm_motor.h"
+#include "user_math.h"
 #include <stdlib.h>
 
 #define DM_MAX_DEVICE (10)
@@ -35,6 +36,31 @@ float uint_to_float(int x_int, float x_min, float x_max, int bits)
     return ((float)x_int) * span / ((float)((1 << bits) - 1)) + offset;
 }
 
+static float DM_Motor_Unwrap_Position(DM_Motor_Stats_t* stats, float curr_pos, float wrap_period){
+    if(!stats->position_initialized){
+        stats->prev_pos_raw = curr_pos;
+        stats->pos_unwrapped = curr_pos;
+        stats->position_initialized = 1;
+
+        return stats->pos_unwrapped;
+    }
+
+    float delta = curr_pos - stats->prev_pos_raw;
+    float half_period = wrap_period * 0.5f;
+
+    if(delta > half_period){
+        delta -= wrap_period;
+    }
+    else if(delta < -half_period){
+        delta += wrap_period;
+    }
+
+    stats->pos_unwrapped += delta;
+    stats->prev_pos_raw = curr_pos;
+
+    return stats->pos_unwrapped;
+}
+
 void DM_Motor_Decode(CAN_Instance_t *motor_can_instance)
 {
     uint8_t *data = motor_can_instance->rx_buffer;
@@ -51,7 +77,11 @@ void DM_Motor_Decode(CAN_Instance_t *motor_can_instance)
     data_frame->t_mos = (float)(data[6]);
     data_frame->t_rotor = (float)(data[7]);
 
-    data_frame->pos = data_frame->pos_raw - data_frame->pos_offset;
+    float unwrapped = DM_Motor_Unwrap_Position(data_frame, data_frame->pos_raw, P_MAX - P_MIN);
+    unwrapped = (unwrapped * data_frame->gear_ratio) + data_frame->pos_offset;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(unwrapped)
+
+    data_frame->pos = unwrapped;
 }
 
 /**
@@ -76,7 +106,7 @@ void DM_Motor_Enable_Motor(DM_Motor_Handle_t *motor)
     // set enable flag, this is the user intention to enable the motor, not neccessarily reflecting the motor status
     motor->enabled = 1;
     // set the flag to send the data
-    motor->send_pending_flag &= DM_MOTOR_ENABLE_PENDING;
+    motor->send_pending_flag |= DM_MOTOR_ENABLE_PENDING;
     // set disable flag to 0
     motor->send_pending_flag &= ~DM_MOTOR_DISABLE_PENDING;
 }
@@ -174,7 +204,7 @@ void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_
     motor->target_pos = target_pos + motor->stats->pos_offset;
     motor->target_vel = target_vel;
     motor->torq = torq;
-    pos_temp = float_to_uint(motor->target_pos, -3.14, 3.14, 16);
+    pos_temp = float_to_uint(motor->target_pos, P_MIN, P_MAX, 16);
     vel_temp = float_to_uint(motor->target_vel, V_MIN, V_MAX, 12);
     kp_temp = float_to_uint(motor->kp, KP_MIN, KP_MAX, 12);
     kd_temp = float_to_uint(motor->kd, KD_MIN, KD_MAX, 12);
@@ -248,6 +278,8 @@ DM_Motor_Handle_t *DM_Motor_Init(DM_Motor_Config_t *config)
     motor->kd = config->kd;
     motor->stats = calloc(sizeof(DM_Motor_Stats_t), 1);
     motor->stats->pos_offset = config->pos_offset;
+    motor->stats->gear_ratio = config->gear_ratio != 0 ? config->gear_ratio : 1.0f;
+    motor->stats->motor_reversal = config->motor_reversal;
 
     motor->can_instance = CAN_Device_Register(motor->can_bus, motor->tx_id, motor->rx_id, DM_Motor_Decode);
     motor->can_instance->binding_motor_stats = (void *)motor->stats;

@@ -85,11 +85,11 @@ void Chassis_Task_Init()
     Motor_Config_t drive_motor_config = {
         .can_bus = 1,
         .speed_controller_id = 0x01,
-        .motor_reversal = MOTOR_REVERSAL_NORMAL,
+        .motor_reversal = CW_POS,
         .control_mode = TORQUE_CONTROL,
     };
     g_chassis_drive_motor_right = DJI_Motor_Init(&drive_motor_config, M3508_PLANETARY);
-    drive_motor_config.motor_reversal = MOTOR_REVERSAL_REVERSED;
+    drive_motor_config.motor_reversal = CCW_POS;
     drive_motor_config.speed_controller_id = 0x02;
     g_chassis_drive_motor_left = DJI_Motor_Init(&drive_motor_config, M3508_PLANETARY);
     

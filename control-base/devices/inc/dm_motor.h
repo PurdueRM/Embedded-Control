@@ -43,6 +43,7 @@ typedef struct
     uint16_t pos_int;
     uint16_t vel_int;
     uint16_t torq_int;
+    Motor_Reversal_t motor_reversal;
 
     float pos;
     float pos_raw;
@@ -52,6 +53,9 @@ typedef struct
     float gear_ratio;
     uint16_t t_mos;
     uint16_t t_rotor;
+    float prev_pos_raw;
+    float pos_unwrapped;
+    uint8_t position_initialized;
 
 } DM_Motor_Stats_t;
 

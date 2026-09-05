@@ -21,7 +21,7 @@ void Gimbal_Task_Init()
         .speed_controller_id = 1,
         .offset = 6141,
         .control_mode = POSITION_VELOCITY_SERIES,
-        .motor_reversal = MOTOR_REVERSAL_NORMAL,
+        .motor_reversal = CW_POS,
         .use_external_feedback = 1,
         .external_feedback_dir = 1,
         .external_angle_feedback_ptr = &g_imu.rad.yaw,

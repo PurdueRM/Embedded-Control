@@ -13,8 +13,8 @@
 
 typedef enum Motor_Reversal_e
 {
-    MOTOR_REVERSAL_NORMAL,
-    MOTOR_REVERSAL_REVERSED
+    CW_POS,
+    CCW_POS
 } Motor_Reversal_t;
 
 typedef struct

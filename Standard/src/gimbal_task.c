@@ -14,7 +14,7 @@ extern IMU_t g_imu;
 DM_Motor_Handle_t *g_yaw;
 DM_Motor_Handle_t *g_pitch;
 PID_t gimbal_imu_pid = {
-    .kp = 1.5f,
+    .kp = 10.0f,
     .ki = 0.0f,
     .kd = 1000.0f,
     .integral_limit = 0.0f,
@@ -22,18 +22,21 @@ PID_t gimbal_imu_pid = {
 };
 float tmp_yaw_angle_diff = 0.0f;
 float g_yaw_torque = 0.0f;
+float value = 0.0f;
 
 
 void Gimbal_Task_Init(){
     DM_Motor_Config_t yaw_motor_config = {
         .can_bus = 1,
         .control_mode = DM_MOTOR_MIT,
-        .pos_offset = 2.19,
+        .pos_offset = 1.85,
         .rx_id = 0x11,
         .tx_id = 0x01,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .motor_reversal = CW_POS,
         .kp = 10.0f,
         .kd = 1.0f,
+        .gear_ratio = 1.11f,
     };
 
     DM_Motor_Config_t pitch_motor_config = {
@@ -43,8 +46,10 @@ void Gimbal_Task_Init(){
         .tx_id = 0x02,
         .pos_offset = 2.526,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
+        .motor_reversal = CW_POS,
         .kp = 10.0f,
         .kd = 1.0f,
+        .gear_ratio = 1.0f,
     };
 
     g_yaw = DM_Motor_Init(&yaw_motor_config);
@@ -56,10 +61,10 @@ void Gimbal_Ctrl_Loop(){
     g_robot_state.gimbal.yaw_angle += g_remote.controller.right_stick.x/660.0f * 0.01f +  g_remote.mouse.x / 100000.0f;
 
     //Gimbal follow imu PID
-    tmp_yaw_angle_diff = 2*PI - g_robot_state.gimbal.yaw_angle - (g_imu.rad.yaw - 1.07f);
+    tmp_yaw_angle_diff = (2*PI - g_robot_state.gimbal.yaw_angle) - (g_imu.rad.yaw - 0.0f);  //1.07f
     __MAP_ANGLE_TO_UNIT_CIRCLE(tmp_yaw_angle_diff);
     g_yaw_torque = PID(&gimbal_imu_pid, tmp_yaw_angle_diff);
-    __MAX_LIMIT(g_yaw_torque, -1.5f, 1.5f)
+    __MAX_LIMIT(g_yaw_torque, -6.0f, 6.0f)
 
     DM_Motor_Enable_Motor(g_yaw);
     DM_Motor_Ctrl_MIT_PD(g_yaw, 0.0f, 0.0f, g_yaw_torque, 0.0f, 0.0f);

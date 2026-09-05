@@ -20,10 +20,10 @@ float gimbal_angle_difference;
 DJI_Motor_Handle_t *motors[4];
 uint8_t drive_esc_id_array[4] = {1, 2, 3, 4};
 Motor_Reversal_t drive_motor_reversal_array[4] = {
-    MOTOR_REVERSAL_NORMAL,
-    MOTOR_REVERSAL_NORMAL,
-    MOTOR_REVERSAL_NORMAL,
-    MOTOR_REVERSAL_NORMAL
+    CW_POS,
+    CW_POS,
+    CW_POS,
+    CW_POS
 };
 
 omni_physical_constants_t physical_constants;
