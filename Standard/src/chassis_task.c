@@ -155,7 +155,7 @@ void Chassis_Process_Target_Velocity()
         // else {  //Decrease spintop rate if not hit for a while
         //     chassis_omega_new_target = omega; // 2 * PI rad/s
         // }
-        chassis_omega_new_target = 1 * PI;
+        chassis_omega_new_target = 3 * PI;
         __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     
     } else {
@@ -163,7 +163,7 @@ void Chassis_Process_Target_Velocity()
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
         chassis_omega_new_target = -1 * PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
         // __MAX_LIMIT(chassis_omega_new_target, -6*PI, 6*PI);
-        __MAX_LIMIT(chassis_omega_new_target, 0, 0);
+        __MAX_LIMIT(chassis_omega_new_target, -0, 0);
         __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     }
 

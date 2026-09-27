@@ -71,15 +71,21 @@ void DM_Motor_Decode(CAN_Instance_t *motor_can_instance)
     data_frame->pos_int = (data[1] << 8) | data[2];
     data_frame->vel_int = (data[3] << 4) | (data[4] >> 4);
     data_frame->torq_int = ((data[4] & 0xF) << 8) | data[5];
-    data_frame->pos_raw = uint_to_float(data_frame->pos_int, P_MIN, P_MAX, 16); // (-12.5,12.5)
-    data_frame->vel = uint_to_float(data_frame->vel_int, V_MIN, V_MAX, 12);     // (-45.0,45.0)
-    data_frame->torq = uint_to_float(data_frame->torq_int, T_MIN, T_MAX, 12);   // (-18.0,18.0)
+    float pos = uint_to_float(data_frame->pos_int, P_MIN, P_MAX, 16);
+    data_frame->pos_raw = data_frame->motor_reversal == CW_POS ? pos : pos; // (-12.5,12.5)
+
+    //How to invert pos?
+    float vel = uint_to_float(data_frame->vel_int, V_MIN, V_MAX, 12);
+    data_frame->vel = data_frame->motor_reversal == CCW_POS ? vel : -vel;     // (-45.0,45.0) (For CW, need negative)
+    float torq = uint_to_float(data_frame->torq_int, T_MIN, T_MAX, 12);
+    data_frame->torq = data_frame->motor_reversal == CW_POS ? torq : torq;   // (-18.0,18.0)
     data_frame->t_mos = (float)(data[6]);
     data_frame->t_rotor = (float)(data[7]);
 
     float unwrapped = DM_Motor_Unwrap_Position(data_frame, data_frame->pos_raw, P_MAX - P_MIN);
     unwrapped = (unwrapped * data_frame->gear_ratio) + data_frame->pos_offset;
     __MAP_ANGLE_TO_UNIT_CIRCLE(unwrapped)
+    unwrapped = data_frame->motor_reversal == CW_POS ? unwrapped : unwrapped;
 
     data_frame->pos = unwrapped;
 }
@@ -119,6 +125,10 @@ void DM_Motor_Frame_Enable_Protocol(DM_Motor_Handle_t *motor)
 {
     CAN_Instance_t *motor_can_instance = motor->can_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
+
+    motor_can_instance->tx_header->StdId = motor->tx_id;
+    motor_can_instance->tx_header->DLC = 8;
+
     data[0] = 0xFF;
     data[1] = 0xFF;
     data[2] = 0xFF;
@@ -132,6 +142,12 @@ void DM_Motor_Frame_Enable_Protocol(DM_Motor_Handle_t *motor)
 void DM_Motor_Disable_Motor(DM_Motor_Handle_t *motor)
 {
     motor->enabled = 0;
+
+    CAN_Instance_t *motor_can_instance = motor->can_instance;
+
+    motor_can_instance->tx_header->StdId = motor->tx_id;
+    motor_can_instance->tx_header->DLC = 8;
+
     switch (motor->disable_behavior)
     {
     case DM_MOTOR_ZERO_CURRENT: 
@@ -164,6 +180,9 @@ void DM_Motor_Frame_Disable_Protocol(DM_Motor_Handle_t *motor)
 
 void DM_Motor_Frame_Zero_Current_Protocol(DM_Motor_Handle_t *motor)
 {
+    motor->can_instance->tx_header->StdId = motor->tx_id;
+    motor->can_instance->tx_header->DLC = 8;
+
     uint8_t *data = motor->can_instance->tx_buffer;
 
     uint16_t pos_temp, vel_temp, kp_temp, kd_temp, torq_temp;
@@ -196,14 +215,34 @@ void DM_Motor_Disable_All()
     }
 }
 
+void DM_Motor_Set_Control_Mode(DM_Motor_Handle_t *motor, uint8_t control_mode)
+{
+    motor->control_mode = control_mode;
+
+    CAN_Instance_t *can_instance = motor->can_instance;
+    uint8_t *data = can_instance->tx_buffer;
+
+    data[0] = motor->tx_id & 0xFF;
+    data[1] = (motor->tx_id >> 8) & 0xFF;
+    data[2] = 0x55;
+    data[3] = 0x0A;
+    data[4] = control_mode * 0xFF;
+    data[5] = (control_mode >> 8) & 0xFF;
+    data[6] = (control_mode >> 16) & 0xFF;
+    data[7] = (control_mode >> 24) & 0xFF;
+
+    CAN_Transmit(can_instance);
+}
+
 void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq)
 {
     uint16_t pos_temp, vel_temp, kp_temp, kd_temp, torq_temp;
     CAN_Instance_t *motor_can_instance = motor->can_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
-    motor->target_pos = target_pos + motor->stats->pos_offset;
-    motor->target_vel = target_vel;
-    motor->torq = torq;
+    //v This is definitely wrong (Doesn't account for gear ratio)
+    motor->target_pos = motor->stats->motor_reversal == CW_POS ? target_pos + motor->stats->pos_offset : target_pos + motor->stats->pos_offset;
+    motor->target_vel = motor->stats->motor_reversal == CW_POS ? target_vel : target_vel;
+    motor->torq = motor->stats->motor_reversal == CW_POS ? torq : torq; // -1 : +1
     pos_temp = float_to_uint(motor->target_pos, P_MIN, P_MAX, 16);
     vel_temp = float_to_uint(motor->target_vel, V_MIN, V_MAX, 12);
     kp_temp = float_to_uint(motor->kp, KP_MIN, KP_MAX, 12);
@@ -232,7 +271,7 @@ void DM_Motor_Ctrl_MIT_PD(DM_Motor_Handle_t *motor, float target_pos, float targ
     uint16_t pos_temp, vel_temp, kp_temp, kd_temp, torq_temp;
     CAN_Instance_t *motor_can_instance = motor->can_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
-    motor->target_pos = target_pos + motor->stats->pos_offset;
+    motor->target_pos = (target_pos - motor->stats->pos_offset) / motor->stats->gear_ratio;
     motor->target_vel = target_vel;
     motor->torq = torq;
     pos_temp = float_to_uint(motor->target_pos, P_MIN, P_MAX, 16);
@@ -274,6 +313,11 @@ DM_Motor_Handle_t *DM_Motor_Init(DM_Motor_Config_t *config)
     motor->rx_id = config->rx_id;
     motor->disable_behavior = config->disable_behavior; // by defualt set to zero current
 
+    motor->send_pending_flag = 0;
+    motor->target_vel = 0.0f;
+    motor->target_pos = 0.0f;
+    motor->torq = 0.0f;
+
     motor->kp = config->kp;
     motor->kd = config->kd;
     motor->stats = calloc(sizeof(DM_Motor_Stats_t), 1);
@@ -285,6 +329,9 @@ DM_Motor_Handle_t *DM_Motor_Init(DM_Motor_Config_t *config)
     motor->can_instance->binding_motor_stats = (void *)motor->stats;
 
     g_dm_motors[g_dm_motor_num++] = motor;
+
+    DM_Motor_Set_Control_Mode(motor, motor->control_mode);
+
     return motor;
 }
 
@@ -293,19 +340,53 @@ void DM_Motor_CtrlPosVel()
     // TODO:
 }
 
-void DM_Motor_CtrlVel()
-{
-    // TODO:
+void DM_Motor_CtrlVel(DM_Motor_Handle_t *motor, float target_vel)
+{   
+    CAN_Instance_t *motor_can_instance = motor->can_instance;
+    uint8_t *data = motor_can_instance->tx_buffer;
+    target_vel = motor->stats->motor_reversal == CCW_POS ? target_vel : -target_vel;
+    motor->target_vel = target_vel;
+
+    uint8_t *vel_bytes = (uint8_t *) &target_vel;
+
+    data[0] = vel_bytes[0];
+    data[1] = vel_bytes[1];
+    data[2] = vel_bytes[2];
+    data[3] = vel_bytes[3];
+
+    motor->send_pending_flag |= DM_MOTOR_SEND_PENDING;
+    if (motor->enabled == 1 && motor->stats->state != DM_MOTOR_ENABLED)
+    {
+        motor->send_pending_flag |= DM_MOTOR_ENABLE_PENDING; // set the enable pending flag
+    }
+
 }
 
 void DM_Motor_Send()
 {
     for (int i = 0; i < g_dm_motor_num; i++) // loop through all the motors
     {
-        if (g_dm_motors[i]->send_pending_flag & DM_MOTOR_SEND_PENDING)
-        {                                               // check if the flag is set
-            CAN_Transmit(g_dm_motors[i]->can_instance); // send the data
-            g_dm_motors[i]->send_pending_flag &= ~DM_MOTOR_SEND_PENDING;      // clear the flag
+        DM_Motor_Handle_t *motor = g_dm_motors[i];                                    // check if the flag is set
+        if (motor->send_pending_flag & DM_MOTOR_SEND_PENDING)
+        {           
+            switch(motor->control_mode){
+                case DM_MOTOR_MIT:
+                    motor->can_instance->tx_header->StdId = motor->tx_id;
+                    motor->can_instance->tx_header->DLC = 8;
+                    break;
+                case DM_MOTOR_POS_VEL:
+                    motor->can_instance->tx_header->StdId = motor->tx_id + 0x100;
+                    motor->can_instance->tx_header->DLC = 8;
+                    break;
+                case DM_MOTOR_VEL:
+                    motor->can_instance->tx_header->StdId = motor->tx_id + 0x200;
+                    motor->can_instance->tx_header->DLC = 4;
+                    break;
+                default:
+                    break;
+            }
+            CAN_Transmit(motor->can_instance); // send the data
+            motor->send_pending_flag &= ~DM_MOTOR_SEND_PENDING;      // clear the flag
         }
         if (g_dm_motors[i]->send_pending_flag & DM_MOTOR_ENABLE_PENDING) 
         // Check if enable pending, this flag is set when the motor is enabled by user but motor feedback shows otherwise

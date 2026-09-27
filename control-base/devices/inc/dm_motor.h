@@ -102,9 +102,11 @@ typedef struct _DM_Motor {
 void DM_Motor_Disable_Motor(DM_Motor_Handle_t *motor);
 void DM_Motor_Enable_Motor(DM_Motor_Handle_t *motor);
 DM_Motor_Handle_t* DM_Motor_Init(DM_Motor_Config_t *config);
+void DM_Motor_Set_Control_Mode(DM_Motor_Handle_t *motor, uint8_t control_mode);
 void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq);
 void DM_Motor_Ctrl_MIT_PD(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq, float kp, float kd);
 void DM_Motor_Set_MIT_PD(DM_Motor_Handle_t *motor, float kp, float kd);
+void DM_Motor_CtrlVel(DM_Motor_Handle_t *motor, float target_vel);
 
 /**
  * Global function to send the motor control data
