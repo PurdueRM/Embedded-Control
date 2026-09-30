@@ -20,6 +20,21 @@ DM_Motor_Handle_t *DM_test_motor;
 //extern Remote_t g_remote;
 //extern Supercap_t g_supercap;
 
+/*
+ * @brief This file is dedicated to testing motors that we have in our possession.
+ * At this time it is a very rudimentary test that makes the motor in
+ * in question spin.
+ *
+ *
+ * @howto First, make uncomment either the DJI_Motor_Test or DM_Motor_Test
+ * macro depending on the type of motor you wish to test. Then, set the DJI
+ * or DM _MOTOR_TYPE macro according to the specific model. The macros will
+ * automatically update the maximum current and pid values for you. The final
+ * thing that needs to be changed is either the speed controller id for DJI
+ * motors or the tx and rx buffers to match whatever the controller 
+ * is configured to. You still have to do that manually.  :(
+ */
+
 // This needs to be uncommented to test DJI motors
 #define DJI_Motor_Test
 
