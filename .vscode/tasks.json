@@ -123,6 +123,7 @@
                 "Wheel-Legged-Chassis",
                 "Hero",
                 "Swerve-Standard-Slave",
+                "Motor-Test-Jig"
                 //"Template"
                 // Add your other robot projects here
             ]
