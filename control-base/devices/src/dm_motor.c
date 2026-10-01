@@ -222,14 +222,19 @@ void DM_Motor_Set_Control_Mode(DM_Motor_Handle_t *motor, uint8_t control_mode)
     CAN_Instance_t *can_instance = motor->can_instance;
     uint8_t *data = can_instance->tx_buffer;
 
-    data[0] = motor->tx_id & 0xFF;
-    data[1] = (motor->tx_id >> 8) & 0xFF;
-    data[2] = 0x55;
-    data[3] = 0x0A;
-    data[4] = control_mode * 0xFF;
-    data[5] = (control_mode >> 8) & 0xFF;
-    data[6] = (control_mode >> 16) & 0xFF;
-    data[7] = (control_mode >> 24) & 0xFF;
+    // Cast control_mode to uint32_t so bit shifts (>> 8, >> 16, >> 24) are valid
+    uint32_t mode_val = (uint32_t)control_mode; 
+
+    data[0] = motor->tx_id & 0xFF; // Motor Slave ID
+    data[1] = 0x55;                // Write command byte
+    data[2] = 0x01;                // Write to RAM (0x02 saves to Flash)
+    data[3] = 0x0A;                // Register RID 0x0A (Control Mode)
+    
+    // Write 32-bit mode value (Little Endian)
+    data[4] = (uint8_t)(mode_val & 0xFF);         // Will be 0x00 for MIT
+    data[5] = (uint8_t)((mode_val >> 8) & 0xFF);  // 0x00
+    data[6] = (uint8_t)((mode_val >> 16) & 0xFF); // 0x00
+    data[7] = (uint8_t)((mode_val >> 24) & 0xFF); // 0x00
 
     CAN_Transmit(can_instance);
 }
@@ -271,9 +276,13 @@ void DM_Motor_Ctrl_MIT_PD(DM_Motor_Handle_t *motor, float target_pos, float targ
     uint16_t pos_temp, vel_temp, kp_temp, kd_temp, torq_temp;
     CAN_Instance_t *motor_can_instance = motor->can_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
+
+    target_pos = motor->stats->motor_reversal == CCW_POS ? target_pos : -target_pos;
+
     motor->target_pos = (target_pos - motor->stats->pos_offset) / motor->stats->gear_ratio;
-    motor->target_vel = target_vel;
-    motor->torq = torq;
+    motor->target_vel = motor->stats->motor_reversal == CCW_POS ? target_vel : -target_vel;
+    motor->torq = motor->stats->motor_reversal == CCW_POS ? torq : -torq;
+    
     pos_temp = float_to_uint(motor->target_pos, P_MIN, P_MAX, 16);
     vel_temp = float_to_uint(motor->target_vel, V_MIN, V_MAX, 12);
     kp_temp = float_to_uint(kp, KP_MIN, KP_MAX, 12);
