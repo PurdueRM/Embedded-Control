@@ -55,7 +55,7 @@ DM_Motor_Handle_t *DM_test_motor;
 #define GM6020_KF 0.0f
 
 // Modify the following macro to match what type of motor you are testing
-#define DJI_MOTOR_TYPE GM6020
+#define DJI_MOTOR_TYPE M3508
 
 // Modify the following macro to match the speed controller id
 #define SPEED_CONTROLLER_ID 1
@@ -99,7 +99,7 @@ void Robot_Init()
     Buzzer_Init();
     Melody_t system_init_melody = {
         .notes = SYSTEM_INITIALIZING,
-        .loudness = 0.0f,
+        .loudness = 0.5f,
         .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
     };
     Buzzer_Play_Melody(system_init_melody); // TODO: Change to non-blocking
