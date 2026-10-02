@@ -8,7 +8,7 @@
 #define C_BOARD_COMM_PERIOD (100) // ms
 
 #include <stdint.h>
-#include "bsp_uart.h"
+#include "bsp_can.h"
 
 typedef struct Board_Comm_Package_s 
 {
@@ -22,8 +22,8 @@ typedef struct Board_Comm_Package_s
 } Board_Comm_Package_t;
 
 void C_Board_Comm_Task_Init();
-void C_Board_Recv_Ref_Info();
-void C_Board_Recv_Supercap_Info(); // send 
+void C_Board_Recv_Ref_Info(CAN_Instance_t *can_instance);
+void C_Board_Recv_Supercap_Info(CAN_Instance_t *can_instance);// send 
 void C_Board_Comm_Send_Loop();
 
 #endif
