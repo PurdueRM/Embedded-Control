@@ -277,11 +277,11 @@ void DM_Motor_Ctrl_MIT_PD(DM_Motor_Handle_t *motor, float target_pos, float targ
     CAN_Instance_t *motor_can_instance = motor->can_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
 
-    target_pos = motor->stats->motor_reversal == CCW_POS ? target_pos : -target_pos;
+    target_pos = motor->stats->motor_reversal == CCW_POS ? target_pos : target_pos;
 
     motor->target_pos = (target_pos - motor->stats->pos_offset) / motor->stats->gear_ratio;
-    motor->target_vel = motor->stats->motor_reversal == CCW_POS ? target_vel : -target_vel;
-    motor->torq = motor->stats->motor_reversal == CCW_POS ? torq : -torq;
+    motor->target_vel = motor->stats->motor_reversal == CCW_POS ? target_vel : target_vel;
+    motor->torq = motor->stats->motor_reversal == CCW_POS ? torq : torq;
     
     pos_temp = float_to_uint(motor->target_pos, P_MIN, P_MAX, 16);
     vel_temp = float_to_uint(motor->target_vel, V_MIN, V_MAX, 12);

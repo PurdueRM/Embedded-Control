@@ -86,7 +86,7 @@ void Gimbal_Ctrl_Loop(){
     __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.45f, 0.4f);
     
     DM_Motor_Enable_Motor(g_pitch);
-    DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 8.5f);
+    // DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 8.5f);
 
 
 }

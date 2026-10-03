@@ -76,13 +76,16 @@ void Launch_Ctrl_Loop()
     if(g_remote.controller.left_switch == UP){
         DJI_Motor_Set_Velocity(g_flywheel_left, -300);
         DJI_Motor_Set_Velocity(g_flywheel_right, -300);
+    }
+    else{
+        DJI_Motor_Set_Velocity(g_flywheel_left, 0);
+        DJI_Motor_Set_Velocity(g_flywheel_right, 0);
+    }
 
+    if(g_remote.controller.wheel > 330.0f){
         DJI_Motor_Set_Velocity(g_feed_motor, 100);
     }
     else{
-        DJI_Motor_Set_Velocity(g_flywheel_left, -00 );
-        DJI_Motor_Set_Velocity(g_flywheel_right, -00);
-
         DJI_Motor_Set_Velocity(g_feed_motor, 0);
     }
     // if (!g_robot_state.launch.IS_FIRING_ENABLED)
