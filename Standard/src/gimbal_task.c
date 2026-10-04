@@ -47,7 +47,7 @@ void Gimbal_Task_Init(){
         .control_mode = DM_MOTOR_MIT,
         .rx_id = 0x12,
         .tx_id = 0x02,
-        .pos_offset = 3.738,
+        .pos_offset = 2.526,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
         .motor_reversal = CCW_POS,
         .kp = 10.0f,
