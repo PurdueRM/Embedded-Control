@@ -32,7 +32,7 @@ void Gimbal_Task_Init(){
     DM_Motor_Config_t yaw_motor_config = {
         .can_bus = 1,
         .control_mode = DM_MOTOR_MIT,
-        .pos_offset = 1.85,
+        .pos_offset = 6.2,
         .rx_id = 0x11,
         .tx_id = 0x01,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
@@ -47,7 +47,7 @@ void Gimbal_Task_Init(){
         .control_mode = DM_MOTOR_MIT,
         .rx_id = 0x12,
         .tx_id = 0x02,
-        .pos_offset = 2.526,
+        .pos_offset = -2.576,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
         .motor_reversal = CCW_POS,
         .kp = 10.0f,
@@ -86,7 +86,7 @@ void Gimbal_Ctrl_Loop(){
     __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.45f, 0.4f);
     
     DM_Motor_Enable_Motor(g_pitch);
-    // DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 8.5f);
+    DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 8.5f);
 
 
 }

@@ -162,8 +162,7 @@ void Chassis_Process_Target_Velocity()
         // Chassis follow gimbal code
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
         chassis_omega_new_target = -1 * PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
-        // __MAX_LIMIT(chassis_omega_new_target, -6*PI, 6*PI);
-        __MAX_LIMIT(chassis_omega_new_target, -0, 0);
+        __MAX_LIMIT(chassis_omega_new_target, -6*PI, 6*PI);
         __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     }
 
