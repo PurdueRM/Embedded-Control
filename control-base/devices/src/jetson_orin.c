@@ -138,5 +138,5 @@ void Jetson_Orin_Send_Data(void)
 	// g_orin_data.tx_buffer[1] = g_orin_data.sending.enemy_color_is_red << 7 | (g_orin_data.sending.game_status << g_orin_data.sending.game_status);
 	// memcpy(&g_orin_data.tx_buffer[2], &g_orin_data.sending.float_byte.data_bytes[0], 32 * sizeof(uint8_t));
 
-	UART_Transmit(g_orin_uart_instance_ptr, &(g_orin_data.sending.header), sizeof(g_orin_data.sending), 6);
+	UART_Transmit(g_orin_uart_instance_ptr, &(g_orin_data.sending.header), sizeof(g_orin_data.sending), pdMS_TO_TICKS(6));
 }
