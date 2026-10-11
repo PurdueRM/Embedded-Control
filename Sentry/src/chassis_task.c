@@ -38,8 +38,6 @@ motor_data_t motor_data_odom;
 uint16_t last_hp;
 uint16_t is_hit_counter = 0;
 
-
-
 void Chassis_Task_Init()
 {
     // Init chassis hardware
