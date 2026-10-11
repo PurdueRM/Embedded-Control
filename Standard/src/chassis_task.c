@@ -46,6 +46,9 @@ int omega_bool = 0;
 
 float chassis_omega_new_target = 0;
 
+static float filtered_vx_in_gimbal = 0.0f;
+static float filtered_vy_in_gimbal = 0.0f;
+
 void Chassis_Task_Init(){
     // Init chassis hardware
     Motor_Config_t drive_motor_config = {
@@ -66,6 +69,8 @@ void Chassis_Task_Init(){
         DJI_Motor_Set_Control_Mode(motors[i], VELOCITY_CONTROL);
     }
 
+    filtered_vx_in_gimbal = 0.0f;
+    filtered_vy_in_gimbal = 0.0f;
     g_robot_state.chassis.x_speed = 0.0f;
     g_robot_state.chassis.y_speed = 0.0f;
     g_robot_state.chassis.omega = 0.0f;
@@ -80,7 +85,7 @@ void Chassis_Task_Init(){
     };
 
     physical_constants = omni_init( //TODO: Set the actual constants for standard
-        CHASSIS_WHEEL_DIAMETER,
+        CHASSIS_WHEEL_DIAMETER / 2.0f,
         CHASSIS_RADIUS,
         CHASSIS_MOUNTING_ANGLE,
         CHASSIS_MAX_SPEED,
@@ -106,6 +111,8 @@ void Chassis_Ctrl_Loop()
 
     // Calculate target velocity of each omni wheel to achieve desired motion
     omni_calculate_kinematics(&g_robot_state.chassis, &chassis_state, &physical_constants);
+    // Enforce the wheel linear-speed limit before converting rad/s to RPM.
+    omni_desaturate_wheel_speeds(&chassis_state, &physical_constants);
     omni_convert_to_rpm(&chassis_state);
 
     // use rate limiter to limit acceleration of the wheels
@@ -155,7 +162,7 @@ void Chassis_Process_Target_Velocity()
         // else {  //Decrease spintop rate if not hit for a while
         //     chassis_omega_new_target = omega; // 2 * PI rad/s
         // }
-        chassis_omega_new_target = 3 * PI;
+        chassis_omega_new_target = 4 * PI;
         __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     
     } else {
@@ -166,60 +173,21 @@ void Chassis_Process_Target_Velocity()
         __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     }
 
-    // Calculate speed of robot relative to chassis
+    // Smooth in the gimbal frame so chassis rotation does not lag the driving direction.
+    const float translation_alpha = g_robot_state.IS_SUPER_CAPACITOR_ENABLED
+        ? CHASSIS_SUPERCAP_TRANSLATION_FILTER_ALPHA : CHASSIS_TRANSLATION_FILTER_ALPHA;
+    const float translation_gain = g_robot_state.IS_SUPER_CAPACITOR_ENABLED ? 2.0f : 1.0f;
+    __FIRST_ORDER_FILTER(filtered_vx_in_gimbal, translation_gain * chassis_state.v_x_in_gimbal, translation_alpha);
+    __FIRST_ORDER_FILTER(filtered_vy_in_gimbal, translation_gain * chassis_state.v_y_in_gimbal, translation_alpha);
+
+    // Convert the smoothed translation to the current chassis frame.
     if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
-        physical_constants.max_speed = 5.0f;
-        __FIRST_ORDER_FILTER(g_robot_state.chassis.x_speed, 2 * (chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference)), 0.005f);
-        __FIRST_ORDER_FILTER(g_robot_state.chassis.y_speed, 2 * (chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference)), 0.005f);
-    } else {
         physical_constants.max_speed = 2.0f;
-        // g_robot_state.chassis.x_speed = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
-        // g_robot_state.chassis.y_speed = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
-        g_robot_state.chassis.y_speed = chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference);
-        g_robot_state.chassis.x_speed = chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference);
+        g_robot_state.chassis.x_speed = filtered_vx_in_gimbal * cos(gimbal_angle_difference) - filtered_vy_in_gimbal * sin(gimbal_angle_difference);
+        g_robot_state.chassis.y_speed = filtered_vx_in_gimbal * sin(gimbal_angle_difference) + filtered_vy_in_gimbal * cos(gimbal_angle_difference);
+    } else {
+        physical_constants.max_speed = CHASSIS_MAX_SPEED;
+        g_robot_state.chassis.y_speed = filtered_vy_in_gimbal * cos(gimbal_angle_difference) - filtered_vx_in_gimbal * sin(gimbal_angle_difference);
+        g_robot_state.chassis.x_speed = filtered_vy_in_gimbal * sin(gimbal_angle_difference) + filtered_vx_in_gimbal * cos(gimbal_angle_difference);
     }
-
-    Update_Omega();
-}
-
-// I think this is deprecated because there's no leveling anymore
-void Update_Omega() 
-{
-    switch ((int) g_board_comm_package.Ps) {
-        case 60:
-            omega = OMEGA_55W;
-            break;
-        case 65:
-            omega = OMEGA_65W;
-            break;
-        case 70:
-            omega = OMEGA_70W;
-            break;
-        case 75:
-            omega = OMEGA_75W;
-            break;
-        case 80:
-            omega = OMEGA_80W;
-            break;
-        case 85:
-            omega = OMEGA_85W;
-            break;
-        case 90:
-            omega = OMEGA_90W;
-            break;
-        default:
-            omega = OMEGA_55W;
-    }
-
-    if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
-        omega = 20.0f;
-        omega = Rescale_Omega();
-    }
-}
-
-float Rescale_Omega(void) {
-    float translation_speed = sqrtf(powf(g_remote.controller.left_stick.x / 660.0f * 4.0f, 2) + powf(g_remote.controller.left_stick.y / 660.0f * 4.0f, 2));
-    float spin_coeff = CHASSIS_RADIUS * omega / (translation_speed * 500.0f + CHASSIS_RADIUS * omega);
-    float target_omega = omega * spin_coeff;
-    return target_omega;
 }

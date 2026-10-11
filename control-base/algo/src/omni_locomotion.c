@@ -13,10 +13,10 @@
 
 /**
  * @brief Initialize the physical constants of the omni drive
- * @param R - the wheel diameter [m]
+ * @param R - the wheel radius [m]
  * @param d - the radius from the center to the wheel [m]
  * @param theta - the mounting angle of the omni wheel [rad]
- * @param max_speed - the maximum speed of the robot [m/s]
+ * @param max_speed - the maximum wheel tangential speed [m/s]
  * @param init_pose - The initial 2d x, y position and heading
  * @return omni_physical_constants_t - the physical constants of the omni drive
  */

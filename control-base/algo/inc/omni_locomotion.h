@@ -31,10 +31,10 @@ typedef struct
 
 typedef struct
 {
-    float R;         // wheel diameter [m]
+    float R;         // wheel radius [m]
     float d;         // radius from center to wheel [m]
     float theta;     // mounting angle of omni wheel [rad]
-    float max_speed; // maximum speed of the robot [m/s]
+    float max_speed; // maximum wheel tangential speed [m/s]
 
     pose_2d_t* init_pose;
 

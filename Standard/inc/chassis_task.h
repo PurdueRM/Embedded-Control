@@ -5,7 +5,10 @@
 #define MAX_ANGLUAR_SPEED 6.28 // rad / s
 #define CHASSIS_WHEEL_DIAMETER (0.15f) // m
 #define CHASSIS_RADIUS (0.25f) // center to wheel, m
-#define CHASSIS_MAX_SPEED (2.0f) // m/s
+#define CHASSIS_MAX_SPEED (1.2f) // maximum wheel tangential speed without supercapacitor, m/s
+// Translation filter coefficients: 0 < alpha <= 1; larger values respond faster.
+#define CHASSIS_TRANSLATION_FILTER_ALPHA (0.008f)
+#define CHASSIS_SUPERCAP_TRANSLATION_FILTER_ALPHA (0.005f)
 #ifndef PI
 #define PI (3.14159265358979323846f)
 #endif // PI

@@ -74,8 +74,8 @@ void Launch_Task_Init(){
 void Launch_Ctrl_Loop()
 {
     if(g_remote.controller.left_switch == UP){
-        DJI_Motor_Set_Velocity(g_flywheel_left, -300);
-        DJI_Motor_Set_Velocity(g_flywheel_right, -300);
+        DJI_Motor_Set_Velocity(g_flywheel_left, -340);
+        DJI_Motor_Set_Velocity(g_flywheel_right, -340);
     }
     else{
         DJI_Motor_Set_Velocity(g_flywheel_left, 0);
