@@ -47,7 +47,8 @@ void Chassis_Task_Init()
         .can_bus = 1,
         .control_mode = VELOCITY_CONTROL,
         .velocity_pid = {
-            .kp = 300.0f,
+            .kp = 100.0f,
+            .kd = 00.0f,
             .kf = 100.0f,
             .output_limit = M3508_MAX_CURRENT_INT,
             .integral_limit = 3000.0f,
@@ -76,9 +77,9 @@ void Chassis_Task_Init()
         &init_pose
     );
 
-    chassis_state.v_x = 0.0f;
-    chassis_state.v_y = 0.0f;
-    chassis_state.omega = 0.0f;
+    g_robot_state.chassis.x_speed = 0.0f;
+    g_robot_state.chassis.y_speed = 0.0f;
+    g_robot_state.chassis.omega = 0.0f;
 
     for (int i = 0; i < 4; i++) {
         // configure rate limiters
@@ -95,6 +96,7 @@ void Chassis_Task_Init()
 
 void Chassis_Process_Target_Velocity()
 {
+    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + PI/2;
     // static float time_for_omega = 0.0f;
     // time_for_omega += 0.001f;
     if (g_remote.controller.right_switch == UP)
@@ -135,7 +137,7 @@ void Chassis_Process_Target_Velocity()
         else {  //Decrease spintop rate if not hit for a while
             chassis_omega_new_target = 3.5 * PI; // 2 * PI rad/s
         }
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.002f);
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.002f);
 
         // float frenquncy = 0.1f;
         // speed_up_spintop_rate = 8 * PI * sin(2*PI*frenquncy*time_for_omega);
@@ -146,27 +148,29 @@ void Chassis_Process_Target_Velocity()
         __MAP_ANGLE_TO_UNIT_CIRCLE(gimbal_angle_difference);
         chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
         __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
+        __MAX_LIMIT(chassis_omega_new_target, 0, 0);
         // chassis_omega_new_target = -g_remote.controller.right_stick.x/660.0f * 6 * PI;
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     }
     // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.003f);
+
+    g_robot_state.chassis.x_speed = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
+    g_robot_state.chassis.y_speed = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
 
 }
 
 void Chassis_Ctrl_Loop()
 {
     //TODO: change this, for odom only
-    gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + PI/2;
     Chassis_Process_Target_Velocity();
     
-    chassis_state.v_x = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
-    chassis_state.v_y = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
+    
     // chassis_state.v_x = g_robot_state.input.vx;
     // chassis_state.v_y = g_robot_state.input.vy;
 
     // Control loop for the chassis
-    omni_calculate_kinematics(&chassis_state, &physical_constants);
-    // omni_desaturate_wheel_speeds(&chassis_state, &physical_constants);
+    omni_calculate_kinematics(&g_robot_state.chassis, &chassis_state, &physical_constants);
+    omni_desaturate_wheel_speeds(&chassis_state, &physical_constants);
     omni_convert_to_rpm(&chassis_state);
 
     // use rate limiter to limit acceleration of the wheels

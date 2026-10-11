@@ -28,15 +28,15 @@ void Gimbal_Task_Init()
         .external_velocity_feedback_ptr = &(g_imu.bmi088_raw.gyro[2]),
         .angle_pid =
             {
-                .kp = 25.0f,
-                .kd = 100.0f,
+                .kp = 13.0f,
+                .kd = 1000.0f,
                 .output_limit = 20, // max vel
             },
         .velocity_pid =
             {
-                .kp = 5000.0f,
+                .kp = 3000.0f,
                 .ki = 0.0f,
-                .kd = 0.0f,
+                .kd = 00.0f,
                 .kf = 0.0f,
                 .feedforward_limit = 10000.0f,
                 .integral_limit = 1000.0f,
