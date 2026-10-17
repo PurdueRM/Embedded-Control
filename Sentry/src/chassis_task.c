@@ -157,8 +157,8 @@ void Chassis_Ctrl_Loop()
     gimbal_angle_difference = DJI_Motor_Get_Absolute_Angle(g_yaw) + PI/2;
     Chassis_Process_Target_Velocity();
     
-    chassis_state.v_x_in_gimbal = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
-    chassis_state.v_y_in_gimbal = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
+    g_robot_state.chassis.x_speed = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
+    g_robot_state.chassis.y_speed = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
     // chassis_state.v_x = g_robot_state.input.vx;
     // chassis_state.v_y = g_robot_state.input.vy;
 
