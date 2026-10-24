@@ -36,29 +36,18 @@ void Robot_Tasks_C_Board_Comm(void const *argument);
 
 void Robot_Tasks_Start()
 {
-    //osThreadDef(imu_task, Robot_Tasks_IMU, osPriorityAboveNormal, 0, 1024);
-    //imu_task_handle = osThreadCreate(osThread(imu_task), NULL);
-
     osThreadDef(motor_task, Robot_Tasks_Motor, osPriorityAboveNormal, 0, 256);
     motor_task_handle = osThreadCreate(osThread(motor_task), NULL);
 
     osThreadDef(robot_command_task, Robot_Tasks_Robot_Command, osPriorityAboveNormal, 0, 256);
     robot_command_task_handle = osThreadCreate(osThread(robot_command_task), NULL);
 
-    //osThreadDef(ui_task, Robot_Tasks_UI, osPriorityAboveNormal, 0, 256);
-    //ui_task_handle = osThreadCreate(osThread(ui_task), NULL);
-
     osThreadDef(debug_task, Robot_Tasks_Debug, osPriorityAboveNormal, 0, 256);
     debug_task_handle = osThreadCreate(osThread(debug_task), NULL);
-
-    //osThreadDef(jetson_orin_task, Robot_Tasks_Jetson_Orin, osPriorityAboveNormal, 0, 256);
-    //jetson_orin_task_handle = osThreadCreate(osThread(jetson_orin_task), NULL);
 
     osThreadDef(daemon_task, Robot_Tasks_Daemon, osPriorityAboveNormal, 0, 256);
     daemon_task_handle = osThreadCreate(osThread(daemon_task), NULL);
 
-    //osThreadDef(c_board_comm_task, Robot_Tasks_C_Board_Comm, osPriorityAboveNormal, 0, 256);
-    //c_board_comm_task_handle = osThreadCreate(osThread(c_board_comm_task), NULL);
 }
 
 void Robot_Tasks_Robot_Command(void const *argument)

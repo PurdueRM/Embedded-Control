@@ -8,15 +8,6 @@
 
 void Motor_Task_Loop() {
     DJI_Motor_Send();
-    // MF_Motor_Send();
     DM_Motor_Send();
 
-    /*
-    g_supercap.send_counter++;
-    if (g_supercap.send_counter >= (1000 / SUPERCAP_SEND_FREQ)) {
-        Supercap_Send();
-        g_supercap.send_counter = 0;
-    }
-    */
 }
-
