@@ -52,9 +52,9 @@ void Handle_Starting_Up_State()
     CAN_Service_Init();
     // Referee_System_Init(&huart1);
     // Supercap_Init(&g_supercap);
-    Jetson_Orin_Init(&huart1);
+    Jetson_Orin_Init(&huart1); // dont forget to switch back
     Referee_System_Init(&huart6);
-    Supercap_Init(&huart1);
+    // Supercap_Init(&huart1);
 
     // Set robot state to disabled
     g_robot_state.state = DISABLED;
