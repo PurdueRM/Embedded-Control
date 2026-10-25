@@ -25,8 +25,10 @@ extern Supercap_t g_supercap;
 void Robot_Init()
 {
     g_robot_state.state = STARTING_UP;
-
+    
+    CAN_Service_Init();
     Buzzer_Init();
+
     // Melody_t system_init_melody = {
     //     .notes = SYSTEM_INITIALIZING,
     //     .loudness = 0.5f,
@@ -48,8 +50,7 @@ void Handle_Starting_Up_State()
     Gimbal_Task_Init();
     Launch_Task_Init();
     Remote_Init(&huart3);
-    CAN_Service_Init();
-    Referee_System_Init(&huart1);
+    // Referee_System_Init(&huart1);
     // Supercap_Init(&g_supercap);
 
     // Set robot state to disabled
@@ -69,7 +70,7 @@ void Handle_Enabled_State()
     else
     {
         // Process movement and components in enabled state
-        Referee_Set_Robot_State();
+        // Referee_Set_Robot_State();
         Process_Remote_Input();
         Process_Chassis_Control();
         Process_Gimbal_Control();

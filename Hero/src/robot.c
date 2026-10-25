@@ -53,7 +53,6 @@ void Handle_Starting_Up_State()
     Gimbal_Task_Init();
     Launch_Task_Init();
     Remote_Init(&huart3);
-    CAN_Service_Init();
     // Referee_System_Init(&huart1);
     // Supercap_Init(&g_supercap);
     // Jetson_Orin_Init(&huart1);

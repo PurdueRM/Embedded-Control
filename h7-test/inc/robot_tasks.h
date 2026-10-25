@@ -31,19 +31,27 @@ osThreadId daemon_task_handle;
 osThreadId_t buzzer_task_handle;
 osThreadId_t heartbeat_led_task_handle;
 osThreadId_t remote_task_handle;
+osThreadId_t motor_task_handle;
+osThreadId_t robot_command_task_handle;
 
-void Robot_Tasks_Robot_Command(void const *argument);
-void Robot_Tasks_Motor(void const *argument);
+osThreadId_t can_rx_task_handle;
+osThreadId_t can_start_task_handle;
+
+
+
 void Robot_Tasks_IMU(void const *argument);
 void Robot_Tasks_UI(void const *argument);
 void Robot_Tasks_Debug(void const *argument);
 void Robot_Tasks_Jetson_Orin(void const *argument);
 void Robot_Tasks_Daemon(void const *argument);
 
+void Robot_Tasks_Robot_Command(void *argument);
+void Robot_Tasks_Motor(void *argument);
 void Robot_Tasks_Buzzer(void *argument);
 void Robot_Tasks_LED(void *argument);
 void Robot_Tasks_Remote(void *argument);
 void Robot_Tasks_CAN_Rx(void *argument);
+void Robot_Tasks_CAN_Start(void *argument);
 
 void Robot_Tasks_Start()
 {
@@ -70,17 +78,31 @@ void Robot_Tasks_Start()
 
     const osThreadAttr_t buzzer_task_attr = {
         .name = "buzzer_task",
-        .priority = osPriorityIdle,
+        .priority = osPriorityLow,
         .stack_size = 2048
     };
     buzzer_task_handle = osThreadNew(Robot_Tasks_Buzzer, NULL, &buzzer_task_attr);
 
     const osThreadAttr_t heartbeat_task_attr = {
         .name = "heartbeat_task",
-        .priority = osPriorityIdle,
+        .priority = osPriorityLow,
         .stack_size = 512
     };
     heartbeat_led_task_handle = osThreadNew(Robot_Tasks_LED, NULL, &heartbeat_task_attr);
+
+    const osThreadAttr_t motor_task_attr = {
+        .name = "motor_task",
+        .priority = osPriorityHigh,
+        .stack_size = 512
+    };
+    motor_task_handle = osThreadNew(Robot_Tasks_Motor, NULL, &motor_task_attr);
+
+    const osThreadAttr_t robot_command_task_attr = {
+        .name = "robot_command_task",
+        .priority = osPriorityHigh2,
+        .stack_size = 1024
+    };
+    motor_task_handle = osThreadNew(Robot_Tasks_Robot_Command, NULL, &robot_command_task_attr);
 
     const osThreadAttr_t remote_task_attr = {
         .name = "remote_task",
@@ -89,23 +111,30 @@ void Robot_Tasks_Start()
     };
     remote_task_handle = osThreadNew(Robot_Tasks_Remote, NULL, &remote_task_attr);
 
-     const osThreadAttr_t can_rx_task_attr = {
+    const osThreadAttr_t can_rx_task_attr = {
         .name = "can_rx_task",
         .priority = osPriorityHigh,
         .stack_size = 1024
     };
-    remote_task_handle = osThreadNew(Robot_Tasks_CAN_Rx, NULL, &can_rx_task_attr);
+    can_rx_task_handle = osThreadNew(Robot_Tasks_CAN_Rx, NULL, &can_rx_task_attr);
+
+    const osThreadAttr_t can_start_task_attr = {
+        .name = "can_start_task",
+        .priority = osPriorityRealtime,
+        .stack_size = 512
+    };
+    can_start_task_handle = osThreadNew(Robot_Tasks_CAN_Start, NULL, &can_start_task_attr);
 
 }
 
 void Robot_Tasks_Buzzer(void *argument)
 {
-    // Melody_t system_init_melody = {
-    //     .notes = SYSTEM_INITIALIZING,
-    //     .loudness = 0.01f,
-    //     .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
-    // };
-    // Buzzer_Play_Melody(&system_init_melody);
+    Melody_t system_init_melody = {
+        .notes = SYSTEM_INITIALIZING,
+        .loudness = 0.01f,
+        .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
+    };
+    Buzzer_Play_Melody(&system_init_melody);
     vTaskDelay(pdMS_TO_TICKS(1));
     // vTaskDelete(NULL);
 
@@ -131,6 +160,12 @@ void Robot_Tasks_Buzzer(void *argument)
     vTaskSuspend(NULL);
 }
 
+void Robot_Tasks_CAN_Start(void *argument) {
+    CAN_Service_Start();
+
+    vTaskDelete(can_start_task_handle);
+}
+
 void Robot_Tasks_LED(void *argument) {
     LED_Start(); // TODO: Move RTOS stuff to here
 }
@@ -142,7 +177,7 @@ void Robot_Tasks_Remote(void *argument) {
     UART_Register(&uart5_instance, &huart5, (uint8_t*) uart5_rx_buffers, 18);
     while (1)
     {
-        Remote_Buffer_Process();
+        Remote_Buffer_Process(); // TODO: Change this to one in robot.c
         vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
 
     }
@@ -176,7 +211,7 @@ void Robot_Tasks_CAN_Rx(void *argument) {
     }
 }
 
-void Robot_Tasks_Robot_Command(void const *argument)
+void Robot_Tasks_Robot_Command(void *argument)
 {
     portTickType xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
@@ -193,7 +228,7 @@ __weak void Robot_Tasks_IMU(void const *argument)
     IMU_Task(argument);
 }
 
-void Robot_Tasks_Motor(void const *argument)
+void Robot_Tasks_Motor(void *argument)
 {
     portTickType xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();

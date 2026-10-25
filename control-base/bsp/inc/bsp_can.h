@@ -3,6 +3,7 @@
 
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "semphr.h"
 #include "stm32h7xx_hal.h"
 
 #define CAN_MAX_DEVICES_PER_BUS 32 // Arbitrarilly set
@@ -33,6 +34,7 @@ typedef struct CAN_Device_t {
     struct CAN_Instance_t *parent_bus;           // reference to the bus it lives on
     uint16_t rx_id;                         // Hardware filter ID
     FDCAN_TxHeaderTypeDef tx_header;
+
     uint8_t tx_buffer[8];
     uint8_t rx_buffer[8];
     void (*callback)(struct CAN_Device_t *device);
@@ -50,6 +52,8 @@ typedef struct CAN_Instance_t {
     uint8_t device_count;
     uint8_t filter_index;
 
+    SemaphoreHandle_t tx_mutex;
+
     CAN_Error_Stats_t errors;
 } CAN_Instance_t;
 
@@ -62,6 +66,7 @@ typedef struct {
 
 
 void CAN_Service_Init();
+HAL_StatusTypeDef CAN_Service_Start();
 void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan);
 CAN_Device_t *CAN_Device_Register(CAN_Instance_t *bus, uint16_t tx_id, uint16_t rx_id, void (*callback)(CAN_Device_t *));
 CAN_Device_t *CAN_Tx_Device_Register(CAN_Instance_t *bus, uint16_t tx_id);

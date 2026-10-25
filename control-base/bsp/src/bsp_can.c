@@ -1,4 +1,5 @@
 #include "bsp_can.h"
+#include "main.h"
 #include "stm32h7xx_hal_fdcan.h"
 #include <string.h>
 
@@ -19,6 +20,41 @@ CAN_Instance_t g_can3;
 QueueHandle_t CAN_RxQueue = NULL;
 
 
+HAL_StatusTypeDef CAN_Service_Start() {
+    HAL_StatusTypeDef status;
+    for (int i = 0; i < 3; i++) {
+        FDCAN_HandleTypeDef *hfdcan = g_buses[i]->hfdcan;
+        uint32_t error_flags = 
+            FDCAN_IT_BUS_OFF | 
+            FDCAN_IT_ERROR_PASSIVE | 
+            FDCAN_IT_ERROR_WARNING |
+            FDCAN_IT_ARB_PROTOCOL_ERROR |  
+            FDCAN_IT_DATA_PROTOCOL_ERROR |
+            FDCAN_IT_RAM_ACCESS_FAILURE;   // Message RAM is unpowered or misconfigured
+        status =  HAL_FDCAN_ActivateNotification(hfdcan, error_flags, 0);
+
+        if (status != HAL_OK) {
+            Error_Handler();
+        }
+
+        status = HAL_FDCAN_Start(hfdcan);
+
+        if (status != HAL_OK) {
+            Error_Handler();
+        }
+
+        uint32_t cccr = hfdcan1.Instance->CCCR;
+        uint32_t state = hfdcan1.State;
+        uint32_t error = hfdcan1.ErrorCode;
+        uint32_t txfqs = hfdcan1.Instance->TXFQS;
+
+         if (cccr == state || error == txfqs) {
+            Error_Handler();
+        }
+    }
+    return status;
+}
+
 void CAN_Service_Init() {
     CAN_RxQueue = xQueueCreate(CAN_RX_QUEUE_SIZE, sizeof(CAN_RxMessage_t));
 
@@ -35,14 +71,20 @@ void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan) {
     bus->device_count = 0;
     bus->filter_index = 0;
 
-    if (hfdcan->Instance == FDCAN1) {
+    if (hfdcan == &hfdcan1) {
         g_buses[0] = bus;
+        // hfdcan->Instance = FDCAN1;
+        // hfdcan->Init.MessageRAMOffset = 0; // fix this 
     }
-    else if (hfdcan->Instance == FDCAN2) {
+    else if (hfdcan == &hfdcan2) {
         g_buses[1] = bus;
+        // hfdcan->Instance = FDCAN2;
+        // hfdcan->Init.MessageRAMOffset = 512; // fix this 
     }
-    else if (hfdcan->Instance == FDCAN3) {
+    else if (hfdcan == &hfdcan3) {
         g_buses[2] = bus;
+        // hfdcan->Instance = FDCAN3;
+        // hfdcan->Init.MessageRAMOffset = 0; // fdcan3 uses separate ram block
     }
     else {
         return;
@@ -51,34 +93,52 @@ void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan) {
     // Set error struct to 0
     memset(&bus->errors, 0, sizeof(CAN_Error_Stats_t));
 
-    // Hardware init
-    hfdcan->Init.FrameFormat = FDCAN_FRAME_CLASSIC;
-    hfdcan->Init.Mode = FDCAN_MODE_NORMAL;
-    hfdcan->Init.AutoRetransmission = DISABLE;
-    hfdcan->Init.TransmitPause = DISABLE;
-    hfdcan->Init.ProtocolException = DISABLE;
-    hfdcan->Init.NominalPrescaler = 6;
-    hfdcan->Init.NominalTimeSeg1 = 15;
-    hfdcan->Init.NominalTimeSeg2 = 4;
-    hfdcan->Init.NominalSyncJumpWidth = 2;
-    hfdcan->Init.DataPrescaler = 1;
-    hfdcan->Init.DataTimeSeg1 = 1;
-    hfdcan->Init.DataTimeSeg2 = 1;
-    hfdcan->Init.DataSyncJumpWidth = 1;
-    hfdcan->Init.MessageRAMOffset = 0;
-    hfdcan->Init.StdFiltersNbr = CAN_MAX_DEVICES_PER_BUS;
-    hfdcan->Init.ExtFiltersNbr = 0;
-    hfdcan->Init.RxFifo0ElmtsNbr = 16;
-    hfdcan->Init.RxFifo0ElmtSize = FDCAN_DATA_BYTES_8;
-    hfdcan->Init.TxEventsNbr = 0;
-    hfdcan->Init.TxBuffersNbr = 0;
-    hfdcan->Init.TxFifoQueueElmtsNbr = 16;
-    hfdcan->Init.TxFifoQueueMode = FDCAN_TX_QUEUE_OPERATION;
+    // Init tx semaphore
+    bus->tx_mutex = xSemaphoreCreateMutex();
+    configASSERT(bus->tx_mutex != NULL);
 
-    HAL_FDCAN_Init(hfdcan);
+    // HAL_FDCAN_DeInit(hfdcan);
+
+    // Hardware init
+    // hfdcan->Init.FrameFormat = FDCAN_FRAME_CLASSIC;
+    // hfdcan->Init.Mode = FDCAN_MODE_NORMAL;
+    // hfdcan->Init.AutoRetransmission = ENABLE;
+    // hfdcan->Init.TransmitPause = DISABLE;
+    // hfdcan->Init.ProtocolException = DISABLE;
+
+    // hfdcan->Init.NominalPrescaler = 6;
+    // hfdcan->Init.NominalSyncJumpWidth = 2;
+    // hfdcan->Init.NominalTimeSeg1 = 15;
+    // hfdcan->Init.NominalTimeSeg2 = 4;
+    // hfdcan->Init.DataPrescaler = 1;
+
+    // hfdcan->Init.DataSyncJumpWidth = 1;
+    // hfdcan->Init.DataTimeSeg1 = 1;
+    // hfdcan->Init.DataTimeSeg2 = 1;
+    // hfdcan->Init.MessageRAMOffset = 0;
+    // hfdcan->Init.StdFiltersNbr = 0;
+    // hfdcan->Init.ExtFiltersNbr = 0;
+    // hfdcan->Init.RxFifo0ElmtsNbr = 16;
+    // hfdcan->Init.RxFifo0ElmtSize = FDCAN_DATA_BYTES_8;
+    // hfdcan->Init.RxFifo1ElmtsNbr = 0;
+    // hfdcan->Init.RxFifo1ElmtSize = FDCAN_DATA_BYTES_8;
+    // hfdcan->Init.RxBuffersNbr = 0;
+    // hfdcan->Init.RxBufferSize = FDCAN_DATA_BYTES_8;
+    // hfdcan->Init.TxEventsNbr = 0;
+    // hfdcan->Init.TxBuffersNbr = 0;
+    // hfdcan->Init.TxFifoQueueElmtsNbr = 16;
+    // hfdcan->Init.TxFifoQueueMode = FDCAN_TX_QUEUE_OPERATION;
+    // hfdcan->Init.TxElmtSize = FDCAN_DATA_BYTES_8;
+
+    // if (HAL_FDCAN_Init(hfdcan) != HAL_OK) {
+    //     __disable_irq();
+    //     while (1) {
+    //         ;
+    //     }
+    // }
 
     // Reject non-matching frames
-    HAL_FDCAN_ConfigGlobalFilter(hfdcan, FDCAN_REJECT, FDCAN_REJECT, FDCAN_REJECT_REMOTE, FDCAN_REJECT_REMOTE);
+    HAL_FDCAN_ConfigGlobalFilter(hfdcan, FDCAN_ACCEPT_IN_RX_FIFO0, FDCAN_ACCEPT_IN_RX_FIFO0, FDCAN_REJECT_REMOTE, FDCAN_REJECT_REMOTE);
 
     // Route Rx Data to Line 0
     HAL_FDCAN_ConfigInterruptLines(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, FDCAN_INTERRUPT_LINE0);
@@ -98,9 +158,6 @@ void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan) {
         FDCAN_IT_RAM_ACCESS_FAILURE;   // Message RAM is unpowered or misconfigured
     
     HAL_FDCAN_ConfigInterruptLines(hfdcan, error_flags, FDCAN_INTERRUPT_LINE1);
-    HAL_FDCAN_ActivateNotification(hfdcan, error_flags, 0);
-
-    HAL_FDCAN_Start(hfdcan);
 }
 
 CAN_Device_t *CAN_Device_Register(CAN_Instance_t *bus, uint16_t tx_id, uint16_t rx_id, void (*callback)(CAN_Device_t *)) {
@@ -131,14 +188,14 @@ CAN_Device_t *CAN_Device_Register(CAN_Instance_t *bus, uint16_t tx_id, uint16_t 
     bus->registered_devices[bus->device_count++] = device;
 
     // Program the hardware filter
-    FDCAN_FilterTypeDef sFilterConfig;
-    sFilterConfig.IdType = FDCAN_STANDARD_ID;
-    sFilterConfig.FilterIndex = bus->filter_index++;
-    sFilterConfig.FilterType = FDCAN_FILTER_DUAL;
-    sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
-    sFilterConfig.FilterID1 = rx_id;
-    sFilterConfig.FilterID2 = rx_id;
-    HAL_FDCAN_ConfigFilter(bus->hfdcan, &sFilterConfig);
+    // FDCAN_FilterTypeDef sFilterConfig;
+    // sFilterConfig.IdType = FDCAN_STANDARD_ID;
+    // sFilterConfig.FilterIndex = bus->filter_index++;
+    // sFilterConfig.FilterType = FDCAN_FILTER_DUAL;
+    // sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+    // sFilterConfig.FilterID1 = rx_id;
+    // sFilterConfig.FilterID2 = rx_id;
+    // HAL_FDCAN_ConfigFilter(bus->hfdcan, &sFilterConfig);
 
     return device;
 }
@@ -175,17 +232,24 @@ CAN_Device_t *CAN_Tx_Device_Register(CAN_Instance_t *bus, uint16_t tx_id) {
 
 HAL_StatusTypeDef CAN_Transmit(CAN_Device_t *device)
 {
-    // Freeze RTOS scheduler
-    taskENTER_CRITICAL();
+    FDCAN_HandleTypeDef *hfdcan = device->parent_bus->hfdcan;
 
-    if (HAL_FDCAN_GetTxFifoFreeLevel(device->parent_bus->hfdcan) == 0) {
+    // Wait up to 1 ms for bus access (prevents priority inversion)
+    if (xSemaphoreTake(device->parent_bus->tx_mutex, pdMS_TO_TICKS(1)) != pdTRUE) {
         return HAL_BUSY;
     }
-    
-    return HAL_FDCAN_AddMessageToTxFifoQ(device->parent_bus->hfdcan, &device->tx_header, device->tx_buffer);
 
-    // Unfreeze RTOS scheduler
-    taskEXIT_CRITICAL();
+    HAL_StatusTypeDef status = HAL_BUSY;
+
+    uint32_t fdcan_sel =
+    (RCC->D2CCIP1R & RCC_D2CCIP1R_FDCANSEL) >> 28;
+
+    if (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan) > 0 || !fdcan_sel) {
+        status = HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &device->tx_header, device->tx_buffer);
+    }
+
+    xSemaphoreGive(device->parent_bus->tx_mutex);
+    return status;
 }
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
@@ -194,27 +258,28 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
         CAN_RxMessage_t rxMsg;
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-        if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxMsg.header, rxMsg.data) == HAL_OK) {
-            
-            // Look up the correct bus
-            CAN_Instance_t *target_bus = NULL;
-            if (hfdcan->Instance == FDCAN1) {
-                target_bus = g_buses[0];
-            }
-            else if (hfdcan->Instance == FDCAN2) {
-                target_bus = g_buses[1];
-            }
-            else if (hfdcan->Instance == FDCAN3) {
-                target_bus = g_buses[2];
-            }
-            else {
-                return;
-            }
+        // Look up the correct bus
+        CAN_Instance_t *target_bus = NULL;
+        if (hfdcan->Instance == FDCAN1) {
+            target_bus = g_buses[0];
+        }
+        else if (hfdcan->Instance == FDCAN2) {
+            target_bus = g_buses[1];
+        }
+        else if (hfdcan->Instance == FDCAN3) {
+            target_bus = g_buses[2];
+        }
+        else {
+            return;
+        }
+
+        while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0) > 0) {
+            HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxMsg.header, rxMsg.data);
 
             // Push to that bus's queue
             if (target_bus != NULL && CAN_RxQueue != NULL) {
                 rxMsg.bus = target_bus;
-                xQueueSendFromISR(CAN_RxQueue, &rxMsg, &xHigherPriorityTaskWoken);
+                xQueueSendFromISR(CAN_RxQueue, &rxMsg, &xHigherPriorityTaskWoken); // handle what to do if queue is full
             }
         }
 
