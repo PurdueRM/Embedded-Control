@@ -84,7 +84,8 @@ DJI_Motor_Handle_t *DJI_Motor_Init(Motor_Config_t *config, DJI_Motor_Type_t type
     motor_handle->external_velocity_feedback_ptr = config->external_velocity_feedback_ptr;
 
     // Initialize motor stats
-    DJI_Motor_Stats_t *motor_stats = malloc(sizeof(DJI_Motor_Stats_t));
+    DJI_Motor_Stats_t *motor_stats = calloc(1, sizeof(DJI_Motor_Stats_t));
+    
     motor_stats->encoder_offset = config->offset;
     motor_stats->total_round = 0;
     motor_stats->current_tick = 0;

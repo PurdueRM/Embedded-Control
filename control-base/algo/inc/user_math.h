@@ -32,14 +32,7 @@
 #define __MAP_ANGLE_TO_UNIT_CIRCLE(x) \
     do                                \
     {                                 \
-        while (x >= PI)           \
-        {                             \
-            x -= 2 * PI;          \
-        }                             \
-        while (x < -PI)           \
-        {                             \
-            x += 2 * PI;          \
-        }                             \
+        (x) = (x) - (2.0f * (PI)) * floorf(((x) + (PI)) / (2.0f * (PI))); \
     } while (0);
 
 #define BUFFER_SIZE (500)
