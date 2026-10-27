@@ -28,8 +28,8 @@ void Gimbal_Task_Init()
         .external_velocity_feedback_ptr = &(g_imu.bmi088_raw.gyro[2]),
         .angle_pid =
             {
-                .kp = 13.0f,
-                .kd = 1000.0f,
+                .kp = 25.0f,
+                .kd = 2000.0f,
                 .output_limit = 20, // max vel
             },
         .velocity_pid =
@@ -85,6 +85,9 @@ void Gimbal_Ctrl_Loop()
     //         __SLEW_RATE_LIMIT(g_robot_state.gimbal.pitch_angle, imu_pitch_delta, 0.2);
     //     }
     // }
+    if (!g_yaw->stats->is_initialized) {
+        return;
+    }
     if (g_remote.controller.right_switch == UP)
     {
         // g_robot_state.gimbal.yaw_angle += g_orin_data.receiving.navigation.yaw_angular_rate * 0.002f; // TODO: move to gimbal task
@@ -101,8 +104,8 @@ void Gimbal_Ctrl_Loop()
             
         }
     } else {
-        g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.01f;
-        g_robot_state.gimbal.pitch_angle += g_remote.controller.right_stick.y / 660.0f * 0.01f;
+        g_robot_state.gimbal.yaw_angle -= g_remote.controller.right_stick.x/660.0f * 0.015f;
+        g_robot_state.gimbal.pitch_angle += g_remote.controller.right_stick.y / 660.0f * 0.015f;
     }
 
     // hardware limits for gimbal pitch (prevent self collision)

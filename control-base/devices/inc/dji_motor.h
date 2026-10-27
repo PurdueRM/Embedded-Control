@@ -60,6 +60,8 @@ typedef struct DJI_Motor_Stats_s
     float last_absolute_angle_rad;
     float total_angle_rad;
     float reduction_ratio;
+
+    uint8_t is_initialized;
 } DJI_Motor_Stats_t;
 
 typedef struct dji_motor

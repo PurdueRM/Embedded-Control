@@ -85,13 +85,14 @@ DJI_Motor_Handle_t *DJI_Motor_Init(Motor_Config_t *config, DJI_Motor_Type_t type
 
     // Initialize motor stats
     DJI_Motor_Stats_t *motor_stats = calloc(1, sizeof(DJI_Motor_Stats_t));
-    
+
     motor_stats->encoder_offset = config->offset;
     motor_stats->total_round = 0;
     motor_stats->current_tick = 0;
     motor_stats->current_vel_rpm = 0;
     motor_stats->current_torq = 0;
     motor_stats->temp = 0;
+    motor_stats->is_initialized = 0;
     motor_handle->stats = motor_stats;
     motor_handle->output_current = 0;
 
@@ -543,6 +544,9 @@ void DJI_Motor_Decode(CAN_Instance_t *can_instance)
     else if (motor->absolute_angle_rad - motor->last_absolute_angle_rad < -PI)
     {
         motor->total_round++;
+    }
+    if (!motor->is_initialized) {
+        motor->is_initialized = 1;
     }
 #pragma message "there are some problem with total_angle_rad"
     motor->total_angle_rad = ((motor->total_round) * 2 * PI + motor->absolute_angle_rad) * motor->reduction_ratio;
