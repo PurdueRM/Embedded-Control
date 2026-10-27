@@ -108,8 +108,8 @@ void Jetson_Orin_Send_Data(void)
 	// update data to be sent
 	g_orin_data.sending.header = 0xAA; // header byte
 	g_orin_data.sending.enemy_color_is_red = (Referee_System.Robot_State.ID > 11) ? 1 : 0;	// ID > 11 means myself is blue, which means enemy is red
-	// g_orin_data.sending.game_status = Referee_System.Game_Status.Progress;
-	g_orin_data.sending.game_status = 4;
+	g_orin_data.sending.game_status = Referee_System.Game_Status.Progress;
+	// g_orin_data.sending.game_status = 4;
 	g_orin_data.sending.rfid = (Referee_System.RFID.center_zone << 1) | (Referee_System.RFID.resupply_zone); // bit 0 for resupply, bit 1 for center zone
 	g_orin_data.sending.pitch_angle = g_imu.rad.pitch;
 	g_orin_data.sending.pitch_angular_rate = g_imu.bmi088_raw.gyro[1];
