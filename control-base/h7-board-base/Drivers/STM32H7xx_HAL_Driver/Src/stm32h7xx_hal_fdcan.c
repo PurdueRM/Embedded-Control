@@ -2772,8 +2772,6 @@ HAL_StatusTypeDef HAL_FDCAN_AddMessageToTxFifoQ(FDCAN_HandleTypeDef *hfdcan, con
       /* Retrieve the Tx FIFO PutIndex */
       PutIndex = ((hfdcan->Instance->TXFQS & FDCAN_TXFQS_TFQPI) >> FDCAN_TXFQS_TFQPI_Pos);
 
-      uint32_t before = hfdcan->Instance->ECR;
-
       /* Add the message to the Tx FIFO/Queue */
       FDCAN_CopyMessageToRAM(hfdcan, pTxHeader, pTxData, PutIndex);
 
@@ -2783,14 +2781,6 @@ HAL_StatusTypeDef HAL_FDCAN_AddMessageToTxFifoQ(FDCAN_HandleTypeDef *hfdcan, con
       /* Store the Latest Tx FIFO/Queue Request Buffer Index */
       hfdcan->LatestTxFifoQRequest = ((uint32_t)1 << PutIndex);
 
-      uint32_t after = hfdcan->Instance->ECR;
-
-      if (after != before) {
-        __disable_irq();
-        while (1) {
-          ;
-        }
-      }
     }
 
     /* Return function status */
