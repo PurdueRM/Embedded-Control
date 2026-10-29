@@ -196,6 +196,10 @@ uint8_t UART_Transmit(UART_Instance_t *instance, uint8_t *tx_buffer, uint16_t tx
         return false; 
     }
 
+    while (__HAL_UART_GET_FLAG(instance->uart_handle, UART_FLAG_TC) == RESET) {
+       ; // wait until UART peripheral actually sent packet
+    }
+
     return true;
 }
 
