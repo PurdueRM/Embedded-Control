@@ -19,33 +19,6 @@ CAN_Instance_t g_can2;
 CAN_Instance_t g_can3;
 QueueHandle_t CAN_RxQueue = NULL;
 
-
-HAL_StatusTypeDef CAN_Service_Start() {
-    HAL_StatusTypeDef status;
-    for (int i = 0; i < 3; i++) {
-        FDCAN_HandleTypeDef *hfdcan = g_buses[i]->hfdcan;
-        uint32_t error_flags = 
-            FDCAN_IT_BUS_OFF | 
-            FDCAN_IT_ERROR_PASSIVE | 
-            FDCAN_IT_ERROR_WARNING |
-            FDCAN_IT_ARB_PROTOCOL_ERROR |  
-            FDCAN_IT_DATA_PROTOCOL_ERROR |
-            FDCAN_IT_RAM_ACCESS_FAILURE;   // Message RAM is unpowered or misconfigured
-        status =  HAL_FDCAN_ActivateNotification(hfdcan, error_flags, 0);
-
-        if (status != HAL_OK) {
-            Error_Handler();
-        }
-
-        status = HAL_FDCAN_Start(hfdcan);
-
-        if (status != HAL_OK) {
-            Error_Handler();
-        }
-    }
-    return status;
-}
-
 void CAN_Service_Init() {
     CAN_RxQueue = xQueueCreate(CAN_RX_QUEUE_SIZE, sizeof(CAN_RxMessage_t));
 
@@ -124,6 +97,10 @@ void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan) {
     }
     if (HAL_FDCAN_ActivateNotification(hfdcan, error_flags, 0) != HAL_OK)
     {
+        Error_Handler();
+    }
+
+    if (HAL_FDCAN_Start(hfdcan) != HAL_OK) {
         Error_Handler();
     }
 }

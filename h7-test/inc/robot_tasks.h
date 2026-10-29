@@ -35,7 +35,6 @@ osThreadId_t motor_task_handle;
 osThreadId_t robot_command_task_handle;
 
 osThreadId_t can_rx_task_handle;
-osThreadId_t can_start_task_handle;
 
 
 
@@ -51,7 +50,6 @@ void Robot_Tasks_Buzzer(void *argument);
 void Robot_Tasks_LED(void *argument);
 void Robot_Tasks_Remote(void *argument);
 void Robot_Tasks_CAN_Rx(void *argument);
-void Robot_Tasks_CAN_Start(void *argument);
 
 void Robot_Tasks_Start()
 {
@@ -118,13 +116,6 @@ void Robot_Tasks_Start()
     };
     can_rx_task_handle = osThreadNew(Robot_Tasks_CAN_Rx, NULL, &can_rx_task_attr);
 
-    const osThreadAttr_t can_start_task_attr = {
-        .name = "can_start_task",
-        .priority = osPriorityRealtime,
-        .stack_size = 512
-    };
-    can_start_task_handle = osThreadNew(Robot_Tasks_CAN_Start, NULL, &can_start_task_attr);
-
 }
 
 void Robot_Tasks_Buzzer(void *argument)
@@ -158,12 +149,6 @@ void Robot_Tasks_Buzzer(void *argument)
         
     // } // INF loop so that no weird returns happen
     vTaskSuspend(NULL);
-}
-
-void Robot_Tasks_CAN_Start(void *argument) {
-    CAN_Service_Start();
-
-    vTaskDelete(can_start_task_handle);
 }
 
 void Robot_Tasks_LED(void *argument) {

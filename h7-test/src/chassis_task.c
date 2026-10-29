@@ -16,8 +16,8 @@ void Chassis_Task_Init()
 {
     // Init chassis hardware
     Motor_Config_t test_motor_config = {
-        .can_bus = 1,
-        .speed_controller_id = 1,
+        .can_bus = 2,
+        .speed_controller_id = 4,
         .offset = 0,
         .control_mode = VELOCITY_CONTROL,
         .motor_reversal = MOTOR_REVERSAL_NORMAL,
