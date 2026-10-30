@@ -73,25 +73,20 @@ typedef struct
 
 } CAN_PSR_Status_t;
 
-// Error Struct
-typedef struct CAN_Error_Stats_t {
-    // CAN Protocol State
-    uint32_t error_warning_count; // TEC (transmit error count) or REC (receive error count) reach 96 
-    uint32_t error_passive_count; // TEC or REC reaches 128, 
-    uint32_t bus_off_count; // TEC or REC reaches 255, need to reset bus
-    
-    // Protocol Errors
-    uint32_t arbitration_error_count; // Protocol Error in Arbitration Phase (Nominal Bit Time is used)
-    uint32_t data_error_count; // Protocol Error in Data Phase (Data Bit Time is used)
-
-    // Peripheral Errors
-    uint32_t peripheral_error_count;
+typedef struct {
     uint32_t ram_access_error_count;
     uint32_t ram_watchdog_error_count;
     uint32_t reserved_area_error_count;
     uint32_t error_log_overflow_count;
+    uint32_t arbitration_error_count; // protocol error in arbitration phase
+    uint32_t data_error_count; // protocol error in data phase, used more in fdcan
     uint32_t timeout_count;
+} CAN_Peripheral_Errors_t;
 
+// Error Struct
+// Note: This struct only populates when it detects an error, so if there are no errors it may contain stale information.
+//       Use hfdcan->Instance to see the current state of the fdcan peripheral when debugging.
+typedef struct CAN_Error_Stats_t {
     // Last error diagnostics
     uint32_t last_error_code; // raw lec
     uint32_t last_psr; // raw psr (protocol status register)
@@ -100,11 +95,22 @@ typedef struct CAN_Error_Stats_t {
     uint8_t last_tec; // transmission error count
     uint8_t last_rec; // receiving error count
 
+    // CAN Protocol State
+    uint32_t error_warning_count; // TEC (transmit error count) or REC (receive error count) reach 96 
+    uint32_t error_passive_count; // TEC or REC reaches 128, 
+    uint32_t bus_off_count; // TEC or REC reaches 255, need to reset bus
+    
     uint32_t last_hal_error;
 
     // Timing
     uint32_t last_error_timestamp;  // FreeRTOS ticks at the time of the last fault
+    
+    uint32_t peripheral_error_count; // peripheral errors
 
+    // Peripheral Errors
+    CAN_Peripheral_Errors_t peripheral_errors;
+    
+    // Decoded PSR
     CAN_PSR_Status_t decoded_psr;
 } CAN_Error_Stats_t;
 

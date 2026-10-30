@@ -85,7 +85,7 @@ void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan) {
 
     HAL_FDCAN_ConfigInterruptLines(hfdcan, error_flags, FDCAN_INTERRUPT_LINE1);
 
-    FDCAN_FilterTypeDef sFilterConfig;
+    FDCAN_FilterTypeDef sFilterConfig = { 0 };
     sFilterConfig.IdType = FDCAN_STANDARD_ID;
     sFilterConfig.FilterIndex = 0;
     sFilterConfig.FilterType = FDCAN_FILTER_MASK;
@@ -225,6 +225,10 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             return;
         }
 
+        if (target_bus == NULL || CAN_RxQueue == NULL) {
+            return;
+        }
+
         while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0) > 0) {
             HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxMsg.header, rxMsg.data);
 
@@ -308,6 +312,14 @@ void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorSt
 }
 
 void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef *hfdcan) { // Peripheral error handling
+
+    // volatile uint32_t hal_error = HAL_FDCAN_GetError(hfdcan);
+    // volatile uint32_t ir        = hfdcan->Instance->IR;
+    // volatile uint32_t psr       = hfdcan->Instance->PSR;
+    // volatile uint32_t ecr       = hfdcan->Instance->ECR;
+    // if (hal_error == ir && psr == ecr) {
+    //     return;
+    // }
     CAN_Instance_t *bus;
 
     if (hfdcan->Instance == FDCAN1) {
@@ -330,28 +342,33 @@ void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef *hfdcan) { // Peripheral error 
 
     bus->errors.last_hal_error = error;
 
+    CAN_Peripheral_Errors_t * peripheral_errors = &bus->errors.peripheral_errors;
+
     if (error & HAL_FDCAN_ERROR_RAM_ACCESS)
-        bus->errors.ram_access_error_count++;
+        peripheral_errors->ram_access_error_count++;
 
     if (error & HAL_FDCAN_ERROR_RAM_WDG)
-        bus->errors.ram_watchdog_error_count++;
+        peripheral_errors->ram_watchdog_error_count++;
 
     if (error & HAL_FDCAN_ERROR_PROTOCOL_ARBT)
-        bus->errors.arbitration_error_count++;
+        peripheral_errors->arbitration_error_count++;
 
     if (error & HAL_FDCAN_ERROR_PROTOCOL_DATA)
-        bus->errors.data_error_count++;
+        peripheral_errors->data_error_count++;
 
     if (error & HAL_FDCAN_ERROR_RESERVED_AREA)
-        bus->errors.reserved_area_error_count++;
+        peripheral_errors->reserved_area_error_count++;
 
     if (error & HAL_FDCAN_ERROR_LOG_OVERFLOW)
-        bus->errors.error_log_overflow_count++;
+        peripheral_errors->error_log_overflow_count++;
 
     if (error & HAL_FDCAN_ERROR_TIMEOUT)
-        bus->errors.timeout_count++;
+        peripheral_errors->timeout_count++;
 
     bus->errors.peripheral_error_count++;
+
+    hfdcan->ErrorCode = HAL_FDCAN_ERROR_NONE;
+
 }
 
 // Called from CAN restart task
