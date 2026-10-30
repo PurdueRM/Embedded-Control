@@ -20,21 +20,24 @@
 
 extern void IMU_Task(void const *pvParameters);
 
-osThreadId imu_task_handle;
-osThreadId robot_command_task_handle;
-osThreadId motor_task_handle;
-osThreadId ui_task_handle;
-osThreadId debug_task_handle;
-osThreadId jetson_orin_task_handle;
-osThreadId daemon_task_handle;
+// osThreadId imu_task_handle;
+// osThreadId robot_command_task_handle;
+// osThreadId motor_task_handle;
+// osThreadId ui_task_handle;
+// osThreadId debug_task_handle;
+// osThreadId jetson_orin_task_handle;
+// osThreadId daemon_task_handle;
 
-osThreadId_t buzzer_task_handle;
-osThreadId_t heartbeat_led_task_handle;
-osThreadId_t remote_task_handle;
-osThreadId_t motor_task_handle;
-osThreadId_t robot_command_task_handle;
+TaskHandle_t buzzer_task_handle;
+TaskHandle_t heartbeat_led_task_handle;
+TaskHandle_t remote_task_handle;
+TaskHandle_t motor_task_handle;
+TaskHandle_t robot_command_task_handle;
 
-osThreadId_t can_rx_task_handle;
+TaskHandle_t can_rx_task_handle;
+TaskHandle_t can_restart_task_handle;
+
+extern CAN_Instance_t *g_buses[3];
 
 
 
@@ -50,6 +53,7 @@ void Robot_Tasks_Buzzer(void *argument);
 void Robot_Tasks_LED(void *argument);
 void Robot_Tasks_Remote(void *argument);
 void Robot_Tasks_CAN_Rx(void *argument);
+void Robot_Tasks_CAN_Restart(void *argument);
 
 void Robot_Tasks_Start()
 {
@@ -116,6 +120,51 @@ void Robot_Tasks_Start()
     };
     can_rx_task_handle = osThreadNew(Robot_Tasks_CAN_Rx, NULL, &can_rx_task_attr);
 
+    const osThreadAttr_t can_restart_task_attr = {
+        .name = "can_restart_task",
+        .priority = osPriorityHigh,
+        .stack_size = 512
+    };
+    can_restart_task_handle = osThreadNew(Robot_Tasks_CAN_Restart, NULL, &can_restart_task_attr);
+}
+
+void Robot_Tasks_CAN_Restart(void * argument) {
+    extern CAN_Instance_t *g_buses[3];
+    const TickType_t restart_poll_interval = pdMS_TO_TICKS(10);
+
+    while (1) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        bool restarting;
+
+        do {
+            restarting = false;
+
+            for (uint8_t i = 0; i < 3; i++) {
+                CAN_Instance_t *bus = g_buses[i];
+
+                if (bus == NULL) {
+                    continue;
+                }
+
+                if (bus->state == CAN_STATE_BUS_OFF) {
+                    CAN_Begin_Restart(bus);
+                }
+                else if (bus->state == CAN_STATE_RESTARTING) {
+                    CAN_Poll_Restart(bus);
+
+                    if (bus->state == CAN_STATE_RESTARTING) {
+                        restarting = true;
+                    }
+                }
+            }
+
+            // Wait briefly, but remain responsive to new Bus-Off events.
+            if (restarting) {
+                ulTaskNotifyTake(pdTRUE, restart_poll_interval);
+            }
+
+        } while (restarting);
+    }
 }
 
 void Robot_Tasks_Buzzer(void *argument)
