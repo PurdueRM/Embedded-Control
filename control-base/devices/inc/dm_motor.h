@@ -56,6 +56,8 @@ typedef struct
     float prev_pos_raw;
     float pos_unwrapped;
     uint8_t position_initialized;
+    uint8_t pos_init_prev;
+
 
 } DM_Motor_Stats_t;
 

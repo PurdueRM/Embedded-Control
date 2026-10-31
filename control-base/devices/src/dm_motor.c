@@ -88,6 +88,8 @@ void DM_Motor_Decode(CAN_Instance_t *motor_can_instance)
     unwrapped = data_frame->motor_reversal == CW_POS ? unwrapped : unwrapped;
 
     data_frame->pos = unwrapped;
+
+
 }
 
 /**

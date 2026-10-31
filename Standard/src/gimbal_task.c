@@ -8,7 +8,7 @@
 #include "jetson_orin.h"
 #include "dm_motor.h"
 
-extern Robot_State_t g_robot_state;
+extern Robot_State_t g_robot_state;\
 extern Remote_t g_remote;
 extern IMU_t g_imu;
 DM_Motor_Handle_t *g_yaw;
@@ -32,7 +32,7 @@ void Gimbal_Task_Init(){
     DM_Motor_Config_t yaw_motor_config = {
         .can_bus = 1,
         .control_mode = DM_MOTOR_MIT,
-        .pos_offset = 6.2,
+        .pos_offset = 6.2 - PI_OVER_2 - PI / 6,
         .rx_id = 0x11,
         .tx_id = 0x01,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
@@ -63,7 +63,13 @@ void Gimbal_Task_Init(){
     DM_Motor_Enable_Motor(g_pitch);
 }
 
-void Gimbal_Ctrl_Loop(){
+void Gimbal_Ctrl_Loop() {
+
+    if (g_yaw->stats->position_initialized == 1 && g_yaw->stats->pos_init_prev == 0) {
+        g_yaw->stats->pos_offset = g_yaw->stats->pos_raw * -1;
+        g_yaw->stats->pos_init_prev = 1;
+    }
+
     // Control loop for gimbal
     g_robot_state.gimbal.yaw_angle += g_remote.controller.right_stick.x/660.0f * 0.01f +  g_remote.mouse.x / 100000.0f;
 
@@ -82,7 +88,7 @@ void Gimbal_Ctrl_Loop(){
     // DM_Motor_Ctrl_MIT_PD(g_yaw, 0.0f, gimbal_target_vel, 0.0f, 1.0f, 0.0f);
     // DM_Motor_CtrlVel(g_yaw, gimbal_target_vel);
 
-    g_robot_state.gimbal.pitch_angle -= g_remote.controller.right_stick.y / 660.0f * 0.01f + g_remote.mouse.y/100000.0f;
+    g_robot_state.gimbal.pitch_angle -= g_remote.controller.right_stick.y / 660.0f * 0.01f - g_remote.mouse.y/100000.0f;
     __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.45f, 0.4f);
     
     DM_Motor_Enable_Motor(g_pitch);
