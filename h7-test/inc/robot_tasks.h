@@ -171,7 +171,7 @@ void Robot_Tasks_Buzzer(void *argument)
 {
     Melody_t system_init_melody = {
         .notes = SYSTEM_INITIALIZING,
-        .loudness = 0.01f,
+        .loudness = .01f,
         .note_num = SYSTEM_INITIALIZING_NOTE_NUM,
     };
     Buzzer_Play_Melody(&system_init_melody);

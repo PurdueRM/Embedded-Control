@@ -23,6 +23,11 @@ QueueHandle_t CAN_RxQueue = NULL;
 
 extern TaskHandle_t can_restart_task_handle;
 
+/**
+ * @brief CAN Initialization
+ *
+ * @note Called in Robot_Init() before RTOS tasks start
+ */
 void CAN_Service_Init() {
     CAN_RxQueue = xQueueCreate(CAN_RX_QUEUE_SIZE, sizeof(CAN_RxMessage_t));
 
@@ -32,7 +37,14 @@ void CAN_Service_Init() {
 }
 
 /**
- * @brief Initialize the Bus Object, Queue, and Hardware
+ * @brief Initializes and starts a CAN peripheral
+ * 
+ * @param bus CAN instance
+ * @param hfdcan CAN handle
+ *
+ * @note Creates tx mutex, configures filters, configures and activates interrupts, then starts the peripheral.
+ *       Although the filter does not filter any messages, we still must have one for proper RAM offsets. Of the two interrupt
+ *       lines, one handles all receiving and the other only contains errors. 
  */
 void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan) {
     bus->hfdcan = hfdcan;
@@ -114,6 +126,14 @@ void CAN_Instance_Init(CAN_Instance_t *bus, FDCAN_HandleTypeDef *hfdcan) {
     bus->state = CAN_STATE_NORMAL;
 }
 
+/**
+ * @brief Registers a device with the CAN peripheral
+ *
+ * @param bus CAN instance
+ * @param tx_id ID used when transmitting to a motor
+ * @param rx_id ID the peripheral listens for when receiving
+ * @param callback RX processing callback
+ */
 CAN_Device_t *CAN_Device_Register(CAN_Instance_t *bus, uint16_t tx_id, uint16_t rx_id, void (*callback)(CAN_Device_t *)) {
 
     // Overflow protection
@@ -144,7 +164,14 @@ CAN_Device_t *CAN_Device_Register(CAN_Instance_t *bus, uint16_t tx_id, uint16_t 
     return device;
 }
 
-// Used to register devices which only use tx (like dji motor send groups)
+/**
+ * @brief Registers a device with the CAN peripheral only TX
+ *
+ * @param bus CAN instance
+ * @param tx_od ID used when transmitting
+ *
+ * @note Used to register devices which only use tx (like dji motor send groups)
+ */
 CAN_Device_t *CAN_Tx_Device_Register(CAN_Instance_t *bus, uint16_t tx_id) {
     // Overflow protection
     if (bus->device_count >= CAN_MAX_DEVICES_PER_BUS || g_device_allocated_count >= TOTAL_MAX_DEVICES) {
@@ -174,6 +201,13 @@ CAN_Device_t *CAN_Tx_Device_Register(CAN_Instance_t *bus, uint16_t tx_id) {
     return device;
 }
 
+/**
+ * @brief Transmits CAN message
+ *
+ * @param device CAN Device
+ *
+ * @note Takes a semaphore, then adds message to the tx queue if there is space
+ */
 HAL_StatusTypeDef CAN_Transmit(CAN_Device_t *device)
 {
     if (device == NULL || device->parent_bus == NULL) {
@@ -204,6 +238,12 @@ HAL_StatusTypeDef CAN_Transmit(CAN_Device_t *device)
     return status;
 }
 
+/**
+ * @brief RX HAL FDCAN Callback called by RX 0 IRQ
+ *
+ * @param hfdcan FDCAN handle
+ * @param RxFifo0ITs Receive FIFO 0 Interrupt Status
+ */
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 {
     if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
@@ -245,9 +285,20 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 }
 
 /*
+ * ---------------------------------------------------------------------------------------------------------
  * Error Handling
+ * ---------------------------------------------------------------------------------------------------------
  */
 
+/**
+ * @brief Error status callback
+ * 
+ * @param hfdcan FDCAN handle
+ * @param ErrorStatusITs
+ *
+ * @note Tracks protocol state machine status and error counters. If enough TEC/REC errors occur to cause a bus off,
+ *       the function signals a rtos task to restart the peripheral.
+ */
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs) {
     CAN_Instance_t *bus;
 
@@ -293,33 +344,28 @@ void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorSt
     // Update state
     uint32_t psr = hfdcan->Instance->PSR;
 
-    if (psr & FDCAN_PSR_BO)
-    {
+    if (psr & FDCAN_PSR_BO) {
         bus->state = CAN_STATE_BUS_OFF;
     }
-    else if (psr & FDCAN_PSR_EP)
-    {
+    else if (psr & FDCAN_PSR_EP) {
         bus->state = CAN_STATE_ERROR_PASSIVE;
     }
-    else if (psr & FDCAN_PSR_EW)
-    {
+    else if (psr & FDCAN_PSR_EW) {
         bus->state = CAN_STATE_ERROR_WARNING;
     }
-    else if (bus->state != CAN_STATE_RESTARTING)
-    {
+    else if (bus->state != CAN_STATE_RESTARTING) {
         bus->state = CAN_STATE_NORMAL;
     }
 }
 
-void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef *hfdcan) { // Peripheral error handling
-
-    // volatile uint32_t hal_error = HAL_FDCAN_GetError(hfdcan);
-    // volatile uint32_t ir        = hfdcan->Instance->IR;
-    // volatile uint32_t psr       = hfdcan->Instance->PSR;
-    // volatile uint32_t ecr       = hfdcan->Instance->ECR;
-    // if (hal_error == ir && psr == ecr) {
-    //     return;
-    // }
+/**
+ * @brief Error callback
+ *
+ * @param hfdcan CAN handle
+ *
+ * @note Tracks peripheral errors
+ */
+void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef *hfdcan) {
     CAN_Instance_t *bus;
 
     if (hfdcan->Instance == FDCAN1) {
@@ -337,41 +383,47 @@ void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef *hfdcan) { // Peripheral error 
 
     CAN_CaptureDiagnostics(bus, hfdcan);
 
-    // Hal errors are sticky, once you access them they clear
+    // Hal errors are sticky
     uint32_t error = HAL_FDCAN_GetError(hfdcan);
 
     bus->errors.last_hal_error = error;
 
     CAN_Peripheral_Errors_t * peripheral_errors = &bus->errors.peripheral_errors;
 
-    if (error & HAL_FDCAN_ERROR_RAM_ACCESS)
+    if (error & HAL_FDCAN_ERROR_RAM_ACCESS) {
         peripheral_errors->ram_access_error_count++;
-
-    if (error & HAL_FDCAN_ERROR_RAM_WDG)
+    }
+    if (error & HAL_FDCAN_ERROR_RAM_WDG) {
         peripheral_errors->ram_watchdog_error_count++;
-
-    if (error & HAL_FDCAN_ERROR_PROTOCOL_ARBT)
+    }
+    if (error & HAL_FDCAN_ERROR_PROTOCOL_ARBT) {
         peripheral_errors->arbitration_error_count++;
-
-    if (error & HAL_FDCAN_ERROR_PROTOCOL_DATA)
+    }
+    if (error & HAL_FDCAN_ERROR_PROTOCOL_DATA) {
         peripheral_errors->data_error_count++;
-
-    if (error & HAL_FDCAN_ERROR_RESERVED_AREA)
+    }
+    if (error & HAL_FDCAN_ERROR_RESERVED_AREA) {
         peripheral_errors->reserved_area_error_count++;
-
-    if (error & HAL_FDCAN_ERROR_LOG_OVERFLOW)
+    }
+    if (error & HAL_FDCAN_ERROR_LOG_OVERFLOW) {
         peripheral_errors->error_log_overflow_count++;
-
-    if (error & HAL_FDCAN_ERROR_TIMEOUT)
+    }
+    if (error & HAL_FDCAN_ERROR_TIMEOUT) {
         peripheral_errors->timeout_count++;
-
+    }
     bus->errors.peripheral_error_count++;
 
     hfdcan->ErrorCode = HAL_FDCAN_ERROR_NONE;
 
 }
 
-// Called from CAN restart task
+/**
+ * @brief Begins the restarting of the CAN peripheral
+ *
+ * @param bus CAN instance
+ *
+ * @note Called from CAN restart task to begin restarting
+ */
 void CAN_Begin_Restart(CAN_Instance_t *bus) {
     if (bus == NULL || bus->state != CAN_STATE_BUS_OFF) {
         return;
@@ -384,7 +436,13 @@ void CAN_Begin_Restart(CAN_Instance_t *bus) {
     CLEAR_BIT(hfdcan->Instance->CCCR, FDCAN_CCCR_INIT);
 }
 
-// Periodically called in CAN task, returns driver to NORMAL state after recovery completes
+/**
+ * @brief Poll to check that the CAN has restarted
+ *
+ * @param bus CAN instance
+ *
+ * @note Periodically called in CAN task, returns driver to NORMAL state after recovery completes
+ */
 void CAN_Poll_Restart(CAN_Instance_t *bus) {
     if (bus == NULL || bus->state != CAN_STATE_RESTARTING) {
         return;
@@ -408,7 +466,9 @@ void CAN_Poll_Restart(CAN_Instance_t *bus) {
 }
 
 /* 
+ * ---------------------------------------------------------------------------------------------------------
  * Helpers
+ * ---------------------------------------------------------------------------------------------------------
  */
 
 CAN_Instance_t* CAN_Get_Bus_Instance(uint8_t bus_number) {
