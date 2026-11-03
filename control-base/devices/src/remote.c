@@ -3,7 +3,7 @@
   * @file    remote.c
   * @brief   This file contains the driver functions for DR16 Remote From DJI
   ******************************************************************************
-  */
+*/
 #include "remote.h"
 #include "bsp_uart.h"
 #include "bsp_daemon.h"
@@ -16,10 +16,15 @@ Daemon_Instance_t *g_remote_daemon;
 
 uint8_t remote_buffer[18];
 
-Remote_t* Remote_Init(UART_HandleTypeDef *huart)
-{
+static void Remote_Timeout_Callback() {
+    memset(&g_remote, 0, sizeof(g_remote)); // online_flag = 0 and no stale inputs
+    UART_Restart_Rx(g_remote_uart);
+}
+
+Remote_t* Remote_Init(UART_HandleTypeDef *huart) {
 	g_remote_uart = &uart5_instance;
     g_remote.online_flag = REMOTE_OFFLINE;
+    g_remote_daemon = Daemon_Register(20, 20, Remote_Timeout_Callback);
 	return &g_remote;
 }
 
@@ -28,8 +33,7 @@ Remote_t* Remote_Init(UART_HandleTypeDef *huart)
  * 
  * Decode the buffer received from DR16 receiver to g_remote. @ref Remote_t
  */
-void Remote_Buffer_Process()
-{
+void Remote_Buffer_Process() {
     UART_Message_t received_msg;
 
     const TickType_t failsafe_timeout = pdMS_TO_TICKS(20); // 20 ms
@@ -39,9 +43,15 @@ void Remote_Buffer_Process()
             return; 
         }
 	    memcpy(remote_buffer, (void*) received_msg.payload, 18);
-        SBUS_TO_RC(remote_buffer, &g_remote);
+        Remote_t temp = { 0 };
+        SBUS_TO_RC(remote_buffer, &temp);
+
+        taskENTER_CRITICAL();
+        g_remote = temp;
+        taskEXIT_CRITICAL();
 
         g_remote.online_flag = REMOTE_ONLINE;
+        Daemon_Reload(g_remote_daemon);
     }
     else { // Receive timed out --> controller is disconnected
         memset(&g_remote, 0, sizeof(Remote_t));
@@ -56,8 +66,7 @@ void Remote_Buffer_Process()
   *         contains the information  for the remote control.
   * @retval none
   */
-void SBUS_TO_RC(volatile const uint8_t *sbus_buf, Remote_t *remote_ctrl)
-{
+void SBUS_TO_RC(volatile const uint8_t *sbus_buf, Remote_t *remote_ctrl) {
     if (sbus_buf == NULL || remote_ctrl == NULL) return;
     /* Channel 0, 1, 2, 3 */
     remote_ctrl->controller.right_stick.x = (  sbus_buf[0]       | (sbus_buf[1] << 8 ) ) & 0x07ff;                            //!< Channel 0
