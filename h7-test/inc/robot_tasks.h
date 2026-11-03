@@ -218,6 +218,9 @@ void Robot_Tasks_Remote(void *argument) {
 }
 
 void Robot_Tasks_CAN_Rx(void *argument) {
+    portTickType xLastWakeTime;
+    xLastWakeTime = xTaskGetTickCount();
+    const TickType_t TimeIncrement = pdMS_TO_TICKS(1);
     CAN_RxMessage_t incomingMsg;
     extern QueueHandle_t CAN_RxQueue;
 
@@ -242,6 +245,7 @@ void Robot_Tasks_CAN_Rx(void *argument) {
                 }
             }
         }
+        vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
     }
 }
 

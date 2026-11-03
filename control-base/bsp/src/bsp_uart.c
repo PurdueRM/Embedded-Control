@@ -7,6 +7,8 @@
 
 #include "FreeRTOS.h"
 #include "portable.h"
+#include "projdefs.h"
+#include "stm32f4xx_hal_uart.h"
 #include "stream_buffer.h"
 
 #define UART_INSTANCE_MAX 4
@@ -33,6 +35,21 @@ static UART_Instance_t* get_uart_instance(UART_HandleTypeDef *huart) {
     return NULL;
 }
 
+static bool start_rx(UART_Instance_t *instance) {
+    if (HAL_UARTEx_ReceiveToIdle_DMA(
+            instance->uart_handle,
+            instance->rx_buffers[instance->active_buffer_index],
+            instance->rx_buffer_size) != HAL_OK)
+    {
+        instance->errors.rx_restart_failures++;
+        return false;
+    }
+ 
+    // Only idle/transfer-complete events are wanted, not half-transfer
+    __HAL_DMA_DISABLE_IT(instance->uart_handle->hdmarx, DMA_IT_HT);
+    return true;
+}
+
 /**
  * @brief Register UART instance
  * 
@@ -44,7 +61,7 @@ static UART_Instance_t* get_uart_instance(UART_HandleTypeDef *huart) {
  * @note This UART implementation only handles fixed-length packets 
 */
 uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart, uint8_t *rx_buffer_block, uint16_t rx_buffer_size) {
-    if (g_uart_instance_count >= UART_INSTANCE_MAX || uart_instance == NULL || rx_buffer_block == NULL) { // Overflow protection
+    if (g_uart_instance_count >= UART_INSTANCE_MAX || uart_instance == NULL || rx_buffer_block == NULL || rx_buffer_size == 0) { // Overflow protection
         return false; 
     }
 
@@ -56,15 +73,29 @@ uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart,
     uart_instance->read_ptr = 0;
 
     // Split up buffer block into pointer array
-    for (int i = 0; i < UART_MSG_QUEUE_SIZE; i++) {
+    for (int i = 0; i < UART_RX_BUF_COUNT; i++) {
         uart_instance->rx_buffers[i] = rx_buffer_block + (i * sizeof(UART_Packet_t));
     }
 
     // Create FreeRTOS rx message queue
     uart_instance->msg_queue = xQueueCreate(UART_MSG_QUEUE_SIZE, sizeof(UART_Message_t));
+    if (uart_instance->msg_queue == NULL) {
+        return false;
+    }
 
-    // Create FreeRTOS tx semaphore
+    // Create FreeRTOS tx semaphore and mutex
     uart_instance->tx_complete_sem = xSemaphoreCreateBinary();
+    if (uart_instance->tx_complete_sem == NULL) {
+        vQueueDelete(uart_instance->msg_queue);
+        return false;
+    }
+
+    uart_instance->tx_mutex = xSemaphoreCreateMutex();
+    if (uart_instance->tx_mutex == NULL) {
+        vQueueDelete(uart_instance->msg_queue);
+        vSemaphoreDelete(uart_instance->tx_complete_sem);
+        return false;
+    }
 
     uart_instance->is_initialized = 1;
 
@@ -76,14 +107,16 @@ uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart,
     g_uart_instances[g_uart_instance_count++] = uart_instance;
 
     // starts DMA on buffer 0
-    HAL_UARTEx_ReceiveToIdle_DMA(
-        uart_instance->uart_handle, 
-        uart_instance->rx_buffers[uart_instance->active_buffer_index], 
-        uart_instance->rx_buffer_size
-    );
+    if (!start_rx(uart_instance)) {
+        g_uart_instance_count--;
+        uart_instance->is_initialized = 0;
 
-    // Disable HT interrupt
-    __HAL_DMA_DISABLE_IT(uart_instance->uart_handle->hdmarx, DMA_IT_HT);
+        vQueueDelete(uart_instance->msg_queue);
+        vSemaphoreDelete(uart_instance->tx_complete_sem);
+        vSemaphoreDelete(uart_instance->tx_mutex);
+
+        memset(uart_instance, 0, sizeof(UART_Instance_t));
+    }
 
     return true;
 }
@@ -108,11 +141,16 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
         return;
     }
 
+    // Half-Transfer, DMA is still filling buffer
+    if (HAL_UARTEx_GetRxEventType(huart) == HAL_UART_RXEVENT_HT) {
+        return;
+    }
+
     // Figure out what buffer just finished receiving data
     uint8_t finished_buffer_index = instance->active_buffer_index;
 
     // Flip index
-    instance->active_buffer_index = (instance->active_buffer_index + 1) % UART_MSG_QUEUE_SIZE;
+    instance->active_buffer_index = (instance->active_buffer_index + 1) % UART_RX_BUF_COUNT;
 
     // Restart DMA into new buffer, keeps reading data while ISR is running
     HAL_UARTEx_ReceiveToIdle_DMA(
@@ -128,7 +166,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
     // Create message
     UART_Message_t msg;
-    msg.payload = instance->rx_buffers[finished_buffer_index];
+    memcpy(msg.payload, instance->rx_buffers[finished_buffer_index], Size);
     msg.length = instance->rx_buffer_size;
 
     // Send message
@@ -137,7 +175,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
     // Force a context switch if a higher priority task was unblocked
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
 }
 
 /**
@@ -181,26 +218,33 @@ uint8_t UART_Transmit(UART_Instance_t *instance, uint8_t *tx_buffer, uint16_t tx
         return false;
     }
 
-    // Clear any old semaphore state just in case
-    xSemaphoreTake(instance->tx_complete_sem, 0);
-
-    // Tell HAL to start the DMA
-    if (HAL_UART_Transmit_DMA(instance->uart_handle, tx_buffer, tx_buffer_len) != HAL_OK) {
+    // Acquire tx mutex
+    if (xSemaphoreTake(instance->tx_mutex, timeout) != pdFALSE) {
         return false;
     }
 
-    // Put calling task to sleep until tx callback wakes it up or timeout is reached
-    if (xSemaphoreTake(instance->tx_complete_sem, timeout) != pdTRUE) {
-        // Condition only true if hardware timed out or froze
-        HAL_UART_AbortTransmit(instance->uart_handle); 
-        return false; 
+    // Clear any old semaphore state just in case
+    xSemaphoreTake(instance->tx_complete_sem, 0);
+
+    bool status = false;
+
+    // Tell HAL to start the DMA
+    if (HAL_UART_Transmit_DMA(instance->uart_handle, tx_buffer, tx_buffer_len) == HAL_OK) {
+        if (xSemaphoreTake(instance->tx_complete_sem, timeout) == pdTRUE) {
+            status = true;
+        }
+        else {
+            // Condition only true if hardware timed out or froze
+            HAL_UART_AbortTransmit(instance->uart_handle);
+        }
+    }
+    else {
+        return false;
     }
 
-    while (__HAL_UART_GET_FLAG(instance->uart_handle, UART_FLAG_TC) == RESET) {
-       ; // wait until UART peripheral actually sent packet
-    }
+    xSemaphoreGive(instance->tx_mutex);
 
-    return true;
+    return status;
 }
 
 /**
@@ -252,4 +296,21 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     );
     __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
 
+}
+
+/**
+ * @brief UART restart
+ *
+ * @param instance UART instance
+ *
+ * @note Used by the daemon to restart reception
+*/
+uint8_t UART_Restart_Rx(UART_Instance_t *instance)
+{
+    if (instance == NULL || !instance->is_initialized) {
+        return false;
+    }
+ 
+    HAL_UART_AbortReceive(instance->uart_handle);
+    return start_rx(instance);
 }

@@ -21,8 +21,7 @@ void LED_Start() {
     const uint16_t steps_per_segment = 50;   
     const uint16_t steps_per_cycle = steps_per_segment * 6;
 
-    while (1)
-    {
+    while (1) {
         // set tx buffer
         uint8_t txbuf[24];  // 8 bytes per color channel
         for (int bit = 0; bit < 8; bit++)
@@ -34,12 +33,6 @@ void LED_Start() {
 
         // transmit colors
         (void)HAL_SPI_Transmit(&hspi6, txbuf, sizeof(txbuf), 0xFFFF);
-
-        // reset pulse (has to cover 50 microseconds)
-        // uint8_t zero = 0x00; 
-        // while (hspi6.State != HAL_SPI_STATE_READY) {
-        //     (void)HAL_SPI_Transmit(&hspi6, &zero, 1, 20);
-        // }
 
         // update colors
         uint16_t s = step % steps_per_cycle;
