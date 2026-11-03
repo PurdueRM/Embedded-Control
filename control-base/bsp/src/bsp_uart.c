@@ -137,11 +137,9 @@ uint8_t UART_Register(UART_Instance_t *uart_instance, UART_HandleTypeDef *huart,
  * @param huart UART handle
  * @param Size size of the received data
  * 
- * @note This function is called after two different interrupts:
- * - DMA_IT_TC (Transfer Complete Interrupt) --> DMA fully fills buffer
- * - DMA_IT_IDLE (Idle Interrupt) --> Line is idle (high) for one UART frame
- * It creates a message from the rx buffer that was just filled, then sends it
- * into the FreeRTOS queue associated with the uart instance.
+ * @note This function is called after DMA_IT_TC (Transfer Complete Interrupt), when
+ * the peripheral finishes a transfer. The function creates a message from the rx buffer 
+ * that was just filled, then sends it nto the FreeRTOS queue associated with the uart instance.
 */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
