@@ -53,7 +53,7 @@ typedef struct _UART_Instance
     SemaphoreHandle_t tx_mutex;
 
     // RX buffer tracking
-    uint8_t *rx_buffers[UART_MSG_QUEUE_SIZE];
+    uint8_t *rx_buffers[UART_RX_BUF_COUNT];
     uint16_t rx_buffer_size;
     uint8_t active_buffer_index;
     uint16_t read_ptr;
@@ -71,7 +71,23 @@ uint8_t UART_Restart_Rx(UART_Instance_t *uart_instance);
 
 /* Statically Allocated UART buffers */
 
+extern UART_Instance_t uart1_instance;
+extern UART_Packet_t uart1_rx_buffers[UART_RX_BUF_COUNT];
+
+extern UART_Instance_t uart2_instance; // RS458
+extern UART_Packet_t uart2_rx_buffers[UART_RX_BUF_COUNT];
+
+extern UART_Instance_t uart3_instance; // RS458
+extern UART_Packet_t uart3_rx_buffers[UART_RX_BUF_COUNT];
+
 extern UART_Instance_t uart5_instance;
-extern UART_Packet_t uart5_rx_buffers[UART_MSG_QUEUE_SIZE]; // add config file for peripherals
+extern UART_Packet_t uart5_rx_buffers[UART_RX_BUF_COUNT];
+
+extern UART_Instance_t uart7_instance;
+extern UART_Packet_t uart7_rx_buffers[UART_RX_BUF_COUNT];
+
+extern UART_Instance_t uart10_instance;
+extern UART_Packet_t uart10_rx_buffers[UART_RX_BUF_COUNT];
+
 
 #endif // BSP_UART_H

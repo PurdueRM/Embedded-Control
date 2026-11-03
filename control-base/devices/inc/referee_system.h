@@ -268,7 +268,7 @@ typedef struct
 	uint8_t Online_Flag;
 } Referee_System_t;
 
-void Referee_Get_Data(UART_Instance_t *uart_instance);
+void Referee_Buffer_Process(void);
 void Referee_Set_Robot_State(void);
 void Referee_System_Init(UART_HandleTypeDef *huart);
 

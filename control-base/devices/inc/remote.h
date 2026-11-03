@@ -13,6 +13,7 @@
 #define REMOTE_STICK_MAX (660.0f)
 #define REMOTE_ONLINE (1)
 #define REMOTE_OFFLINE (0)
+#define REMOTE_BUFFER_LEN (18)
 
 #define KEY_W ((uint16_t)0x01<<0)
 #define KEY_S ((uint16_t)0x01<<1)

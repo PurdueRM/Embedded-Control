@@ -31,6 +31,7 @@ extern void IMU_Task(void const *pvParameters);
 TaskHandle_t buzzer_task_handle;
 TaskHandle_t heartbeat_led_task_handle;
 TaskHandle_t remote_task_handle;
+TaskHandle_t referee_task_handle;
 TaskHandle_t motor_task_handle;
 TaskHandle_t robot_command_task_handle;
 
@@ -52,6 +53,7 @@ void Robot_Tasks_Motor(void *argument);
 void Robot_Tasks_Buzzer(void *argument);
 void Robot_Tasks_LED(void *argument);
 void Robot_Tasks_Remote(void *argument);
+void Robot_Tasks_Referee(void *argument);
 void Robot_Tasks_CAN_Rx(void *argument);
 void Robot_Tasks_CAN_Restart(void *argument);
 
@@ -112,6 +114,13 @@ void Robot_Tasks_Start()
         .stack_size = 512
     };
     remote_task_handle = osThreadNew(Robot_Tasks_Remote, NULL, &remote_task_attr);
+
+    const osThreadAttr_t referee_task_attr = {
+        .name = "referee_task",
+        .priority = osPriorityHigh,
+        .stack_size = 512
+    };
+    referee_task_handle = osThreadNew(Robot_Tasks_Remote, NULL, &referee_task_attr);
 
     const osThreadAttr_t can_rx_task_attr = {
         .name = "can_rx_task",
@@ -212,6 +221,20 @@ void Robot_Tasks_Remote(void *argument) {
     while (1)
     {
         Remote_Buffer_Process(); // TODO: Change this to one in robot.c
+        vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
+
+    }
+}
+
+void Robot_Tasks_Referee(void *argument) {
+    portTickType xLastWakeTime;
+    xLastWakeTime = xTaskGetTickCount();
+    const TickType_t TimeIncrement = pdMS_TO_TICKS(1);
+    UART_Register(&uart5_instance, &huart5, (uint8_t*) uart5_rx_buffers, 18);
+    while (1)
+    {
+        // Add UI here
+        Referee_Buffer_Process();
         vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
 
     }

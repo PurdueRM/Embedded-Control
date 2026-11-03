@@ -16,11 +16,19 @@ Daemon_Instance_t *g_remote_daemon;
 
 uint8_t remote_buffer[18];
 
+/**
+ * @brief Callback for daemon timeout
+ */
 static void Remote_Timeout_Callback() {
     memset(&g_remote, 0, sizeof(g_remote)); // online_flag = 0 and no stale inputs
     UART_Restart_Rx(g_remote_uart);
 }
 
+/**
+ * @brief Remote intializattion
+ *
+ * @param huart Remote UART handle (uart5 on dm_mc02)
+ */
 Remote_t* Remote_Init(UART_HandleTypeDef *huart) {
 	g_remote_uart = &uart5_instance;
     g_remote.online_flag = REMOTE_OFFLINE;
@@ -28,7 +36,7 @@ Remote_t* Remote_Init(UART_HandleTypeDef *huart) {
 	return &g_remote;
 }
 
-/*
+/**
  * Remote_BufferProcess()
  * 
  * Decode the buffer received from DR16 receiver to g_remote. @ref Remote_t
@@ -39,10 +47,10 @@ void Remote_Buffer_Process() {
     const TickType_t failsafe_timeout = pdMS_TO_TICKS(20); // 20 ms
 
     if (xQueueReceive(uart5_instance.msg_queue, &received_msg, failsafe_timeout) == pdTRUE) {
-        if (received_msg.length != 18) {
+        if (received_msg.length != REMOTE_BUFFER_LEN) {
             return; 
         }
-	    memcpy(remote_buffer, (void*) received_msg.payload, 18);
+	    memcpy(remote_buffer, (void*) received_msg.payload, REMOTE_BUFFER_LEN);
         Remote_t temp = { 0 };
         SBUS_TO_RC(remote_buffer, &temp);
 

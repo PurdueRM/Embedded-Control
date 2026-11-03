@@ -3,13 +3,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "memory.h"
+#include <string.h>
 
-#include "FreeRTOS.h"
-#include "portable.h"
-#include "projdefs.h"
-#include "stm32f4xx_hal_uart.h"
-#include "stream_buffer.h"
+#include "stm32h7xx_hal_uart.h"
 
 #define UART_INSTANCE_MAX 4
 
@@ -17,9 +13,23 @@ UART_Instance_t *g_uart_instances[UART_INSTANCE_MAX];
 uint8_t g_uart_instance_count = 0;
 
 // Statically allocated buffers
-__attribute__((section(".non_cacheable"))) UART_Instance_t uart5_instance;
-__attribute__((section(".non_cacheable"))) UART_Packet_t uart5_rx_buffers[UART_MSG_QUEUE_SIZE]; // add config file for peripherals
+UART_Instance_t uart1_instance;
+__attribute__((section(".non_cacheable"))) UART_Packet_t uart1_rx_buffers[UART_RX_BUF_COUNT];
 
+UART_Instance_t uart2_instance; // RS458
+__attribute__((section(".non_cacheable"))) UART_Packet_t uart2_rx_buffers[UART_RX_BUF_COUNT];
+
+UART_Instance_t uart3_instance; // RS458
+__attribute__((section(".non_cacheable"))) UART_Packet_t uart3_rx_buffers[UART_RX_BUF_COUNT];
+
+UART_Instance_t uart5_instance;
+__attribute__((section(".non_cacheable"))) UART_Packet_t uart5_rx_buffers[UART_RX_BUF_COUNT];
+
+UART_Instance_t uart7_instance;
+__attribute__((section(".non_cacheable"))) UART_Packet_t uart7_rx_buffers[UART_RX_BUF_COUNT];
+
+UART_Instance_t uart10_instance;
+__attribute__((section(".non_cacheable"))) UART_Packet_t uart10_rx_buffers[UART_RX_BUF_COUNT];
 
 /** 
  * @brief Find registered UART instance
