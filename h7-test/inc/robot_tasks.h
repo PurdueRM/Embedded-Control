@@ -37,12 +37,12 @@ TaskHandle_t robot_command_task_handle;
 
 TaskHandle_t can_rx_task_handle;
 TaskHandle_t can_restart_task_handle;
+TaskHandle_t imu_task_handle;
 
 extern CAN_Instance_t *g_buses[3];
 
 
 
-void Robot_Tasks_IMU(void const *argument);
 void Robot_Tasks_UI(void const *argument);
 void Robot_Tasks_Debug(void const *argument);
 void Robot_Tasks_Jetson_Orin(void const *argument);
@@ -56,6 +56,8 @@ void Robot_Tasks_Remote(void *argument);
 void Robot_Tasks_Referee(void *argument);
 void Robot_Tasks_CAN_Rx(void *argument);
 void Robot_Tasks_CAN_Restart(void *argument);
+void Robot_Tasks_IMU(void *argument);
+
 
 void Robot_Tasks_Start()
 {
@@ -135,6 +137,13 @@ void Robot_Tasks_Start()
         .stack_size = 512
     };
     can_restart_task_handle = osThreadNew(Robot_Tasks_CAN_Restart, NULL, &can_restart_task_attr);
+
+    const osThreadAttr_t imu_task_attr = {
+        .name = "imu_task",
+        .priority = osPriorityHigh,
+        .stack_size = 512
+    };
+    imu_task_handle = osThreadNew(Robot_Tasks_IMU, NULL, &imu_task_attr);
 }
 
 void Robot_Tasks_CAN_Restart(void * argument) {
@@ -185,7 +194,7 @@ void Robot_Tasks_Buzzer(void *argument)
     };
     Buzzer_Play_Melody(&system_init_melody);
     vTaskDelay(pdMS_TO_TICKS(1));
-    // vTaskDelete(NULL);
+    vTaskDelete(NULL);
 
     // Melody_t megalovania_melody = {
     //     .notes = MEGALOVANIA_MOTIF,
@@ -206,7 +215,7 @@ void Robot_Tasks_Buzzer(void *argument)
     //     // Buzzer_Play_Melody(&goat_theme_melody);
         
     // } // INF loop so that no weird returns happen
-    vTaskSuspend(NULL);
+    // vTaskSuspend(NULL);
 }
 
 void Robot_Tasks_LED(void *argument) {
@@ -284,7 +293,7 @@ void Robot_Tasks_Robot_Command(void *argument)
     }
 }
 
-__weak void Robot_Tasks_IMU(void const *argument)
+void Robot_Tasks_IMU(void *argument)
 {
     IMU_Task(argument);
 }

@@ -32,6 +32,13 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+/* Corrected CS Pin Definitions based on Schematic */
+#define CS1_ACCEL_Pin       GPIO_PIN_0
+#define CS1_ACCEL_GPIO_Port GPIOC
+
+#define CS1_GYRO_Pin        GPIO_PIN_3
+#define CS1_GYRO_GPIO_Port  GPIOC
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
