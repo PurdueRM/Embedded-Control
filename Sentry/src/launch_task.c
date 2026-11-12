@@ -1,6 +1,7 @@
 #include "launch_task.h"
 
 #include "dji_motor.h"
+#include "jetson_orin.h"
 #include "motor.h"
 #include "robot.h"
 #include "remote.h"
@@ -75,6 +76,11 @@ void Launch_Task_Init()
 
 void Launch_Ctrl_Loop()
 {
+    if (g_remote.controller.right_switch == UP) {
+        if (g_orin_data.receiving.auto_aiming.fire) {
+            g_robot_state.launch.busy_mode = SINGLE_FIRE;
+        }
+    }
     if (!g_robot_state.launch.IS_FIRING_ENABLED)
     {
         stopFlywheel();
