@@ -84,9 +84,9 @@ void Chassis_Task_Init()
         &init_pose
     );
 
-    chassis_state.v_x = 0.0f;
-    chassis_state.v_y = 0.0f;
-    chassis_state.omega = 0.0f;
+    g_robot_state.chassis.x_speed = 0.0f;
+    g_robot_state.chassis.y_speed = 0.0f;
+    g_robot_state.chassis.omega = 0.0f;
 
     for (int i = 0; i < 4; i++) {
         // configure rate limiters
@@ -132,7 +132,7 @@ void Chassis_Process_Target_Velocity()
         else {  //Decrease spintop rate if not hit for a while
             chassis_omega_new_target = omega; // 2 * PI rad/s
         }
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
 
         // float frenquncy = 0.1f;
         // speed_up_spintop_rate = 8 * PI * sin(2*PI*frenquncy*time_for_omega);
@@ -144,7 +144,7 @@ void Chassis_Process_Target_Velocity()
         chassis_omega_new_target = PID(&g_follow_gimbal_angle_pid, gimbal_angle_difference);
         __MAX_LIMIT(chassis_omega_new_target, -6*2*PI, 6*2*PI);
         // chassis_omega_new_target = -g_remote.controller.right_stick.x/660.0f * 6 * PI;
-        __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.001f);
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.omega, chassis_omega_new_target, 0.001f);
     }
     // __FIRST_ORDER_FILTER(chassis_state.omega, chassis_omega_new_target, 0.003f);
     Update_Omega();
@@ -158,18 +158,18 @@ void Chassis_Ctrl_Loop()
 
     if (g_robot_state.IS_SUPER_CAPACITOR_ENABLED) {
         physical_constants.max_speed = 5.0f;
-        __FIRST_ORDER_FILTER(chassis_state.v_x, 2 * (chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference)), 0.005f);
-        __FIRST_ORDER_FILTER(chassis_state.v_y, 2 * (chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference)), 0.005f)
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.x_speed, 2 * (chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference)), 0.005f);
+        __FIRST_ORDER_FILTER(g_robot_state.chassis.y_speed, 2 * (chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference)), 0.005f)
     } else {
         physical_constants.max_speed = 2.0f;
-        chassis_state.v_x = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
-        chassis_state.v_y = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
+        g_robot_state.chassis.x_speed = chassis_state.v_x_in_gimbal * cos(gimbal_angle_difference) - chassis_state.v_y_in_gimbal * sin(gimbal_angle_difference);
+        g_robot_state.chassis.y_speed = chassis_state.v_x_in_gimbal * sin(gimbal_angle_difference) + chassis_state.v_y_in_gimbal * cos(gimbal_angle_difference);
     }
     // chassis_state.v_x = g_robot_state.input.vx;
     // chassis_state.v_y = g_robot_state.input.vy;
 
     // Control loop for the chassis
-    omni_calculate_kinematics(&chassis_state, &physical_constants);
+    omni_calculate_kinematics(&g_robot_state.chassis, &chassis_state, &physical_constants);
     // omni_desaturate_wheel_speeds(&chassis_state, &physical_constants);2
     omni_convert_to_rpm(&chassis_state);
 

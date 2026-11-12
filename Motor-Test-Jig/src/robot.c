@@ -3,22 +3,14 @@
 #include "robot.h"
 
 #include "robot_tasks.h"
-//#include "chassis_task.h"
-//#include "gimbal_task.h"
-//#include "launch_task.h"
-//#include "remote.h"
 #include "imu_task.h"
-//#include "referee_system.h"
 #include "buzzer.h"
-//#include "supercap.h"
 #include "dji_motor.h"
 #include "dm_motor.h"
 
 Robot_State_t g_robot_state = {0};
 DJI_Motor_Handle_t *DJI_test_motor;
 DM_Motor_Handle_t *DM_test_motor;
-//extern Remote_t g_remote;
-//extern Supercap_t g_supercap;
 
 /*
  * @brief This file is dedicated to testing motors that we have in our possession.
@@ -113,19 +105,9 @@ void Robot_Init()
  */
 void Handle_Starting_Up_State()
 {
-    /* START NEW */
     Motor_Task_Init();
-    /* END NEW */
     
-    //Gimbal_Task_Init();
-    //Launch_Task_Init();
-    //Remote_Init(&huart3);
     CAN_Service_Init();
-    // Referee_System_Init(&huart1);
-    // Supercap_Init(&g_supercap);
-    //Jetson_Orin_Init(&huart1);
-    //Referee_System_Init(&huart6);
-    //Supercap_Init(&huart1);
 
     // Set robot state to disabled
     g_robot_state.state = ENABLED;
@@ -137,15 +119,7 @@ void Handle_Starting_Up_State()
  */
 void Handle_Enabled_State()
 {
-    /* START NEW */
     Process_Motor_Control();
-    /* END NEW */
-    
-    //Referee_Set_Robot_State();
-    //Process_Remote_Input();
-    //Process_Chassis_Control();
-    //Process_Gimbal_Control();
-    //Process_Launch_Control();
 }
 
 #define M3508_TEST_KP 500.0f
@@ -210,94 +184,10 @@ void Process_Motor_Control()
     #endif
 
     #ifdef DM_Motor_Test
-    // If velocity does not work, try position or torqueb
+    // If velocity does not work, try position or torque
     DM_Motor_Ctrl_MIT_PD(DM_testMotor, 0.0f, 5.0f, 0.0f, 20.0f, 8.5f);
     #endif
 }
-
-
-/**
- * @brief This function handles the ENABLED state of the robot.
- * This means disabling all motors and components
- */
- /*
-void Handle_Disabled_State()
-{
-    DJI_Motor_Disable_All();
-    DM_Motor_Disable_All();
-
-    Gimbal_Task_Disable();
-    //  Disable all major components
-    g_robot_state.launch.IS_FLYWHEEL_ENABLED = 0;
-    g_robot_state.chassis.x_speed = 0;
-    g_robot_state.chassis.y_speed = 0;
-
-    if (g_remote.online_flag == REMOTE_ONLINE && g_remote.controller.right_switch != DOWN)
-    {
-        g_robot_state.state = ENABLED;
-        DJI_Motor_Enable_All();
-    }
-}
-*/
-
-/*
-void Process_Remote_Input()
-{
-    g_robot_state.input.vx = g_remote.controller.left_stick.x/660.0f * 2.0f;
-    g_robot_state.input.vy = g_remote.controller.left_stick.y/660.0f * 2.0f;
-    g_robot_state.input.vomega = -g_remote.controller.right_stick.x/660.0f * 6.28f;
-    
-    if (__IS_TRANSITIONED(g_remote.controller.left_switch, g_robot_state.input.prev_left_switch, MID))
-    {
-        g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
-    }
-    if (__IS_TRANSITIONED(g_remote.controller.left_switch, g_robot_state.input.prev_left_switch, DOWN) ||
-        __IS_TRANSITIONED(g_remote.controller.left_switch, g_robot_state.input.prev_left_switch, UP))
-    {
-        g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
-    }
-
-    if ((g_remote.mouse.left) || (g_remote.controller.wheel > 50.0f)) { // Hold left mouse to fire
-        g_robot_state.launch.fire_mode = SINGLE_FIRE;
-    } else {
-        g_robot_state.launch.fire_mode = NO_FIRE;
-    }
-
-    if (g_remote.controller.left_switch == UP) { // Left switch high to enable spintop
-        //g_robot_state.chassis.IS_SPINTOP_ENABLED = 1;
-        g_robot_state.launch.IS_FIRING_ENABLED = 1;
-        g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 1;
-    } else {
-        //g_robot_state.chassis.IS_SPINTOP_ENABLED = 0;
-        g_robot_state.launch.IS_FIRING_ENABLED = 0;
-        g_robot_state.launch.IS_AUTO_AIMING_ENABLED = 0;
-    }
-
-    g_robot_state.input.prev_left_switch = g_remote.controller.left_switch;
-
-}
-*/
-
-/*
-void Process_Chassis_Control()
-{
-     Chassis_Ctrl_Loop();
-}
-*/
-
-/*
-void Process_Gimbal_Control()
-{
-     Gimbal_Ctrl_Loop();
-}
-*/
-
-/*
-void Process_Launch_Control()
-{
-     Launch_Ctrl_Loop();
-}
-*/
 
 /**
  *  This function is called periodically by the Robot Task.
