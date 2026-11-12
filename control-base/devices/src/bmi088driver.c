@@ -9,7 +9,7 @@ float BMI088_GYRO_SEN = BMI088_GYRO_2000_SEN;//penis
 
 #if defined(BMI088_USE_SPI)
 
-#define BMI088_accel_write_single_reg(reg, data) \q
+#define BMI088_accel_write_single_reg(reg, data) \
     {                                            \
         BMI088_ACCEL_NS_L();                     \
         BMI088_write_single_reg((reg), (data));  \
