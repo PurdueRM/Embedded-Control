@@ -72,25 +72,21 @@ void DM_Motor_Decode(CAN_Instance_t *motor_can_instance)
     data_frame->pos_int = (data[1] << 8) | data[2];
     data_frame->vel_int = (data[3] << 4) | (data[4] >> 4);
     data_frame->torq_int = ((data[4] & 0xF) << 8) | data[5];
-    float pos = uint_to_float(data_frame->pos_int, P_MIN, P_MAX, 16);
-    data_frame->pos_raw = data_frame->motor_reversal == CW_POS ? pos : pos; // (-12.5,12.5)
 
-    //How to invert pos?
+    float direction = data_frame->motor_reversal == CW_POS ? -1.0f : 1.0f;
+    float ratio = data_frame->gear_ratio;
+    data_frame->pos_raw = uint_to_float(data_frame->pos_int, P_MIN, P_MAX, 16);
     float vel = uint_to_float(data_frame->vel_int, V_MIN, V_MAX, 12);
-    data_frame->vel = data_frame->motor_reversal == CCW_POS ? vel : -vel;     // (-45.0,45.0) (For CW, need negative)
+    data_frame->vel = direction * vel * ratio;
     float torq = uint_to_float(data_frame->torq_int, T_MIN, T_MAX, 12);
-    data_frame->torq = data_frame->motor_reversal == CW_POS ? torq : torq;   // (-18.0,18.0)
+    
+    data_frame->torq = direction * torq / ratio;
     data_frame->t_mos = (float)(data[6]);
     data_frame->t_rotor = (float)(data[7]);
 
     float unwrapped = DM_Motor_Unwrap_Position(data_frame, data_frame->pos_raw, P_MAX - P_MIN);
-    unwrapped = (unwrapped * data_frame->gear_ratio) + data_frame->pos_offset;
-    __MAP_ANGLE_TO_UNIT_CIRCLE(unwrapped)
-    unwrapped = data_frame->motor_reversal == CW_POS ? unwrapped : unwrapped;
-
-    data_frame->pos = unwrapped;
-
-
+    data_frame->pos = direction * unwrapped * ratio + data_frame->pos_offset;
+    __MAP_ANGLE_TO_UNIT_CIRCLE(data_frame->pos);
 }
 
 /**
@@ -256,10 +252,15 @@ void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_
     uint16_t pos_temp, vel_temp, kp_temp, kd_temp, torq_temp;
     CAN_Instance_t *motor_can_instance = motor->can_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
-    //v This is definitely wrong (Doesn't account for gear ratio)
-    motor->target_pos = motor->stats->motor_reversal == CW_POS ? target_pos + motor->stats->pos_offset : target_pos + motor->stats->pos_offset;
-    motor->target_vel = motor->stats->motor_reversal == CW_POS ? target_vel : target_vel;
-    motor->torq = motor->stats->motor_reversal == CW_POS ? torq : torq; // -1 : +1
+    float direction = motor->stats->motor_reversal == CW_POS ? -1.0f : 1.0f;
+    float ratio = motor->stats->gear_ratio;
+    motor->target_pos = direction * (target_pos - motor->stats->pos_offset) / ratio;
+    motor->target_vel = direction * target_vel / ratio;
+    motor->torq = direction * torq * ratio;
+
+    __MAX_LIMIT(motor->target_pos, P_MIN, P_MAX);
+    __MAX_LIMIT(motor->target_vel, V_MIN, V_MAX);
+    __MAX_LIMIT(motor->torq, T_MIN, T_MAX);
     pos_temp = float_to_uint(motor->target_pos, P_MIN, P_MAX, 16);
     vel_temp = float_to_uint(motor->target_vel, V_MIN, V_MAX, 12);
     kp_temp = float_to_uint(motor->kp, KP_MIN, KP_MAX, 12);
@@ -289,12 +290,16 @@ void DM_Motor_Ctrl_MIT_PD(DM_Motor_Handle_t *motor, float target_pos, float targ
     CAN_Instance_t *motor_can_instance = motor->can_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
 
-    target_pos = motor->stats->motor_reversal == CCW_POS ? target_pos : target_pos;
+    float direction = motor->stats->motor_reversal == CW_POS ? -1.0f : 1.0f;
+    float ratio = motor->stats->gear_ratio;
+    motor->target_pos = direction * (target_pos - motor->stats->pos_offset) / ratio;
+    motor->target_vel = direction * target_vel / ratio;
+    motor->torq = direction * torq * ratio;
 
-    motor->target_pos = (target_pos - motor->stats->pos_offset) / motor->stats->gear_ratio;
-    motor->target_vel = motor->stats->motor_reversal == CCW_POS ? target_vel : target_vel;
-    motor->torq = motor->stats->motor_reversal == CCW_POS ? torq : torq;
-    
+    __MAX_LIMIT(motor->target_pos, P_MIN, P_MAX);
+    __MAX_LIMIT(motor->target_vel, V_MIN, V_MAX);
+    __MAX_LIMIT(motor->torq, T_MIN, T_MAX);
+
     pos_temp = float_to_uint(motor->target_pos, P_MIN, P_MAX, 16);
     vel_temp = float_to_uint(motor->target_vel, V_MIN, V_MAX, 12);
     kp_temp = float_to_uint(kp, KP_MIN, KP_MAX, 12);
@@ -359,7 +364,11 @@ DM_Motor_Handle_t *DM_Motor_Init(DM_Motor_Config_t *config)
 void DM_Motor_CtrlPosVel(DM_Motor_Handle_t *motor, float target_pos, float target_vel)
 {
     uint8_t *data = motor->can_instance->tx_buffer;
+    // motor->target_pos = target_pos;
+    target_pos = (motor->stats->motor_reversal==CW_POS ? -1 : 1) * (target_pos - motor->stats->pos_offset) / motor->stats->gear_ratio;
     motor->target_pos = target_pos;
+
+    target_vel = target_vel / motor->stats->gear_ratio;
     motor->target_vel = target_vel;
 
     // STM32 uses little-endian floats, matching the DaMiao POS_VEL payload.
@@ -378,6 +387,7 @@ void DM_Motor_CtrlVel(DM_Motor_Handle_t *motor, float target_vel)
     CAN_Instance_t *motor_can_instance = motor->can_instance;
     uint8_t *data = motor_can_instance->tx_buffer;
     target_vel = motor->stats->motor_reversal == CCW_POS ? target_vel : -target_vel;
+    target_vel /= motor->stats->gear_ratio;
     motor->target_vel = target_vel;
 
     uint8_t *vel_bytes = (uint8_t *) &target_vel;

@@ -32,14 +32,15 @@ void Gimbal_Task_Init(){
     DM_Motor_Config_t yaw_motor_config = {
         .can_bus = 1,
         .control_mode = DM_MOTOR_MIT,
-        .pos_offset = 6.2 - PI_OVER_2 - PI / 6,
+        .pos_offset = 3.14,
         .rx_id = 0x11,
         .tx_id = 0x01,
         .disable_behavior = DM_MOTOR_ZERO_CURRENT,
-        .motor_reversal = CW_POS,
+        .motor_reversal = CCW_POS,
         .kp = 10.0f,
         .kd = 1.0f,
-        .gear_ratio = 1.098f,
+        // .gear_ratio = 1.098f,
+        .gear_ratio = 2.0f,
     };
 
     DM_Motor_Config_t pitch_motor_config = {
@@ -56,8 +57,8 @@ void Gimbal_Task_Init(){
     };
 
     g_yaw = DM_Motor_Init(&yaw_motor_config);
-    DM_Motor_Set_Control_Mode(g_yaw, DM_MOTOR_VEL);
-    // DM_Motor_Set_Control_Mode(g_yaw, DM_MOTOR_MIT);
+    // DM_Motor_Set_Control_Mode(g_yaw, DM_MOTOR_VEL);
+    DM_Motor_Set_Control_Mode(g_yaw, DM_MOTOR_MIT);
     // DM_Motor_Set_Control_Mode(g_yaw, DM_MOTOR_POS_VEL);
     g_pitch = DM_Motor_Init(&pitch_motor_config);
     DM_Motor_Set_Control_Mode(g_pitch, DM_MOTOR_MIT);
@@ -67,9 +68,9 @@ void Gimbal_Task_Init(){
 void Gimbal_Ctrl_Loop() {
     gimbal_target_vel = g_remote.controller.left_stick.y / 600.0f * PI;
     DM_Motor_Enable_Motor(g_yaw);
-    DM_Motor_CtrlVel(g_yaw, gimbal_target_vel);
-    // DM_Motor_CtrlPosVel(g_yaw, gimbal_target_vel, 2*PI);
-    // DM_Motor_Ctrl_MIT(g_yaw, gimbal_target_vel, 0, 0);
+    // DM_Motor_CtrlVel(g_yaw, gimbal_target_vel);
+    // DM_Motor_CtrlPosVel(g_yaw, gimbal_target_vel, PI);
+    DM_Motor_Ctrl_MIT(g_yaw, gimbal_target_vel, 0, 0);
 
     // if (g_yaw->stats->position_initialized == 1 && g_yaw->stats->pos_init_prev == 0) {
     //     g_yaw->stats->pos_offset = g_yaw->stats->pos_raw * -1;

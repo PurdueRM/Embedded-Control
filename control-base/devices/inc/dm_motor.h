@@ -46,12 +46,12 @@ typedef struct
     uint16_t torq_int;
     Motor_Reversal_t motor_reversal;
 
-    float pos;
-    float pos_raw;
-    float pos_offset;
-    float vel;
-    float torq;
-    float gear_ratio;
+    float pos;        // Wrapped robot position [-pi, pi) (rad), including reversal, gearing and offset
+    float pos_raw;    // Wrapped motor position (rad), without coordinate conversion
+    float pos_offset; // Robot position at motor zero (rad)
+    float vel;        // Robot velocity (rad/s), including reversal and gearing
+    float torq;       // Ideal robot output torque (Nm), including reversal and gearing
+    float gear_ratio; // Positive robot angle / motor-reported angle
     uint16_t t_mos;
     uint16_t t_rotor;
     float prev_pos_raw;
