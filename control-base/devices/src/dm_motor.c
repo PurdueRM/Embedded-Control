@@ -1,6 +1,7 @@
 #include "dm_motor.h"
 #include "user_math.h"
 #include <stdlib.h>
+#include <string.h>
 
 #define DM_MAX_DEVICE (10)
 DM_Motor_Handle_t *g_dm_motors[DM_MAX_DEVICE] = {NULL};
@@ -111,10 +112,14 @@ void DM_Motor_Decode(CAN_Instance_t *motor_can_instance)
  */
 void DM_Motor_Enable_Motor(DM_Motor_Handle_t *motor)
 {
+    uint8_t enable_needed = motor->enabled == 0 || motor->stats->state != DM_MOTOR_ENABLED;
     // set enable flag, this is the user intention to enable the motor, not neccessarily reflecting the motor status
     motor->enabled = 1;
     // set the flag to send the data
-    motor->send_pending_flag |= DM_MOTOR_ENABLE_PENDING;
+    if (enable_needed)
+    {
+        motor->send_pending_flag |= DM_MOTOR_ENABLE_PENDING;
+    }
     // set disable flag to 0
     motor->send_pending_flag &= ~DM_MOTOR_DISABLE_PENDING;
 }
@@ -144,11 +149,7 @@ void DM_Motor_Frame_Enable_Protocol(DM_Motor_Handle_t *motor)
 void DM_Motor_Disable_Motor(DM_Motor_Handle_t *motor)
 {
     motor->enabled = 0;
-
-    CAN_Instance_t *motor_can_instance = motor->can_instance;
-
-    motor_can_instance->tx_header->StdId = motor->tx_id;
-    motor_can_instance->tx_header->DLC = 8;
+    motor->send_pending_flag &= ~DM_MOTOR_ENABLE_PENDING;
 
     switch (motor->disable_behavior)
     {
@@ -219,26 +220,35 @@ void DM_Motor_Disable_All()
 
 void DM_Motor_Set_Control_Mode(DM_Motor_Handle_t *motor, uint8_t control_mode)
 {
+    if (control_mode > DM_MOTOR_VEL)
+    {
+        return;
+    }
     motor->control_mode = control_mode;
+    // Initialization runs before CAN_Service_Init(). Queue the write for the motor task.
+    motor->send_pending_flag |= DM_MOTOR_MODE_PENDING;
+}
 
-    CAN_Instance_t *can_instance = motor->can_instance;
-    uint8_t *data = can_instance->tx_buffer;
+static HAL_StatusTypeDef DM_Motor_Send_Control_Mode(DM_Motor_Handle_t *motor)
+{
+    // Use a separate frame so changing mode cannot overwrite a queued setpoint.
+    CAN_Instance_t request = {0};
+    CAN_TxHeaderTypeDef header = {0};
+    request.can_bus = motor->can_bus;
+    request.tx_header = &header;
+    header.StdId = 0x7FF;
+    header.IDE = CAN_ID_STD;
+    header.RTR = CAN_RTR_DATA;
+    header.DLC = 8;
 
-    // Cast control_mode to uint32_t so bit shifts (>> 8, >> 16, >> 24) are valid
-    uint32_t mode_val = (uint32_t)control_mode; 
-
-    data[0] = motor->tx_id & 0xFF; // Motor Slave ID
-    data[1] = 0x55;                // Write command byte
-    data[2] = 0x01;                // Write to RAM (0x02 saves to Flash)
-    data[3] = 0x0A;                // Register RID 0x0A (Control Mode)
-    
-    // Write 32-bit mode value (Little Endian)
-    data[4] = (uint8_t)(mode_val & 0xFF);         // Will be 0x00 for MIT
-    data[5] = (uint8_t)((mode_val >> 8) & 0xFF);  // 0x00
-    data[6] = (uint8_t)((mode_val >> 16) & 0xFF); // 0x00
-    data[7] = (uint8_t)((mode_val >> 24) & 0xFF); // 0x00
-
-    CAN_Transmit(can_instance);
+    // The public constants are zero-based; CTRL_MODE is 1=MIT, 2=POS_VEL, 3=VEL.
+    uint8_t *data = request.tx_buffer;
+    data[0] = motor->tx_id & 0xFF;
+    data[1] = (motor->tx_id >> 8) & 0xFF;
+    data[2] = 0x55; // Write register to RAM (no Flash write)
+    data[3] = 0x0A; // CTRL_MODE
+    data[4] = motor->control_mode + 1U;
+    return CAN_Transmit(&request);
 }
 
 void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq)
@@ -346,9 +356,21 @@ DM_Motor_Handle_t *DM_Motor_Init(DM_Motor_Config_t *config)
     return motor;
 }
 
-void DM_Motor_CtrlPosVel()
+void DM_Motor_CtrlPosVel(DM_Motor_Handle_t *motor, float target_pos, float target_vel)
 {
-    // TODO:
+    uint8_t *data = motor->can_instance->tx_buffer;
+    motor->target_pos = target_pos;
+    motor->target_vel = target_vel;
+
+    // STM32 uses little-endian floats, matching the DaMiao POS_VEL payload.
+    memcpy(data, &target_pos, sizeof(target_pos));
+    memcpy(data + sizeof(target_pos), &target_vel, sizeof(target_vel));
+
+    motor->send_pending_flag |= DM_MOTOR_SEND_PENDING;
+    if (motor->enabled == 1 && motor->stats->state != DM_MOTOR_ENABLED)
+    {
+        motor->send_pending_flag |= DM_MOTOR_ENABLE_PENDING;
+    }
 }
 
 void DM_Motor_CtrlVel(DM_Motor_Handle_t *motor, float target_vel)
@@ -378,6 +400,15 @@ void DM_Motor_Send()
     for (int i = 0; i < g_dm_motor_num; i++) // loop through all the motors
     {
         DM_Motor_Handle_t *motor = g_dm_motors[i];                                    // check if the flag is set
+        if (motor->send_pending_flag & DM_MOTOR_MODE_PENDING)
+        {
+            if (DM_Motor_Send_Control_Mode(motor) == HAL_OK)
+            {
+                motor->send_pending_flag &= ~DM_MOTOR_MODE_PENDING;
+            }
+            // Give the mode write a separate iteration before enable or control frames.
+            continue;
+        }
         if (motor->send_pending_flag & DM_MOTOR_SEND_PENDING)
         {           
             switch(motor->control_mode){
@@ -396,22 +427,45 @@ void DM_Motor_Send()
                 default:
                     break;
             }
-            CAN_Transmit(motor->can_instance); // send the data
-            motor->send_pending_flag &= ~DM_MOTOR_SEND_PENDING;      // clear the flag
+            if (CAN_Transmit(motor->can_instance) == HAL_OK)
+            {
+                motor->send_pending_flag &= ~DM_MOTOR_SEND_PENDING;
+            }
         }
         if (g_dm_motors[i]->send_pending_flag & DM_MOTOR_ENABLE_PENDING) 
         // Check if enable pending, this flag is set when the motor is enabled by user but motor feedback shows otherwise
         {
-            DM_Motor_Frame_Enable_Protocol(g_dm_motors[i]);      // Form the enable data with DaMiao Motor Protocol
-            CAN_Transmit(g_dm_motors[i]->can_instance); // send the data
-            g_dm_motors[i]->send_pending_flag &= ~DM_MOTOR_ENABLE_PENDING;      // clear the flag
+            // Special frames must not overwrite a setpoint queued by the robot task.
+            CAN_Instance_t request = {0};
+            CAN_TxHeaderTypeDef header = {0};
+            DM_Motor_Handle_t command = *motor;
+            request.can_bus = motor->can_bus;
+            request.tx_header = &header;
+            header.IDE = CAN_ID_STD;
+            header.RTR = CAN_RTR_DATA;
+            command.can_instance = &request;
+            DM_Motor_Frame_Enable_Protocol(&command);
+            if (CAN_Transmit(&request) == HAL_OK)
+            {
+                motor->send_pending_flag &= ~DM_MOTOR_ENABLE_PENDING;
+            }
         }
         if (g_dm_motors[i]->send_pending_flag & DM_MOTOR_DISABLE_PENDING)
         {
-            DM_Motor_Frame_Disable_Protocol(g_dm_motors[i]);
-            CAN_Transmit(g_dm_motors[i]->can_instance);
-            DM_Motor_Frame_Zero_Current_Protocol(g_dm_motors[i]); // Form the zero current data with DaMiao Motor Protocol
-            CAN_Transmit(g_dm_motors[i]->can_instance);
+            CAN_Instance_t request = {0};
+            CAN_TxHeaderTypeDef header = {0};
+            DM_Motor_Handle_t command = *motor;
+            request.can_bus = motor->can_bus;
+            request.tx_header = &header;
+            header.StdId = motor->tx_id;
+            header.DLC = 8;
+            header.IDE = CAN_ID_STD;
+            header.RTR = CAN_RTR_DATA;
+            command.can_instance = &request;
+            DM_Motor_Frame_Disable_Protocol(&command);
+            CAN_Transmit(&request);
+            DM_Motor_Frame_Zero_Current_Protocol(&command);
+            CAN_Transmit(&request);
             // does not clear the flag, this is to ensure to keep sending so the motor is disabled
         }
     }

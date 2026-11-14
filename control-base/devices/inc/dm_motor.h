@@ -26,6 +26,7 @@
 #define DM_MOTOR_SEND_PENDING   (1 << 0)
 #define DM_MOTOR_ENABLE_PENDING (1 << 1)
 #define DM_MOTOR_DISABLE_PENDING (1 << 2)
+#define DM_MOTOR_MODE_PENDING (1 << 3)
 #define DM_MOTOR_DISABLED (0x0)
 #define DM_MOTOR_ENABLED (0x1)
 #define DM_MOTOR_OVER_VOLTAGE (0x8)
@@ -104,10 +105,14 @@ typedef struct _DM_Motor {
 void DM_Motor_Disable_Motor(DM_Motor_Handle_t *motor);
 void DM_Motor_Enable_Motor(DM_Motor_Handle_t *motor);
 DM_Motor_Handle_t* DM_Motor_Init(DM_Motor_Config_t *config);
+// Queues a RAM register write for DM_Motor_Send(); does not confirm motor acceptance.
 void DM_Motor_Set_Control_Mode(DM_Motor_Handle_t *motor, uint8_t control_mode);
 void DM_Motor_Ctrl_MIT(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq);
 void DM_Motor_Ctrl_MIT_PD(DM_Motor_Handle_t *motor, float target_pos, float target_vel, float torq, float kp, float kd);
 void DM_Motor_Set_MIT_PD(DM_Motor_Handle_t *motor, float kp, float kd);
+// Raw motor position (rad) and positive speed limit (rad/s), without coordinate conversion.
+// Select DM_MOTOR_POS_VEL before use; DM_Motor_Send() transmits the queued command.
+void DM_Motor_CtrlPosVel(DM_Motor_Handle_t *motor, float target_pos, float target_vel);
 void DM_Motor_CtrlVel(DM_Motor_Handle_t *motor, float target_vel);
 
 /**

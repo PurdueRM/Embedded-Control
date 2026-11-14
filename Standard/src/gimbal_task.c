@@ -56,43 +56,47 @@ void Gimbal_Task_Init(){
     };
 
     g_yaw = DM_Motor_Init(&yaw_motor_config);
-    // DM_Motor_Set_Control_Mode(g_yaw, DM_MOTOR_VEL);
-    DM_Motor_Set_Control_Mode(g_yaw, DM_MOTOR_MIT);
+    DM_Motor_Set_Control_Mode(g_yaw, DM_MOTOR_VEL);
+    // DM_Motor_Set_Control_Mode(g_yaw, DM_MOTOR_MIT);
+    // DM_Motor_Set_Control_Mode(g_yaw, DM_MOTOR_POS_VEL);
     g_pitch = DM_Motor_Init(&pitch_motor_config);
     DM_Motor_Set_Control_Mode(g_pitch, DM_MOTOR_MIT);
     DM_Motor_Enable_Motor(g_pitch);
 }
 
 void Gimbal_Ctrl_Loop() {
-
-    if (g_yaw->stats->position_initialized == 1 && g_yaw->stats->pos_init_prev == 0) {
-        g_yaw->stats->pos_offset = g_yaw->stats->pos_raw * -1;
-        g_yaw->stats->pos_init_prev = 1;
-    }
-
-    // Control loop for gimbal
-    g_robot_state.gimbal.yaw_angle += g_remote.controller.right_stick.x/660.0f * 0.01f +  g_remote.mouse.x / 100000.0f;
-
-    // //Gimbal follow imu PID
-    tmp_yaw_angle_diff = (2*PI - g_robot_state.gimbal.yaw_angle) - (g_imu.rad.yaw - 0.0f);  //1.07f
-    __MAP_ANGLE_TO_UNIT_CIRCLE(tmp_yaw_angle_diff);
-    g_yaw_torque = PID(&gimbal_imu_pid, tmp_yaw_angle_diff);
-    __MAX_LIMIT(g_yaw_torque, -6.0f, 6.0f)
-
+    gimbal_target_vel = g_remote.controller.left_stick.y / 600.0f * PI;
     DM_Motor_Enable_Motor(g_yaw);
-    DM_Motor_Ctrl_MIT_PD(g_yaw, 0.0f, 0.0f, g_yaw_torque, 0.0f, 0.0f);
-    // gimbal_target_vel = g_remote.controller.right_stick.y/660.0f * 4 * PI;
-    // gimbal_target_torque = g_remote.controller.right_stick.y/660.0f * 10.0f;
+    DM_Motor_CtrlVel(g_yaw, gimbal_target_vel);
+    // DM_Motor_CtrlPosVel(g_yaw, gimbal_target_vel, 2*PI);
+    // DM_Motor_Ctrl_MIT(g_yaw, gimbal_target_vel, 0, 0);
+
+    // if (g_yaw->stats->position_initialized == 1 && g_yaw->stats->pos_init_prev == 0) {
+    //     g_yaw->stats->pos_offset = g_yaw->stats->pos_raw * -1;
+    //     g_yaw->stats->pos_init_prev = 1;
+    // }
+
+    // // Control loop for gimbal
+    // g_robot_state.gimbal.yaw_angle += g_remote.controller.right_stick.x/660.0f * 0.01f +  g_remote.mouse.x / 100000.0f;
+
+    // // //Gimbal follow imu PID
+    // tmp_yaw_angle_diff = (2*PI - g_robot_state.gimbal.yaw_angle) - (g_imu.rad.yaw - 0.0f);  //1.07f
+    // __MAP_ANGLE_TO_UNIT_CIRCLE(tmp_yaw_angle_diff);
+    // g_yaw_torque = PID(&gimbal_imu_pid, tmp_yaw_angle_diff);
+    // __MAX_LIMIT(g_yaw_torque, -6.0f, 6.0f)
 
     // DM_Motor_Enable_Motor(g_yaw);
-    // DM_Motor_Ctrl_MIT_PD(g_yaw, 0.0f, gimbal_target_vel, 0.0f, 1.0f, 0.0f);
-    // DM_Motor_CtrlVel(g_yaw, gimbal_target_vel);
+    // DM_Motor_Ctrl_MIT_PD(g_yaw, 0.0f, 0.0f, g_yaw_torque, 0.0f, 0.0f);
+    // // gimbal_target_vel = g_remote.controller.right_stick.y/660.0f * 4 * PI;
+    // // gimbal_target_torque = g_remote.controller.right_stick.y/660.0f * 10.0f;
 
-    g_robot_state.gimbal.pitch_angle -= g_remote.controller.right_stick.y / 660.0f * 0.01f - g_remote.mouse.y/100000.0f;
-    __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.45f, 0.4f);
+    // // DM_Motor_Enable_Motor(g_yaw);
+    // // DM_Motor_Ctrl_MIT_PD(g_yaw, 0.0f, gimbal_target_vel, 0.0f, 1.0f, 0.0f);
+    // // DM_Motor_CtrlVel(g_yaw, gimbal_target_vel);
+
+    // g_robot_state.gimbal.pitch_angle -= g_remote.controller.right_stick.y / 660.0f * 0.01f - g_remote.mouse.y/100000.0f;
+    // __MAX_LIMIT(g_robot_state.gimbal.pitch_angle, -0.45f, 0.4f);
     
-    DM_Motor_Enable_Motor(g_pitch);
-    DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 8.5f);
-
-
+    // DM_Motor_Enable_Motor(g_pitch);
+    // DM_Motor_Ctrl_MIT_PD(g_pitch, g_robot_state.gimbal.pitch_angle, 0.0f, 0.0f, 20.0f, 8.5f);
 }

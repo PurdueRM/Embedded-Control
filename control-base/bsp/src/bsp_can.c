@@ -103,10 +103,16 @@ HAL_StatusTypeDef CAN_Transmit(CAN_Instance_t *can_instance)
 {
     // Select the correct CAN bus
     CAN_HandleTypeDef *hcanx = (can_instance->can_bus == 1) ? &hcan1 : &hcan2;
+    // Startup tasks may run before CAN_Service_Init(). Allow deferred writes to retry.
+    if (HAL_CAN_GetState(hcanx) != HAL_CAN_STATE_LISTENING)
+    {
+        return HAL_ERROR;
+    }
     // Wait for available mailbox
     while (HAL_CAN_GetTxMailboxesFreeLevel(hcanx) == 0);
     // Transmit the message
-    return HAL_CAN_AddTxMessage(hcanx, can_instance->tx_header, can_instance->tx_buffer, (uint32_t *)CAN_TX_MAILBOX0);
+    uint32_t tx_mailbox;
+    return HAL_CAN_AddTxMessage(hcanx, can_instance->tx_header, can_instance->tx_buffer, &tx_mailbox);
 }
 
 /**
